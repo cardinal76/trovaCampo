@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { societa } from "../data/societa";
+import { geocodifica } from "../geocoding";
 import { NuovoCampoInput, Societa } from "../types";
 
 const router = Router();
@@ -26,7 +27,7 @@ router.get("/societa", (req, res) => {
   res.json(risultati);
 });
 
-router.post("/societa", (req, res) => {
+router.post("/societa", async (req, res) => {
   const body = req.body as Partial<NuovoCampoInput>;
   const nomeSocieta = typeof body.nomeSocieta === "string" ? body.nomeSocieta.trim() : "";
   const nomeImpianto = typeof body.nomeImpianto === "string" ? body.nomeImpianto.trim() : "";
@@ -39,6 +40,11 @@ router.post("/societa", (req, res) => {
     });
   }
 
+  // Se la geocodifica non trova l'indirizzo (o il servizio non risponde), il
+  // campo viene comunque salvato senza coordinate: comparirà in ricerca
+  // nella lista "non ancora geolocalizzati" invece che come pin sulla mappa.
+  const coordinate = await geocodifica(indirizzoImpianto);
+
   const nuovaSocieta: Societa = {
     id: crypto.randomUUID(),
     siglaSocieta: "",
@@ -48,6 +54,7 @@ router.post("/societa", (req, res) => {
     indirizzoImpianto,
     localitaImpianto: "",
     provinciaImpianto: "",
+    ...(coordinate ? { lat: coordinate.lat, lng: coordinate.lng } : {}),
   };
 
   societa.push(nuovaSocieta);
