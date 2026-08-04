@@ -59,7 +59,12 @@ Come descritto nei documenti di analisi, alcune idee per evoluzioni successive d
   - la schermata **"Aggiungi campo"**, raggiungibile dalla Home, per inserire un nuovo campo con nome campo, nome società e indirizzo. I tre campi sono normali caselle di testo: si può digitare oppure dettare con il microfono già presente sulla tastiera di iOS/Android, senza bisogno di librerie aggiuntive.
 - All'inserimento, il backend prova a **geocodificare automaticamente l'indirizzo** tramite [Nominatim/OpenStreetMap](https://nominatim.openstreetmap.org/) (gratuito, nessuna chiave API) per ottenere le coordinate del campo. Se il servizio non trova l'indirizzo o non risponde, il campo viene comunque salvato senza coordinate e compare in ricerca nella lista "non ancora geolocalizzati" invece che come pin sulla mappa. Nominatim ha una usage policy restrittiva (max 1 richiesta al secondo, niente uso massivo): per un volume alto di inserimenti servirebbe un provider a pagamento o un'istanza self-hosted.
 
-Le funzioni 2 e 3 (ricerca società/campionati) non sono ancora implementate.
+Sono state implementate anche le **Funzioni 2 (Ricerca società) e 3 (Ricerca campionati società)**, unite in un'unica schermata come nel mockup `grafica/anagraficaSocietà.jpg`:
+- toccando un pin sulla mappa (tasto "Vedi scheda società" nel callout) o una voce della lista "non ancora geolocalizzati" nella schermata dei risultati, si apre la schermata **"Scheda società"**;
+- mostra l'anagrafica (matricola, comitato regionale, presidente, indirizzo sede, contatti, sito web, presenza ed eventuali prezzi della scuola calcio) e i campionati a cui la società partecipa, distinti in agonistica e scuola calcio;
+- se una società non ha ancora l'anagrafica completa (es. inserita manualmente con la sola Funzione 1), la scheda lo segnala esplicitamente invece di mostrare campi vuoti.
+
+Nei dati di esempio, solo "Certosa Calcio" e "Almas Roma S.r.l." hanno l'anagrafica e i campionati compilati, per mostrare anche il caso di dati mancanti.
 
 ## Come avviare il progetto in locale
 

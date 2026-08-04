@@ -15,6 +15,16 @@ export async function cercaSocieta(nome: string): Promise<Societa[]> {
   return risposta.json();
 }
 
+export async function ottieniSocieta(id: string): Promise<Societa> {
+  const risposta = await fetch(`${API_URL}/api/societa/${encodeURIComponent(id)}`);
+
+  if (!risposta.ok) {
+    throw new Error(`Recupero società fallito (${risposta.status})`);
+  }
+
+  return risposta.json();
+}
+
 export async function inserisciSocieta(campo: NuovoCampoInput): Promise<Societa> {
   const risposta = await fetch(`${API_URL}/api/societa`, {
     method: "POST",

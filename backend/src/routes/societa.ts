@@ -27,6 +27,16 @@ router.get("/societa", (req, res) => {
   res.json(risultati);
 });
 
+router.get("/societa/:id", (req, res) => {
+  const trovata = societa.find((s) => s.id === req.params.id);
+
+  if (!trovata) {
+    return res.status(404).json({ errore: "Società non trovata" });
+  }
+
+  res.json(trovata);
+});
+
 router.post("/societa", async (req, res) => {
   const body = req.body as Partial<NuovoCampoInput>;
   const nomeSocieta = typeof body.nomeSocieta === "string" ? body.nomeSocieta.trim() : "";
