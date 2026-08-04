@@ -28,6 +28,8 @@ Come descritto nei documenti di analisi, alcune idee per evoluzioni successive d
 ## Struttura del repository
 
 ```
+├── backend/                                API di ricerca (Node.js + TypeScript + Express)
+├── mobile/                                 App mobile (Expo + React Native + TypeScript)
 ├── funzioni.docx                          Analisi delle funzioni dell'app
 ├── evoluzioni.docx                        Documento (in bozza) delle evoluzioni future
 ├── bancaDati.docx                         Documento (in bozza) della banca dati
@@ -50,4 +52,30 @@ Come descritto nei documenti di analisi, alcune idee per evoluzioni successive d
 
 ## Stato del progetto
 
-Il progetto è attualmente in fase di **analisi dei requisiti e progettazione**: non contiene ancora codice sorgente, ma documenti di analisi, mockup grafici e specifiche funzionali che guideranno lo sviluppo dell'app.
+È stata avviata l'implementazione della **Funzione 1 (Ricerca campo)**:
+- `backend/` espone un'API REST che cerca le società per nome o indirizzo su un set di dati di esempio (in attesa dell'importazione della banca dati reale, vedi `documenti/analisi/analisi_0.1.docx`).
+- `mobile/` è un'app Expo/React Native con la schermata di ricerca ("Cerca Campo") e la schermata mappa che mostra i campi trovati, coerente con i mockup in `grafica/`.
+
+Le funzioni 2 e 3 (ricerca società/campionati) non sono ancora implementate.
+
+## Come avviare il progetto in locale
+
+### Backend
+
+```bash
+cd backend
+npm install
+npm run dev      # avvia l'API su http://localhost:3000
+```
+
+### App mobile
+
+```bash
+cd mobile
+npm install
+# Su dispositivo/emulatore reale imposta l'IP della macchina che esegue il backend:
+# EXPO_PUBLIC_API_URL=http://<ip-locale>:3000 npx expo start
+npm start
+```
+
+L'app si aspetta il backend raggiungibile su `http://localhost:3000` per impostazione predefinita (valido per i simulatori iOS e per Expo web; su Android/dispositivo fisico va impostata la variabile `EXPO_PUBLIC_API_URL`).
