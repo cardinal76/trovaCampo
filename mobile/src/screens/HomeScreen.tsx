@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
-import { StyleSheet, Text, TextInput, View } from "react-native";
+import { StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { RootStackParamList } from "../navigation";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Home">;
@@ -29,6 +29,9 @@ export default function HomeScreen({ navigation }: Props) {
         autoCapitalize="none"
         autoCorrect={false}
       />
+      <TouchableOpacity style={styles.link} onPress={() => navigation.navigate("Inserisci")}>
+        <Text style={styles.linkTesto}>Non trovi un campo? Aggiungilo</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -55,5 +58,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     fontSize: 15,
     textAlign: "center",
+  },
+  link: {
+    marginTop: 16,
+  },
+  linkTesto: {
+    color: "#2f6fce",
+    fontSize: 14,
   },
 });

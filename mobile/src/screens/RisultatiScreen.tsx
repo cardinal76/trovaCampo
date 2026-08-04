@@ -1,12 +1,18 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
 import MapView, { Callout, Marker } from "react-native-maps";
 import { cercaSocieta } from "../api/societa";
 import { RootStackParamList } from "../navigation";
 import { Societa } from "../types";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Risultati">;
+
+type SocietaGeolocalizzata = Societa & { lat: number; lng: number };
+
+function haCoordinate(s: Societa): s is SocietaGeolocalizzata {
+  return typeof s.lat === "number" && typeof s.lng === "number";
+}
 
 export default function RisultatiScreen({ route }: Props) {
   const { query } = route.params;
@@ -43,14 +49,17 @@ export default function RisultatiScreen({ route }: Props) {
     };
   }, [query]);
 
+  const geolocalizzati = useMemo(() => risultati.filter(haCoordinate), [risultati]);
+  const senzaCoordinate = useMemo(() => risultati.filter((s) => !haCoordinate(s)), [risultati]);
+
   useEffect(() => {
-    if (risultati.length > 0 && mapRef.current) {
+    if (geolocalizzati.length > 0 && mapRef.current) {
       mapRef.current.fitToCoordinates(
-        risultati.map((s) => ({ latitude: s.lat, longitude: s.lng })),
+        geolocalizzati.map((s) => ({ latitude: s.lat, longitude: s.lng })),
         { edgePadding: { top: 80, right: 80, bottom: 80, left: 80 }, animated: true }
       );
     }
-  }, [risultati]);
+  }, [geolocalizzati]);
 
   if (caricamento) {
     return (
@@ -77,38 +86,94 @@ export default function RisultatiScreen({ route }: Props) {
   }
 
   return (
-    <MapView
-      ref={mapRef}
-      style={styles.mappa}
-      initialRegion={{
-        latitude: risultati[0].lat,
-        longitude: risultati[0].lng,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      }}
-    >
-      {risultati.map((s) => (
-        <Marker key={s.id} coordinate={{ latitude: s.lat, longitude: s.lng }}>
-          <Callout>
-            <View style={styles.callout}>
-              <Text style={styles.calloutTitolo}>
-                {s.siglaSocieta} {s.nomeSocieta}
+    <View style={styles.container}>
+      {geolocalizzati.length > 0 && (
+        <MapView
+          ref={mapRef}
+          style={[styles.mappa, senzaCoordinate.length > 0 && styles.mappaRidotta]}
+          initialRegion={{
+            latitude: geolocalizzati[0].lat,
+            longitude: geolocalizzati[0].lng,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          }}
+        >
+          {geolocalizzati.map((s) => (
+            <Marker key={s.id} coordinate={{ latitude: s.lat, longitude: s.lng }}>
+              <Callout>
+                <View style={styles.callout}>
+                  <Text style={styles.calloutTitolo}>
+                    {s.siglaSocieta} {s.nomeSocieta}
+                  </Text>
+                  <Text>{s.nomeImpianto}</Text>
+                  <Text>
+                    {s.indirizzoImpianto}, {s.localitaImpianto} ({s.provinciaImpianto})
+                  </Text>
+                </View>
+              </Callout>
+            </Marker>
+          ))}
+        </MapView>
+      )}
+
+      {senzaCoordinate.length > 0 && (
+        <FlatList
+          style={styles.lista}
+          data={senzaCoordinate}
+          keyExtractor={(s) => s.id}
+          ListHeaderComponent={
+            geolocalizzati.length > 0 ? (
+              <Text style={styles.listaTitolo}>Non ancora geolocalizzati</Text>
+            ) : null
+          }
+          renderItem={({ item }) => (
+            <View style={styles.voceLista}>
+              <Text style={styles.voceTitolo}>
+                {item.siglaSocieta} {item.nomeSocieta}
               </Text>
-              <Text>{s.nomeImpianto}</Text>
-              <Text>
-                {s.indirizzoImpianto}, {s.localitaImpianto} ({s.provinciaImpianto})
-              </Text>
+              <Text>{item.nomeImpianto}</Text>
+              <Text style={styles.voceIndirizzo}>{item.indirizzoImpianto}</Text>
             </View>
-          </Callout>
-        </Marker>
-      ))}
-    </MapView>
+          )}
+        />
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   mappa: {
     flex: 1,
+  },
+  mappaRidotta: {
+    flex: 2,
+  },
+  lista: {
+    flex: 1,
+    borderTopWidth: 1,
+    borderTopColor: "#ddd",
+  },
+  listaTitolo: {
+    fontSize: 12,
+    color: "#666",
+    textTransform: "uppercase",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  voceLista: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  voceTitolo: {
+    fontWeight: "600",
+  },
+  voceIndirizzo: {
+    color: "#666",
   },
   centrato: {
     flex: 1,

@@ -7,6 +7,12 @@ export interface Societa {
   indirizzoImpianto: string;
   localitaImpianto: string;
   provinciaImpianto: string;
-  lat: number;
-  lng: number;
+  lat?: number;
+  lng?: number;
+}
+
+export interface NuovoCampoInput {
+  nomeSocieta: string;
+  nomeImpianto: string;
+  indirizzoImpianto: string;
 }

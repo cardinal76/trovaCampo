@@ -53,8 +53,10 @@ Come descritto nei documenti di analisi, alcune idee per evoluzioni successive d
 ## Stato del progetto
 
 È stata avviata l'implementazione della **Funzione 1 (Ricerca campo)**:
-- `backend/` espone un'API REST che cerca le società per nome o indirizzo su un set di dati di esempio (in attesa dell'importazione della banca dati reale, vedi `documenti/analisi/analisi_0.1.docx`).
-- `mobile/` è un'app Expo/React Native con la schermata di ricerca ("Cerca Campo") e la schermata mappa che mostra i campi trovati, coerente con i mockup in `grafica/`.
+- `backend/` espone un'API REST che cerca le società per nome campo/società/indirizzo su un set di dati di esempio (in attesa dell'importazione della banca dati reale, vedi `documenti/analisi/analisi_0.1.docx`), e permette di inserire nuovi campi.
+- `mobile/` è un'app Expo/React Native con:
+  - la schermata di ricerca ("Cerca Campo") e la schermata mappa che mostra i campi trovati, coerente con i mockup in `grafica/`;
+  - la schermata **"Aggiungi campo"**, raggiungibile dalla Home, per inserire un nuovo campo con nome campo, nome società e indirizzo. I tre campi sono normali caselle di testo: si può digitare oppure dettare con il microfono già presente sulla tastiera di iOS/Android, senza bisogno di librerie aggiuntive. I campi inseriti da qui non hanno ancora coordinate geografiche (nessuna geocodifica automatica), quindi in fase di ricerca compaiono in una lista sotto la mappa invece che come pin.
 
 Le funzioni 2 e 3 (ricerca società/campionati) non sono ancora implementate.
 

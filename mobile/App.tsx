@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { RootStackParamList } from "./src/navigation";
 import HomeScreen from "./src/screens/HomeScreen";
+import InserisciCampoScreen from "./src/screens/InserisciCampoScreen";
 import RisultatiScreen from "./src/screens/RisultatiScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -17,6 +18,11 @@ export default function App() {
           name="Risultati"
           component={RisultatiScreen}
           options={({ route }) => ({ title: route.params.query })}
+        />
+        <Stack.Screen
+          name="Inserisci"
+          component={InserisciCampoScreen}
+          options={{ title: "Aggiungi campo" }}
         />
       </Stack.Navigator>
     </NavigationContainer>

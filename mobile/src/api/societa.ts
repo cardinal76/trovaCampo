@@ -1,4 +1,4 @@
-import { Societa } from "../types";
+import { NuovoCampoInput, Societa } from "../types";
 
 // In sviluppo puntare all'IP della macchina che esegue il backend, es.
 // EXPO_PUBLIC_API_URL=http://192.168.1.10:3000 expo start
@@ -10,6 +10,20 @@ export async function cercaSocieta(nome: string): Promise<Societa[]> {
 
   if (!risposta.ok) {
     throw new Error(`Ricerca fallita (${risposta.status})`);
+  }
+
+  return risposta.json();
+}
+
+export async function inserisciSocieta(campo: NuovoCampoInput): Promise<Societa> {
+  const risposta = await fetch(`${API_URL}/api/societa`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(campo),
+  });
+
+  if (!risposta.ok) {
+    throw new Error(`Inserimento fallito (${risposta.status})`);
   }
 
   return risposta.json();
