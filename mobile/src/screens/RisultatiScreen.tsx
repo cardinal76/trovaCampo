@@ -1,6 +1,6 @@
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import MapView, { Callout, Marker } from "react-native-maps";
 import { cercaSocieta } from "../api/societa";
 import { RootStackParamList } from "../navigation";
@@ -14,7 +14,7 @@ function haCoordinate(s: Societa): s is SocietaGeolocalizzata {
   return typeof s.lat === "number" && typeof s.lng === "number";
 }
 
-export default function RisultatiScreen({ route }: Props) {
+export default function RisultatiScreen({ route, navigation }: Props) {
   const { query } = route.params;
   const [risultati, setRisultati] = useState<Societa[]>([]);
   const [caricamento, setCaricamento] = useState(true);
@@ -100,7 +100,7 @@ export default function RisultatiScreen({ route }: Props) {
         >
           {geolocalizzati.map((s) => (
             <Marker key={s.id} coordinate={{ latitude: s.lat, longitude: s.lng }}>
-              <Callout>
+              <Callout onPress={() => navigation.navigate("Dettaglio", { id: s.id })}>
                 <View style={styles.callout}>
                   <Text style={styles.calloutTitolo}>
                     {s.siglaSocieta} {s.nomeSocieta}
@@ -109,6 +109,7 @@ export default function RisultatiScreen({ route }: Props) {
                   <Text>
                     {s.indirizzoImpianto}, {s.localitaImpianto} ({s.provinciaImpianto})
                   </Text>
+                  <Text style={styles.calloutLink}>Vedi scheda società ›</Text>
                 </View>
               </Callout>
             </Marker>
@@ -127,13 +128,16 @@ export default function RisultatiScreen({ route }: Props) {
             ) : null
           }
           renderItem={({ item }) => (
-            <View style={styles.voceLista}>
+            <TouchableOpacity
+              style={styles.voceLista}
+              onPress={() => navigation.navigate("Dettaglio", { id: item.id })}
+            >
               <Text style={styles.voceTitolo}>
                 {item.siglaSocieta} {item.nomeSocieta}
               </Text>
               <Text>{item.nomeImpianto}</Text>
               <Text style={styles.voceIndirizzo}>{item.indirizzoImpianto}</Text>
-            </View>
+            </TouchableOpacity>
           )}
         />
       )}
@@ -187,5 +191,9 @@ const styles = StyleSheet.create({
   calloutTitolo: {
     fontWeight: "600",
     marginBottom: 4,
+  },
+  calloutLink: {
+    color: "#2f6fce",
+    marginTop: 6,
   },
 });

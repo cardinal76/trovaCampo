@@ -4,7 +4,9 @@ import { Societa } from "../types";
  * Dati di esempio (seed) usati in sviluppo, in attesa dell'importazione
  * della banca dati reale dai siti calcistici istituzionali (vedi
  * documenti/analisi/analisi_0.1.docx). Non rappresentano un elenco reale
- * e completo di società dilettantistiche.
+ * e completo di società dilettantistiche. Solo alcune voci hanno
+ * l'anagrafica completa (Funzione 2) e i campionati (Funzione 3),
+ * per mostrare anche il caso di dati mancanti.
  */
 export const societa: Societa[] = [
   {
@@ -18,6 +20,23 @@ export const societa: Societa[] = [
     provinciaImpianto: "RM",
     lat: 41.8919,
     lng: 12.4863,
+    matricola: "4521",
+    presidente: "Mario Rossi",
+    indirizzoSede: "Via della Certosa 12, Roma",
+    telefono: "0612345678",
+    email: "info@certosacalcio.it",
+    sitoWeb: "www.certosacalcio.it",
+    scuolaCalcio: true,
+    prezziScuolaCalcio: "180€/anno",
+    campionati: [
+      { descrizione: "Terza Categoria", girone: "B", comitato: "LAZIO", tipo: "Agonistica" },
+      {
+        descrizione: "Scuola Calcio Piccoli Amici",
+        girone: "-",
+        comitato: "LAZIO",
+        tipo: "ScuolaCalcio",
+      },
+    ],
   },
   {
     id: "2",
@@ -33,8 +52,8 @@ export const societa: Societa[] = [
   },
   {
     id: "3",
-    siglaSocieta: "S.R.L.",
-    nomeSocieta: "Almas Roma",
+    siglaSocieta: "A.S.D.",
+    nomeSocieta: "Almas Roma S.r.l.",
     comitatoRegionale: "LAZIO",
     nomeImpianto: "Sant'Anna \"A\" (erba)",
     indirizzoImpianto: "Via Demetriade 78",
@@ -42,6 +61,49 @@ export const societa: Societa[] = [
     provinciaImpianto: "RM",
     lat: 41.8697,
     lng: 12.5514,
+    matricola: "1620",
+    presidente: "Massimiliano Di Litta",
+    indirizzoSede: "Via Demetriade 78, Roma",
+    telefono: "067810020",
+    fax: "067810020",
+    email: "almas.roma@hotmail.it",
+    sitoWeb: "www.asdalmasroma.com",
+    scuolaCalcio: false,
+    campionati: [
+      { descrizione: "Promozione", girone: "A", comitato: "LAZIO", tipo: "Agonistica" },
+      { descrizione: "Regionale Juniores", girone: "B", comitato: "LAZIO", tipo: "Agonistica" },
+      {
+        descrizione: "Allievi Regionali Eccellenza",
+        girone: "B",
+        comitato: "LAZIO",
+        tipo: "Agonistica",
+      },
+      {
+        descrizione: "Allievi Regionali Fascia B",
+        girone: "D",
+        comitato: "LAZIO",
+        tipo: "Agonistica",
+      },
+      { descrizione: "Regionale Giovanissimi", girone: "C", comitato: "LAZIO", tipo: "Agonistica" },
+      {
+        descrizione: "Giovanissimi Reg. Fascia B",
+        girone: "D",
+        comitato: "LAZIO",
+        tipo: "Agonistica",
+      },
+      {
+        descrizione: "Play Out Allievi Eccellenza",
+        girone: "B",
+        comitato: "LAZIO",
+        tipo: "Agonistica",
+      },
+      {
+        descrizione: "Gare Graduatoria Promozione",
+        girone: "A",
+        comitato: "LAZIO",
+        tipo: "Agonistica",
+      },
+    ],
   },
   {
     id: "4",

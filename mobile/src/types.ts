@@ -1,3 +1,12 @@
+export type TipoCampionato = "ScuolaCalcio" | "Agonistica";
+
+export interface Campionato {
+  descrizione: string;
+  girone: string;
+  comitato: string;
+  tipo: TipoCampionato;
+}
+
 export interface Societa {
   id: string;
   siglaSocieta: string;
@@ -9,6 +18,18 @@ export interface Societa {
   provinciaImpianto: string;
   lat?: number;
   lng?: number;
+
+  matricola?: string;
+  presidente?: string;
+  indirizzoSede?: string;
+  telefono?: string;
+  fax?: string;
+  email?: string;
+  sitoWeb?: string;
+  scuolaCalcio?: boolean;
+  prezziScuolaCalcio?: string;
+
+  campionati?: Campionato[];
 }
 
 export interface NuovoCampoInput {

@@ -2,6 +2,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 import { RootStackParamList } from "./src/navigation";
+import DettaglioSocietaScreen from "./src/screens/DettaglioSocietaScreen";
 import HomeScreen from "./src/screens/HomeScreen";
 import InserisciCampoScreen from "./src/screens/InserisciCampoScreen";
 import RisultatiScreen from "./src/screens/RisultatiScreen";
@@ -23,6 +24,11 @@ export default function App() {
           name="Inserisci"
           component={InserisciCampoScreen}
           options={{ title: "Aggiungi campo" }}
+        />
+        <Stack.Screen
+          name="Dettaglio"
+          component={DettaglioSocietaScreen}
+          options={{ title: "Scheda società" }}
         />
       </Stack.Navigator>
     </NavigationContainer>
