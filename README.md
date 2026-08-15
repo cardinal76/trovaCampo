@@ -55,7 +55,11 @@ Come descritto nei documenti di analisi, alcune idee per evoluzioni successive d
 È stata avviata l'implementazione della **Funzione 1 (Ricerca campo)**:
 - `backend/` espone un'API REST che cerca le società per nome campo/società/indirizzo su un set di dati di esempio (in attesa dell'importazione della banca dati reale, vedi `documenti/analisi/analisi_0.1.docx`), e permette di inserire nuovi campi.
 - `mobile/` è un'app Expo/React Native con:
-  - la schermata di ricerca ("Cerca Campo") e la schermata mappa che mostra i campi trovati, coerente con i mockup in `grafica/`;
+  - la schermata di ricerca ("Cerca Campo") e la schermata mappa che mostra i campi trovati, coerenti con i mockup in `grafica/`:
+    - la Home ha il titolo "Cerca Campo", la casella di ricerca per nome società o indirizzo e il pulsante **"Vai"** (come in `grafica/FunzioneUnoSchermataUno.jpg`); si può cercare anche con il tasto invio della tastiera;
+    - la schermata dei risultati mostra la mappa con i campi trovati e, sotto, l'**elenco completo dei risultati** (compresi quelli già geolocalizzati, segnalando con l'etichetta "senza posizione" quelli di cui non si conoscono ancora le coordinate); toccando una voce o il fumetto di un pin si apre la scheda società;
+    - in cima ai risultati resta una barra di ricerca compatta per **correggere la ricerca sul posto**, senza tornare alla Home;
+    - se la ricerca non dà risultati viene proposto di aggiungere il campo, mentre in caso di errore di rete c'è un pulsante "Riprova" che rilancia la stessa ricerca.
   - la schermata **"Aggiungi campo"**, raggiungibile dalla Home, per inserire un nuovo campo con nome campo, nome società e indirizzo. I tre campi sono normali caselle di testo: si può digitare oppure dettare con il microfono già presente sulla tastiera di iOS/Android, senza bisogno di librerie aggiuntive.
 - All'inserimento, il backend prova a **geocodificare automaticamente l'indirizzo** tramite [Nominatim/OpenStreetMap](https://nominatim.openstreetmap.org/) (gratuito, nessuna chiave API) per ottenere le coordinate del campo. Se il servizio non trova l'indirizzo o non risponde, il campo viene comunque salvato senza coordinate e compare in ricerca nella lista "non ancora geolocalizzati" invece che come pin sulla mappa. Nominatim ha una usage policy restrittiva (max 1 richiesta al secondo, niente uso massivo): per un volume alto di inserimenti servirebbe un provider a pagamento o un'istanza self-hosted.
 

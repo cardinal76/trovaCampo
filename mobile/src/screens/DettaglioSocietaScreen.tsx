@@ -2,6 +2,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import { ottieniSocieta } from "../api/societa";
+import { indirizzoCompleto, nomeCompleto } from "../formato";
 import { RootStackParamList } from "../navigation";
 import { Campionato, Societa } from "../types";
 
@@ -103,19 +104,12 @@ export default function DettaglioSocietaScreen({ route }: Props) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contenuto}>
-      <Text style={styles.titolo}>
-        {societa.siglaSocieta} {societa.nomeSocieta}
-      </Text>
+      <Text style={styles.titolo}>{nomeCompleto(societa)}</Text>
 
       <View style={styles.sezione}>
         <Text style={styles.sezioneTitolo}>Campo</Text>
         <Riga etichetta="Impianto" valore={societa.nomeImpianto} />
-        <Riga
-          etichetta="Indirizzo"
-          valore={`${societa.indirizzoImpianto}${
-            societa.localitaImpianto ? `, ${societa.localitaImpianto}` : ""
-          }${societa.provinciaImpianto ? ` (${societa.provinciaImpianto})` : ""}`}
-        />
+        <Riga etichetta="Indirizzo" valore={indirizzoCompleto(societa)} />
       </View>
 
       {haAnagrafica ? (
