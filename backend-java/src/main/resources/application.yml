@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: trovacampo-api
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/trovacampo}
+  jackson:
+    # I campi facoltativi (anagrafica, campionati, coordinate) restano fuori
+    # dal JSON quando mancano, come nell'API Node.
+    default-property-inclusion: non_null
+
+server:
+  port: ${PORT:3000}
+
+trovacampo:
+  cors:
+    origini: "*"
+  nominatim:
+    url: https://nominatim.openstreetmap.org
+    user-agent: "TrovaCampo/0.1 (progetto di analisi calcio dilettantistico)"
+  seed:
+    abilitato: true
+
+logging:
+  level:
+    it.trovacampo: INFO

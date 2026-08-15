@@ -1,0 +1,7 @@
+{
+  "name": "TrovaCampo",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}

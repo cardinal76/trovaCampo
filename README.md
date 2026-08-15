@@ -29,7 +29,9 @@ Come descritto nei documenti di analisi, alcune idee per evoluzioni successive d
 
 ```
 ├── backend/                                API di ricerca (Node.js + TypeScript + Express)
+├── backend-java/                           Stessa API in Java (Spring Boot + MongoDB)
 ├── mobile/                                 App mobile (Expo + React Native + TypeScript)
+├── mobile-ionic/                           Stessa app in Ionic + Angular + Capacitor
 ├── funzioni.docx                          Analisi delle funzioni dell'app
 ├── evoluzioni.docx                        Documento (in bozza) delle evoluzioni future
 ├── bancaDati.docx                         Documento (in bozza) della banca dati
@@ -64,15 +66,26 @@ Come descritto nei documenti di analisi, alcune idee per evoluzioni successive d
 - All'inserimento, il backend prova a **geocodificare automaticamente l'indirizzo** tramite [Nominatim/OpenStreetMap](https://nominatim.openstreetmap.org/) (gratuito, nessuna chiave API) per ottenere le coordinate del campo. Se il servizio non trova l'indirizzo o non risponde, il campo viene comunque salvato senza coordinate e compare in ricerca nella lista "non ancora geolocalizzati" invece che come pin sulla mappa. Nominatim ha una usage policy restrittiva (max 1 richiesta al secondo, niente uso massivo): per un volume alto di inserimenti servirebbe un provider a pagamento o un'istanza self-hosted.
 
 Sono state implementate anche le **Funzioni 2 (Ricerca società) e 3 (Ricerca campionati società)**, unite in un'unica schermata come nel mockup `grafica/anagraficaSocietà.jpg`:
-- toccando un pin sulla mappa (tasto "Vedi scheda società" nel callout) o una voce della lista "non ancora geolocalizzati" nella schermata dei risultati, si apre la schermata **"Scheda società"**;
+- toccando un pin sulla mappa (tasto "Vedi scheda società" nel fumetto) o una voce dell'elenco dei risultati, si apre la schermata **"Scheda società"**;
 - mostra l'anagrafica (matricola, comitato regionale, presidente, indirizzo sede, contatti, sito web, presenza ed eventuali prezzi della scuola calcio) e i campionati a cui la società partecipa, distinti in agonistica e scuola calcio;
 - se una società non ha ancora l'anagrafica completa (es. inserita manualmente con la sola Funzione 1), la scheda lo segnala esplicitamente invece di mostrare campi vuoti.
 
 Nei dati di esempio, solo "Certosa Calcio" e "Almas Roma S.r.l." hanno l'anagrafica e i campionati compilati, per mostrare anche il caso di dati mancanti.
 
+## Due implementazioni dello stesso progetto
+
+Le stesse tre funzioni sono realizzate con due stack diversi, che si possono combinare liberamente perché **backend e app condividono lo stesso contratto REST** (`GET /api/societa?nome=`, `GET /api/societa/{id}`, `POST /api/societa`):
+
+| | Node/Expo | Java/Ionic |
+| --- | --- | --- |
+| Backend | [`backend/`](backend) — Node.js + Express, dati in memoria | [`backend-java/`](backend-java) — Spring Boot 3 + MongoDB |
+| App | [`mobile/`](mobile) — Expo + React Native, mappa `react-native-maps` | [`mobile-ionic/`](mobile-ionic) — Ionic + Angular + Capacitor, mappa Leaflet/OSM |
+
+Qualunque app funziona con qualunque backend: l'app Ionic può puntare al backend Node e viceversa. I due backend usano la stessa porta (3000), quindi vanno avviati uno alla volta.
+
 ## Come avviare il progetto in locale
 
-### Backend
+### Backend Node
 
 ```bash
 cd backend
@@ -80,7 +93,17 @@ npm install
 npm run dev      # avvia l'API su http://localhost:3000
 ```
 
-### App mobile
+### Backend Spring Boot (in alternativa)
+
+```bash
+cd backend-java
+docker compose up -d     # MongoDB su localhost:27017
+./mvnw spring-boot:run   # avvia l'API su http://localhost:3000
+```
+
+Al primo avvio, a collezione vuota, carica le stesse società di esempio del backend Node. Dettagli in [`backend-java/README.md`](backend-java/README.md).
+
+### App mobile (Expo)
 
 ```bash
 cd mobile
@@ -89,5 +112,15 @@ npm install
 # EXPO_PUBLIC_API_URL=http://<ip-locale>:3000 npx expo start
 npm start
 ```
+
+### App mobile (Ionic + Angular)
+
+```bash
+cd mobile-ionic
+npm install
+npm start        # http://localhost:4200
+```
+
+L'indirizzo dell'API si imposta in `mobile-ionic/src/environments/environment.ts`. Per generare l'app nativa con Capacitor, vedi [`mobile-ionic/README.md`](mobile-ionic/README.md).
 
 L'app si aspetta il backend raggiungibile su `http://localhost:3000` per impostazione predefinita (valido per i simulatori iOS e per Expo web; su Android/dispositivo fisico va impostata la variabile `EXPO_PUBLIC_API_URL`).

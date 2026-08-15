@@ -1,0 +1,64 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ termine() }}</ion-title>
+  </ion-toolbar>
+  <ion-toolbar>
+    <!-- Correzione della ricerca sul posto, senza tornare alla Home. -->
+    <ion-searchbar
+      placeholder="cerca per nome Società oppure cerca per indirizzo"
+      [value]="testo()"
+      (ionInput)="testo.set($any($event.target).value ?? '')"
+      (keyup.enter)="nuovaRicerca()"
+      (ionClear)="testo.set('')"
+      enterkeyhint="search"
+    ></ion-searchbar>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  @if (stato() === 'caricamento') {
+    <div class="centrato">
+      <ion-spinner></ion-spinner>
+    </div>
+  } @else if (stato() === 'errore') {
+    <div class="centrato">
+      <p>Impossibile completare la ricerca. Controlla la connessione e riprova.</p>
+      <ion-button fill="outline" (click)="cerca()">Riprova</ion-button>
+    </div>
+  } @else if (risultati().length === 0) {
+    <div class="centrato">
+      <p>Nessun campo trovato per "{{ termine() }}".</p>
+      <ion-button fill="outline" (click)="vaiAdAggiungi()">Aggiungi questo campo</ion-button>
+    </div>
+  } @else {
+    <div class="risultati">
+      @if (geolocalizzati().length > 0) {
+        <div #contenitoreMappa class="mappa"></div>
+      }
+
+      <ion-list class="elenco">
+        <ion-list-header>
+          <ion-label>
+            {{ risultati().length === 1 ? '1 campo trovato' : risultati().length + ' campi trovati' }}
+          </ion-label>
+        </ion-list-header>
+
+        @for (societa of risultati(); track societa.id) {
+          <ion-item button (click)="apriScheda(societa)">
+            <ion-label>
+              <h2>{{ nomeCompleto(societa) }}</h2>
+              <p>{{ societa.nomeImpianto }}</p>
+              <p>{{ indirizzoCompleto(societa) }}</p>
+            </ion-label>
+            @if (societa.lat === undefined || societa.lng === undefined) {
+              <ion-note slot="end">senza posizione</ion-note>
+            }
+          </ion-item>
+        }
+      </ion-list>
+    </div>
+  }
+</ion-content>

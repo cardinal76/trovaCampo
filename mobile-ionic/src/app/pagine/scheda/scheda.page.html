@@ -1,0 +1,150 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Scheda società</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  @if (stato() === 'caricamento') {
+    <div class="ion-padding ion-text-center">
+      <ion-spinner></ion-spinner>
+    </div>
+  } @else if (stato() === 'errore' || societa() === null) {
+    <div class="ion-padding ion-text-center">
+      <p>Impossibile caricare la scheda della società.</p>
+    </div>
+  } @else {
+    <ion-list>
+      <ion-list-header>
+        <ion-label>
+          <h2>{{ titolo() }}</h2>
+        </ion-label>
+      </ion-list-header>
+
+      <ion-list-header>
+        <ion-label>Campo</ion-label>
+      </ion-list-header>
+      <ion-item>
+        <ion-label>
+          <p>Impianto</p>
+          <h3>{{ societa()!.nomeImpianto }}</h3>
+        </ion-label>
+      </ion-item>
+      <ion-item>
+        <ion-label>
+          <p>Indirizzo</p>
+          <h3>{{ indirizzoCampo() }}</h3>
+        </ion-label>
+      </ion-item>
+
+      <ion-list-header>
+        <ion-label>Anagrafica società</ion-label>
+      </ion-list-header>
+
+      @if (haAnagrafica()) {
+        @if (societa()!.matricola) {
+          <ion-item>
+            <ion-label>Matricola</ion-label>
+            <ion-note slot="end">{{ societa()!.matricola }}</ion-note>
+          </ion-item>
+        }
+        @if (societa()!.comitatoRegionale) {
+          <ion-item>
+            <ion-label>Comitato regionale</ion-label>
+            <ion-note slot="end">{{ societa()!.comitatoRegionale }}</ion-note>
+          </ion-item>
+        }
+        @if (societa()!.presidente) {
+          <ion-item>
+            <ion-label>Presidente</ion-label>
+            <ion-note slot="end">{{ societa()!.presidente }}</ion-note>
+          </ion-item>
+        }
+        @if (societa()!.indirizzoSede) {
+          <ion-item>
+            <ion-label>Indirizzo sede</ion-label>
+            <ion-note slot="end">{{ societa()!.indirizzoSede }}</ion-note>
+          </ion-item>
+        }
+        @if (societa()!.telefono) {
+          <ion-item>
+            <ion-label>Telefono</ion-label>
+            <ion-note slot="end">{{ societa()!.telefono }}</ion-note>
+          </ion-item>
+        }
+        @if (societa()!.fax) {
+          <ion-item>
+            <ion-label>Fax</ion-label>
+            <ion-note slot="end">{{ societa()!.fax }}</ion-note>
+          </ion-item>
+        }
+        @if (societa()!.email) {
+          <ion-item>
+            <ion-label>Email</ion-label>
+            <ion-note slot="end">{{ societa()!.email }}</ion-note>
+          </ion-item>
+        }
+        @if (societa()!.sitoWeb) {
+          <ion-item>
+            <ion-label>Sito web</ion-label>
+            <ion-note slot="end">{{ societa()!.sitoWeb }}</ion-note>
+          </ion-item>
+        }
+        @if (prezziScuolaCalcio()) {
+          <ion-item>
+            <ion-label>Scuola calcio</ion-label>
+            <ion-note slot="end">{{ prezziScuolaCalcio() }}</ion-note>
+          </ion-item>
+        }
+      } @else {
+        <ion-item lines="none">
+          <ion-label class="ion-text-wrap">
+            <p>Anagrafica non ancora disponibile per questo campo (inserito manualmente).</p>
+          </ion-label>
+        </ion-item>
+      }
+
+      @if (agonistica().length > 0) {
+        <ion-list-header>
+          <ion-label>Campionati agonistica</ion-label>
+        </ion-list-header>
+        @for (campionato of agonistica(); track $index) {
+          <ion-item>
+            <ion-label>
+              <h3>{{ campionato.descrizione }}</h3>
+              <p>Girone {{ campionato.girone }} · Comitato {{ campionato.comitato }}</p>
+            </ion-label>
+          </ion-item>
+        }
+      }
+
+      @if (scuolaCalcio().length > 0) {
+        <ion-list-header>
+          <ion-label>Campionati scuola calcio</ion-label>
+        </ion-list-header>
+        @for (campionato of scuolaCalcio(); track $index) {
+          <ion-item>
+            <ion-label>
+              <h3>{{ campionato.descrizione }}</h3>
+              <p>Girone {{ campionato.girone }} · Comitato {{ campionato.comitato }}</p>
+            </ion-label>
+          </ion-item>
+        }
+      }
+
+      @if (campionati().length === 0) {
+        <ion-list-header>
+          <ion-label>Campionati</ion-label>
+        </ion-list-header>
+        <ion-item lines="none">
+          <ion-label class="ion-text-wrap">
+            <p>Nessun campionato registrato.</p>
+          </ion-label>
+        </ion-item>
+      }
+    </ion-list>
+  }
+</ion-content>
