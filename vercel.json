@@ -1,0 +1,12 @@
+{
+  "buildCommand": "cd mobile-ionic && npm install && npm run build",
+  "outputDirectory": "mobile-ionic/dist/mobile-ionic/browser",
+  "framework": "angular",
+  "nodeVersion": "20.x",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
