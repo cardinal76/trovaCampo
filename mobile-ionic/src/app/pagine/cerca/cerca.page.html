@@ -1,0 +1,24 @@
+<ion-content class="ion-padding">
+  <div class="cerca">
+    <h1 class="titolo">Cerca Campo</h1>
+
+    <ion-input
+      class="casella"
+      fill="outline"
+      placeholder="cerca per nome Società oppure cerca per indirizzo"
+      enterkeyhint="search"
+      autocapitalize="off"
+      [spellcheck]="false"
+      aria-label="Nome società o indirizzo del campo"
+      [ngModel]="testo()"
+      (ngModelChange)="testo.set($event)"
+      (keyup.enter)="cerca()"
+    ></ion-input>
+
+    <ion-button class="vai" [disabled]="!pronto()" (click)="cerca()">Vai</ion-button>
+
+    <ion-button class="aggiungi" fill="clear" size="small" routerLink="/aggiungi">
+      Non trovi un campo? Aggiungilo
+    </ion-button>
+  </div>
+</ion-content>

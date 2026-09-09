@@ -1,0 +1,39 @@
+/* Stili globali di TrovaCampo. */
+
+/*
+ * Leaflet inserisce pin e popup fuori dai template Angular, quindi il loro
+ * stile non può stare nel foglio della pagina: verrebbe scartato
+ * dall'incapsulamento dei componenti.
+ */
+.pin-campo {
+  background: var(--ion-color-primary, #2f6fce);
+  border: 2px solid #fff;
+  border-radius: 50% 50% 50% 0;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 40%);
+  transform: rotate(-45deg);
+}
+
+.collegamento-scheda {
+  margin-top: 0.4rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ion-color-primary, #2f6fce);
+  font: inherit;
+  cursor: pointer;
+}
+
+.leaflet-container {
+  font-family: inherit;
+}
+
+/*
+ * L'app nasce per il telefono, ma la stessa build è anche un sito: sugli
+ * schermi larghi il contenuto a colonna singola resta leggibile invece di
+ * stirarsi per tutta la pagina.
+ */
+.contenuto-largo {
+  width: 100%;
+  max-width: 48rem;
+  margin-inline: auto;
+}
