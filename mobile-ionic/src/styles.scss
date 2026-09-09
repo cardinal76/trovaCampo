@@ -26,3 +26,14 @@
 .leaflet-container {
   font-family: inherit;
 }
+
+/*
+ * L'app nasce per il telefono, ma la stessa build è anche un sito: sugli
+ * schermi larghi il contenuto a colonna singola resta leggibile invece di
+ * stirarsi per tutta la pagina.
+ */
+.contenuto-largo {
+  width: 100%;
+  max-width: 48rem;
+  margin-inline: auto;
+}

@@ -83,6 +83,8 @@ Le stesse tre funzioni sono realizzate con due stack diversi, che si possono com
 
 Qualunque app funziona con qualunque backend: l'app Ionic può puntare al backend Node e viceversa. I due backend usano la stessa porta (3000), quindi vanno avviati uno alla volta.
 
+L'app Ionic è anche l'**applicazione web** del progetto: `npm run build` produce un sito statico pubblicabile su qualunque web server, e il layout si adatta agli schermi grandi (dai 900 px mappa ed elenco dei risultati stanno affiancati). La stessa base di codice resta app nativa via Capacitor.
+
 ## Come avviare il progetto in locale
 
 ### Backend Node

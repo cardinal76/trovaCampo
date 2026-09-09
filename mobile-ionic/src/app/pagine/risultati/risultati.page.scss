@@ -23,3 +23,28 @@
   padding: 0 1.5rem;
   text-align: center;
 }
+
+/*
+ * Sugli schermi larghi la stessa build serve anche come sito: mappa e
+ * elenco stanno affiancati invece di impilarsi come sul telefono.
+ */
+@media (min-width: 900px) {
+  .risultati {
+    flex-direction: row;
+  }
+
+  .mappa {
+    flex: 1 1 auto;
+    height: 100%;
+  }
+
+  .elenco {
+    flex: 0 0 24rem;
+    height: 100%;
+    border-inline-start: 1px solid var(--ion-color-step-150, #e0e0e0);
+  }
+
+  ion-searchbar {
+    max-width: 40rem;
+  }
+}

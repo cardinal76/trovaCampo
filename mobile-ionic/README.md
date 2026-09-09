@@ -15,6 +15,15 @@ La mappa usa **Leaflet** con le tile di OpenStreetMap: nessuna chiave API e ness
 
 Le società senza coordinate (per esempio i campi appena segnalati, se la geocodifica non ha riconosciuto l'indirizzo) non compaiono sulla mappa ma restano nell'elenco, marcate con "senza posizione".
 
+## Anche come applicazione web
+
+`npm run build` produce un sito statico in `dist/mobile-ionic/browser`, pubblicabile su qualunque web server: la stessa base di codice è sia app nativa (via Capacitor) sia sito.
+
+Il layout è pensato per il telefono, ma si adatta agli schermi larghi:
+
+- da **900 px** in su la pagina dei risultati mette **mappa ed elenco affiancati** invece di impilarli, e la barra di ricerca smette di allargarsi;
+- scheda società e inserimento campo restano in una colonna leggibile (48 rem) centrata, invece di stirarsi per tutta la pagina.
+
 ## Avvio
 
 Serve l'API in ascolto: il backend Spring Boot in [`../backend-java`](../backend-java) oppure quello Node in [`../backend`](../backend) — espongono lo stesso contratto REST.
