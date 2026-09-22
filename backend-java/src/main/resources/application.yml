@@ -21,6 +21,15 @@ trovacampo:
   seed:
     abilitato: true
 
+# Solo /actuator/health, che e' quello che guarda l'healthcheck del container
+# in produzione. Comprende il controllo su MongoDB: un backend acceso ma senza
+# database risulta DOWN, invece di rispondere 500 a ogni ricerca.
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
 logging:
   level:
     it.trovacampo: INFO

@@ -1,0 +1,159 @@
+name: Deploy produzione
+
+# Rilascio di TrovaCampo sul server di presenze: push sul branch
+# "produzione", oppure a mano dalla scheda Actions sullo stesso commit.
+#
+# Stesso giro di presenze (vedi il suo DEPLOY.md): un runner self-hosted di
+# casa costruisce le immagini, le spinge nel registro che gira sul server
+# (solo su 127.0.0.1:5000, raggiunto con un tunnel SSH) e poi ordina al server
+# di ricreare i container. Niente runner a pagamento, niente GHCR.
+on:
+  push:
+    branches: [produzione]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  REGISTRO: localhost:5000
+
+# Segreti del repository, gli stessi valori di presenze:
+#   PRODUZIONE_HOST     indirizzo del server
+#   PRODUZIONE_USER     utente SSH con accesso a Docker
+#   PRODUZIONE_SSH_KEY  chiave privata dedicata alla CI
+jobs:
+  deploy:
+    name: Costruisce, spinge e rilascia
+    # Etichetta propria e non "presenze-build": un runner self-hosted di un
+    # account personale e' registrato su un solo repository, quindi per
+    # TrovaCampo ne serve un secondo (anche sulla stessa macchina).
+    runs-on: [self-hosted, trovacampo-build]
+    timeout-minutes: 30
+    concurrency:
+      group: deploy-produzione-trovacampo
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Costruisce le immagini
+        run: |
+          TAG="${{ github.sha }}"
+          docker build -t "$REGISTRO/trovacampo-backend:$TAG" ./backend-java
+          docker build -t "$REGISTRO/trovacampo-frontend:$TAG" ./mobile-ionic
+
+      # La chiave va in una cartella temporanea del job e non in ~/.ssh: il
+      # runner e' self-hosted e la sua home sopravvive fra un job e l'altro.
+      - name: Configura la chiave SSH
+        run: |
+          mkdir -p "$RUNNER_TEMP/ssh"
+          printf '%s\n' "${{ secrets.PRODUZIONE_SSH_KEY }}" > "$RUNNER_TEMP/ssh/chiave"
+          chmod 600 "$RUNNER_TEMP/ssh/chiave"
+          ssh-keyscan -H "${{ secrets.PRODUZIONE_HOST }}" > "$RUNNER_TEMP/ssh/known_hosts" 2>/dev/null
+
+      # Il registro e la rete Docker sono di presenze: qui si controlla che ci
+      # siano, senza accenderli. Se mancano, il messaggio lo dice invece di un
+      # "connection refused" al push o di un "network not found" all'avvio.
+      - name: Controlla che presenze sia in piedi
+        run: |
+          ssh -i "$RUNNER_TEMP/ssh/chiave" \
+              -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts" \
+              -o BatchMode=yes \
+              "${{ secrets.PRODUZIONE_USER }}@${{ secrets.PRODUZIONE_HOST }}" bash -s <<'FINE'
+          set -e
+          docker ps --format '{{.Names}}' | grep -qx presenze-registro \
+            || { echo "Il registro di presenze (presenze-registro) non e' in esecuzione" >&2; exit 1; }
+          docker network inspect presenze_default >/dev/null 2>&1 \
+            || { echo "Manca la rete presenze_default: lo stack di presenze non e' su" >&2; exit 1; }
+          test -f ~/trovacampo/.env.prod \
+            || { echo "Manca ~/trovacampo/.env.prod sul server: vedi DEPLOY.md" >&2; exit 1; }
+          FINE
+
+      # ExitOnForwardFailure: se la 5000 fosse occupata su questa macchina, il
+      # push finirebbe su qualunque cosa risponda qui invece che sul server.
+      - name: Apre il tunnel verso il registro
+        run: |
+          ssh -f -N -M -S "$RUNNER_TEMP/ssh/tunnel" \
+              -i "$RUNNER_TEMP/ssh/chiave" \
+              -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts" \
+              -o BatchMode=yes \
+              -o ExitOnForwardFailure=yes \
+              -L 5000:127.0.0.1:5000 \
+              "${{ secrets.PRODUZIONE_USER }}@${{ secrets.PRODUZIONE_HOST }}"
+
+      - name: Spinge le immagini
+        run: |
+          TAG="${{ github.sha }}"
+          docker push "$REGISTRO/trovacampo-backend:$TAG"
+          docker push "$REGISTRO/trovacampo-frontend:$TAG"
+
+      - name: Chiude il tunnel
+        if: always()
+        run: ssh -S "$RUNNER_TEMP/ssh/tunnel" -O exit dummy 2>/dev/null || true
+
+      # Sul server non c'e' un clone di questo repository: serve solo il
+      # compose, e copiarlo evita una seconda deploy key (GitHub ne accetta
+      # una per repository, e presenze ha gia' la sua).
+      - name: Copia il compose sul server
+        run: |
+          scp -i "$RUNNER_TEMP/ssh/chiave" \
+              -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts" \
+              -o BatchMode=yes \
+              docker-compose.prod.yml \
+              "${{ secrets.PRODUZIONE_USER }}@${{ secrets.PRODUZIONE_HOST }}:trovacampo/docker-compose.prod.yml"
+
+      # Heredoc quotato, come in presenze: gli apostrofi all'italiana dentro
+      # un argomento fra apici singoli chiuderebbero l'apice della ssh.
+      - name: Rilascia sul server
+        run: |
+          ssh -i "$RUNNER_TEMP/ssh/chiave" \
+              -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts" \
+              -o BatchMode=yes \
+              "${{ secrets.PRODUZIONE_USER }}@${{ secrets.PRODUZIONE_HOST }}" \
+              bash -s -- "${{ github.sha }}" <<'FINE'
+          set -e
+          export TAG_IMMAGINI="$1"
+          cd ~/trovacampo
+          COMPOSE="docker compose -p trovacampo -f docker-compose.prod.yml --env-file .env.prod"
+
+          # Il tag in esecuzione finisce nel file d'ambiente: un "up -d"
+          # lanciato a mano piu' avanti non ricadrebbe su ":locale".
+          if grep -q '^TAG_IMMAGINI=' .env.prod; then
+            sed -i "s|^TAG_IMMAGINI=.*|TAG_IMMAGINI=$TAG_IMMAGINI|" .env.prod
+          else
+            printf '\n# Scritta dal deploy: il tag delle immagini in esecuzione.\n' >> .env.prod
+            printf 'TAG_IMMAGINI=%s\n' "$TAG_IMMAGINI" >> .env.prod
+          fi
+
+          $COMPOSE pull
+          $COMPOSE up -d
+
+          for i in $(seq 1 40); do
+            if docker ps --format "{{.Names}} {{.Status}}" | grep -q "trovacampo-backend.*(healthy)"; then
+              echo "backend healthy"; break
+            fi
+            if [ "$i" = 40 ]; then
+              echo "il backend non e' diventato healthy in 10 minuti" >&2
+              $COMPOSE logs --tail 40 trovacampo-backend >&2
+              exit 1
+            fi
+            sleep 15
+          done
+
+          # La pulizia settimanale di presenze toglie dal disco solo le sue
+          # immagini (presenze-*): le versioni vecchie di queste le toglie il
+          # rilascio stesso. Nel registro invece restano, e le pota lo script
+          # di presenze tenendo le ultime dieci.
+          docker images --format '{{.Repository}}:{{.Tag}}' \
+            | grep -E '^localhost:5000/trovacampo-(backend|frontend):' \
+            | grep -v ":$TAG_IMMAGINI\$" \
+            | xargs -r docker rmi || true
+          FINE
+
+      - name: Fa pulizia sulla macchina e rimuove la chiave
+        if: always()
+        run: |
+          TAG="${{ github.sha }}"
+          docker rmi "$REGISTRO/trovacampo-backend:$TAG" "$REGISTRO/trovacampo-frontend:$TAG" 2>/dev/null || true
+          docker image prune -f
+          rm -rf "$RUNNER_TEMP/ssh"
