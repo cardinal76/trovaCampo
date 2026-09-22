@@ -1,0 +1,92 @@
+# Stack di produzione di TrovaCampo, sullo stesso server di presenze.
+#
+#     docker compose -p trovacampo -f docker-compose.prod.yml --env-file .env.prod up -d
+#
+# Non ha un proxy suo: le porte 80 e 443 del server sono gia' del Caddy di
+# presenze, che fa anche i certificati. TrovaCampo si aggancia alla rete
+# Docker di presenze e Caddy lo raggiunge per nome di container (vedi il
+# blocco trovacampo.footballer.it in deploy/Caddyfile di presenze).
+#
+# Le immagini arrivano dal registro di presenze (127.0.0.1:5000), spinte dal
+# workflow .github/workflows/produzione.yml.
+
+services:
+
+  # I nomi dei servizi hanno il prefisso "trovacampo-" di proposito, e non per
+  # estetica: su una rete Docker ogni container risponde anche al nome del
+  # suo servizio. Un servizio chiamato "backend" dentro presenze_default
+  # risponderebbe allo stesso nome del backend di presenze, e Caddy
+  # distribuirebbe a caso le chiamate /api/* di presenze fra i due.
+  trovacampo-mongo:
+    image: mongo:7
+    container_name: trovacampo-mongo
+    restart: unless-stopped
+    # La cache di WiredTiger per default e' mezza RAM della macchina, e la
+    # macchina e' condivisa con Keycloak, Postgres e un altro Spring Boot.
+    command: ["--wiredTigerCacheSizeGB", "0.25"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:?}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?}
+    volumes:
+      - mongo-dati:/data/db
+    # Solo la rete interna di TrovaCampo: nessuna porta pubblicata, e Caddy
+    # non ha motivo di vederlo.
+    networks:
+      - interna
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  trovacampo-backend:
+    image: localhost:5000/trovacampo-backend:${TAG_IMMAGINI:-locale}
+    build:
+      context: ./backend-java
+    container_name: trovacampo-backend
+    restart: unless-stopped
+    environment:
+      # authSource=admin: l'utente e' quello di root creato dall'immagine di
+      # Mongo, che vive nel database admin e non in trovacampo.
+      MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@trovacampo-mongo:27017/trovacampo?authSource=admin
+      PORT: "3000"
+      # Senza un limite la JVM si prende un quarto della RAM dell'host, non
+      # del container.
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75
+    networks:
+      - interna
+      - presenze
+    mem_limit: 448m
+    depends_on:
+      trovacampo-mongo:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/actuator/health | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+  trovacampo-frontend:
+    image: localhost:5000/trovacampo-frontend:${TAG_IMMAGINI:-locale}
+    build:
+      context: ./mobile-ionic
+    container_name: trovacampo-frontend
+    restart: unless-stopped
+    networks:
+      - presenze
+    mem_limit: 64m
+
+networks:
+  interna:
+  # Creata dal compose di presenze (progetto "presenze", rete "default").
+  # Deve esistere prima: se presenze non e' su, questo stack non parte, ed e'
+  # giusto cosi' -- senza il suo Caddy TrovaCampo non sarebbe raggiungibile.
+  presenze:
+    external: true
+    name: presenze_default
+
+volumes:
+  mongo-dati:

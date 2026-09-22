@@ -25,6 +25,11 @@ Come descritto nei documenti di analisi, alcune idee per evoluzioni successive d
 - inserimento dei risultati delle partite da parte delle società, con classifiche aggiornate quasi in tempo reale;
 - una mappa delle partite in corso nelle vicinanze, utile per osservatori e scout giovanili.
 
+## Deploy
+
+L'app gira sullo stesso server di presenze, dietro il suo Caddy, su
+`https://trovacampo.footballer.it`. Passi e dettagli in [`DEPLOY.md`](DEPLOY.md).
+
 ## Struttura del repository
 
 ```
