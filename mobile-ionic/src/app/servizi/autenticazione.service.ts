@@ -74,10 +74,11 @@ export class AutenticazioneService {
 
   private aggiornaUtente(keycloak: Keycloak): void {
     const profilo = keycloak.tokenParsed as { preferred_username?: string; name?: string } | undefined;
-    this.nome.set(profilo?.name ?? profilo?.preferred_username ?? null);
+    const nome = profilo?.name ?? profilo?.preferred_username ?? null;
+    this.nome.set(nome);
     this.ruoli.set(keycloak.realmAccess?.roles ?? []);
     const amministratore = keycloak.hasRealmRole(RUOLO_AMMINISTRATORE);
     this.amministratore.set(amministratore);
-    ricordaAmministratore(amministratore);
+    ricordaAmministratore(amministratore, nome);
   }
 }

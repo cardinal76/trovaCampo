@@ -25,13 +25,13 @@ import {
 } from '../../servizi/autenticazione.service';
 
 /**
- * Login dal pulsante "Accedi" della home, sul Keycloak di presenze.
+ * Login dalla voce "Accedi" del menu utente, sul Keycloak di presenze.
  *
- * Chi ha il ruolo trovacampo-admin torna subito alla home, dove ora vede i
- * pulsanti di amministrazione. Chi non ce l'ha resta qui e vede con che utente
- * è entrato e quali ruoli ha davvero nel token: con lo stesso Keycloak di
- * presenze capita di entrare in silenzio con un altro account già aperto nel
- * browser. Con /accedi?esci=1 (il pulsante "Esci" della home) si esce.
+ * Chi ha il ruolo trovacampo-admin torna subito alla home: nel menu utente
+ * ora trova le funzioni di amministrazione. Chi non ce l'ha resta qui e vede
+ * con che utente è entrato e quali ruoli ha davvero nel token: con lo stesso
+ * Keycloak di presenze capita di entrare in silenzio con un altro account già
+ * aperto nel browser. Con /accedi?esci=1 (la voce "Esci" del menu utente) si esce.
  */
 @Component({
   selector: 'pagina-accesso',

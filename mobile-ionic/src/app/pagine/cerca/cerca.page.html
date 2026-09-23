@@ -1,3 +1,12 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>TrovaCampo</ion-title>
+    <ion-buttons slot="end">
+      <menu-utente></menu-utente>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
 <ion-content class="ion-padding">
   <div class="cerca">
     <h1 class="titolo">Cerca Campo</h1>
@@ -17,35 +26,8 @@
 
     <ion-button class="vai" [disabled]="!pronto()" (click)="cerca()">Vai</ion-button>
 
-    <div class="sfoglia">
-      <ion-button fill="outline" routerLink="/campi">Elenco dei campi</ion-button>
-      <ion-button fill="outline" routerLink="/mappa">Mappa dei campi</ion-button>
-    </div>
-
     <ion-button class="aggiungi" fill="clear" size="small" routerLink="/aggiungi">
       Non trovi un campo? Aggiungilo
     </ion-button>
-
-    @if (amministratore()) {
-      <div class="amministrazione">
-        <ion-button fill="solid" color="medium" size="small" routerLink="/admin/societa/nuova">
-          <ion-icon slot="start" name="add"></ion-icon>
-          Nuova società
-        </ion-button>
-        <ion-button fill="solid" color="medium" size="small" routerLink="/admin/importazione">
-          <ion-icon slot="start" name="cloud-upload"></ion-icon>
-          Importa campi
-        </ion-button>
-        <ion-button fill="clear" color="medium" size="small" routerLink="/accedi" [queryParams]="{ esci: 1 }">
-          <ion-icon slot="start" name="log-out"></ion-icon>
-          Esci
-        </ion-button>
-      </div>
-    } @else {
-      <ion-button class="accedi" fill="clear" color="medium" size="small" routerLink="/accedi">
-        <ion-icon slot="start" name="log-in"></ion-icon>
-        Accedi
-      </ion-button>
-    }
   </div>
 </ion-content>

@@ -26,7 +26,7 @@ export const routes: Routes = [
     loadComponent: () => import('./pagine/aggiungi/aggiungi.page').then((m) => m.AggiungiPage),
   },
   {
-    // Dal pulsante "Accedi" (ed "Esci", con ?esci=1) della home.
+    // Dalle voci "Accedi" ed "Esci" (con ?esci=1) del menu utente.
     path: 'accedi',
     loadComponent: () => import('./pagine/accesso/accesso.page').then((m) => m.AccessoPage),
   },
