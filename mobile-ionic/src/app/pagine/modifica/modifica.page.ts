@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
+  AlertController,
   IonBackButton,
   IonButton,
   IonButtons,
@@ -22,6 +23,7 @@ import {
   IonTitle,
   IonToggle,
   IonToolbar,
+  NavController,
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -103,11 +105,14 @@ function coordinata(testo: string): number | undefined | null {
 }
 
 /**
- * Modifica della scheda di una società, per chi ha il ruolo trovacampo-admin.
+ * Scheda di una società da creare o da modificare, per chi ha il ruolo
+ * trovacampo-admin. Lo stesso modulo serve ai due casi: /admin/societa/nuova
+ * parte vuoto, /admin/societa/:id dai dati salvati e in fondo ha anche
+ * "Elimina società".
  *
- * Ci si arriva dal pulsante "Modifica" della scheda, che compare solo
- * all'amministratore; aprirla porta al login del Keycloak di presenze come
- * la pagina di importazione. Salvando si torna alla scheda aggiornata.
+ * Ci si arriva dai pulsanti "Nuova società" in home e "Modifica" nella scheda,
+ * che compaiono solo all'amministratore; aprirla porta al login del Keycloak
+ * di presenze come la pagina di importazione. Salvando si va alla scheda.
  */
 @Component({
   selector: 'pagina-modifica',
@@ -141,11 +146,15 @@ export class ModificaPage {
   private readonly rotta = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastController);
+  private readonly avvisi = inject(AlertController);
+  private readonly navigazione = inject(NavController);
   private readonly societa = inject(SocietaService);
   private readonly amministrazione = inject(AmministrazioneService);
   readonly autenticazione = inject(AutenticazioneService);
   readonly ruolo = RUOLO_AMMINISTRATORE;
 
+  /** Vero su /admin/societa/nuova: modulo vuoto, niente da eliminare. */
+  readonly nuova = this.rotta.snapshot.data['nuova'] === true;
   private readonly id = this.rotta.snapshot.paramMap.get('id') ?? '';
 
   readonly stato = signal<'accesso' | 'caricamento' | 'pronto' | 'errore'>('accesso');
@@ -192,16 +201,15 @@ export class ModificaPage {
 
     this.salvataggio.set(true);
     this.errore.set(null);
-    this.amministrazione.modifica(this.id, scheda).subscribe({
-      next: async () => {
+    const salvataggio = this.nuova
+      ? this.amministrazione.crea(scheda)
+      : this.amministrazione.modifica(this.id, scheda);
+
+    salvataggio.subscribe({
+      next: async (salvata) => {
         this.salvataggio.set(false);
-        const avviso = await this.toast.create({
-          message: 'Scheda salvata.',
-          duration: 2000,
-          color: 'success',
-        });
-        await avviso.present();
-        await this.router.navigate(['/societa', this.id], { replaceUrl: true });
+        await this.avvisa(this.nuova ? 'Società creata.' : 'Scheda salvata.');
+        await this.router.navigate(['/societa', salvata.id], { replaceUrl: true });
       },
       error: (errore: Error) => {
         this.salvataggio.set(false);
@@ -210,7 +218,50 @@ export class ModificaPage {
     });
   }
 
+  async elimina(): Promise<void> {
+    const modulo = this.modulo();
+    const conferma = await this.avvisi.create({
+      header: 'Eliminare la società?',
+      message: `${modulo?.nomeSocieta ?? 'La società'} e il suo campo spariranno da ricerca, elenco e mappa. Non si può annullare.`,
+      buttons: [
+        { text: 'Annulla', role: 'cancel' },
+        { text: 'Elimina', role: 'destructive' },
+      ],
+    });
+    await conferma.present();
+    const { role } = await conferma.onDidDismiss();
+    if (role !== 'destructive') {
+      return;
+    }
+
+    this.salvataggio.set(true);
+    this.errore.set(null);
+    this.amministrazione.elimina(this.id).subscribe({
+      next: async () => {
+        this.salvataggio.set(false);
+        await this.avvisa('Società eliminata.');
+        // All'elenco, ripartendo da capo: tornando indietro si finirebbe
+        // sulla scheda, che non esiste più.
+        await this.navigazione.navigateRoot('/campi');
+      },
+      error: (errore: Error) => {
+        this.salvataggio.set(false);
+        this.errore.set(errore.message);
+      },
+    });
+  }
+
+  private async avvisa(messaggio: string): Promise<void> {
+    const avviso = await this.toast.create({ message: messaggio, duration: 2000, color: 'success' });
+    await avviso.present();
+  }
+
   private carica(): void {
+    if (this.nuova) {
+      this.modulo.set(new Modulo());
+      this.stato.set('pronto');
+      return;
+    }
     this.stato.set('caricamento');
     this.societa.perId(this.id).subscribe({
       next: (societa) => {

@@ -65,4 +65,29 @@ describe('AmministrazioneService', () => {
 
     expect(((await esito) as Error).message).toContain('trovacampo-admin');
   });
+
+  it('crea una società nuova', async () => {
+    const esito = firstValueFrom(service.crea(scheda));
+    await Promise.resolve();
+    await Promise.resolve();
+    const chiamata = http.expectOne(`${environment.apiUrl}/api/admin/societa`);
+
+    expect(chiamata.request.method).toBe('POST');
+    expect(chiamata.request.headers.get('Authorization')).toBe('Bearer abc');
+    chiamata.flush({ id: 'nuovo', ...scheda }, { status: 201, statusText: 'Created' });
+
+    expect((await esito).id).toBe('nuovo');
+  });
+
+  it('elimina una società', async () => {
+    const esito = firstValueFrom(service.elimina('1'), { defaultValue: undefined });
+    await Promise.resolve();
+    await Promise.resolve();
+    const chiamata = http.expectOne(`${environment.apiUrl}/api/admin/societa/1`);
+
+    expect(chiamata.request.method).toBe('DELETE');
+    chiamata.flush(null, { status: 204, statusText: 'No Content' });
+
+    await esito;
+  });
 });

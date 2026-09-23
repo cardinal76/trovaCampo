@@ -214,4 +214,39 @@ class SocietaServiceTest {
         assertThat(service().modifica("x", modulo("Via 1", null, null))).isEmpty();
         verify(repository, never()).save(any());
     }
+
+    @Test
+    void creaUnaSocietaDalModulo() {
+        when(repository.save(any())).thenAnswer(invocazione -> invocazione.getArgument(0));
+
+        Societa creata = service().crea(modulo("Via Nuova 1", null, null));
+
+        assertThat(creata.getId()).isNull();
+        assertThat(creata.getNomeSocieta()).isEqualTo("Certosa Calcio");
+        assertThat(creata.getIndirizzoImpianto()).isEqualTo("Via Nuova 1");
+        // Senza coordinate ci penserà la geocodifica automatica.
+        assertThat(creata.getLat()).isNull();
+        assertThat(creata.getTestoRicerca()).contains("via nuova 1");
+    }
+
+    @Test
+    void unaSocietaNuovaTieneLeCoordinateDelModulo() {
+        when(repository.save(any())).thenAnswer(invocazione -> invocazione.getArgument(0));
+
+        Societa creata = service().crea(modulo("Via Nuova 1", 41.9, 12.5));
+
+        assertThat(creata.getLat()).isEqualTo(41.9);
+        assertThat(creata.getLng()).isEqualTo(12.5);
+    }
+
+    @Test
+    void eliminaSoloUnaSocietaCheEsiste() {
+        when(repository.existsById("1")).thenReturn(true);
+        when(repository.existsById("x")).thenReturn(false);
+
+        assertThat(service().elimina("1")).isTrue();
+        assertThat(service().elimina("x")).isFalse();
+        verify(repository).deleteById("1");
+        verify(repository, never()).deleteById("x");
+    }
 }

@@ -3,7 +3,7 @@
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/"></ion-back-button>
     </ion-buttons>
-    <ion-title>Modifica scheda</ion-title>
+    <ion-title>{{ nuova ? 'Nuova società' : 'Modifica scheda' }}</ion-title>
     @if (stato() === 'pronto' && autenticazione.amministratore()) {
       <ion-buttons slot="end">
         <ion-button [disabled]="salvataggio()" (click)="salva()">
@@ -183,9 +183,23 @@
             @if (salvataggio()) {
               <ion-spinner name="crescent"></ion-spinner>
             } @else {
-              Salva
+              {{ nuova ? 'Crea la società' : 'Salva' }}
             }
           </ion-button>
+
+          @if (!nuova) {
+            <ion-button
+              expand="block"
+              fill="outline"
+              color="danger"
+              class="elimina"
+              [disabled]="salvataggio()"
+              (click)="elimina()"
+            >
+              <ion-icon slot="start" name="trash"></ion-icon>
+              Elimina società
+            </ion-button>
+          }
         }
       }
     }

@@ -32,6 +32,12 @@ export const routes: Routes = [
       import('./pagine/importazione/importazione.page').then((m) => m.ImportazionePage),
   },
   {
+    // Prima di :id, che altrimenti prenderebbe "nuova" per un identificativo.
+    path: 'admin/societa/nuova',
+    data: { nuova: true },
+    loadComponent: () => import('./pagine/modifica/modifica.page').then((m) => m.ModificaPage),
+  },
+  {
     // Per chi amministra: si apre dal pulsante "Modifica" della scheda.
     path: 'admin/societa/:id',
     loadComponent: () => import('./pagine/modifica/modifica.page').then((m) => m.ModificaPage),

@@ -27,10 +27,16 @@
     </ion-button>
 
     @if (amministratore()) {
-      <ion-button class="importa" fill="solid" color="medium" size="small" routerLink="/admin/importazione">
-        <ion-icon slot="start" name="cloud-upload"></ion-icon>
-        Importa campi
-      </ion-button>
+      <div class="amministrazione">
+        <ion-button fill="solid" color="medium" size="small" routerLink="/admin/societa/nuova">
+          <ion-icon slot="start" name="add"></ion-icon>
+          Nuova società
+        </ion-button>
+        <ion-button fill="solid" color="medium" size="small" routerLink="/admin/importazione">
+          <ion-icon slot="start" name="cloud-upload"></ion-icon>
+          Importa campi
+        </ion-button>
+      </div>
     }
   </div>
 </ion-content>

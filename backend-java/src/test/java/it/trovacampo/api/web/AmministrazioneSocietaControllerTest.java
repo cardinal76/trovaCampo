@@ -6,6 +6,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -102,5 +104,57 @@ class AmministrazioneSocietaControllerTest {
                                 .content(MODULO)
                                 .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void lAmministratoreCreaUnaSocieta() throws Exception {
+        when(service.crea(any())).thenReturn(new Societa().setId("nuovo").setNomeSocieta("Certosa Calcio"));
+
+        mockMvc.perform(
+                        post("/api/admin/societa")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(MODULO)
+                                .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value("nuovo"));
+    }
+
+    @Test
+    void senzaIlRuoloNonSiCrea() throws Exception {
+        mockMvc.perform(
+                        post("/api/admin/societa")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(MODULO)
+                                .with(conRuolo("allenatore")))
+                .andExpect(status().isForbidden());
+
+        verify(service, never()).crea(any());
+    }
+
+    @Test
+    void lAmministratoreEliminaUnaSocieta() throws Exception {
+        when(service.elimina("1")).thenReturn(true);
+
+        mockMvc.perform(
+                        delete("/api/admin/societa/1")
+                                .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void eliminareUnaSocietaCheNonCeRisponde404() throws Exception {
+        when(service.elimina("x")).thenReturn(false);
+
+        mockMvc.perform(
+                        delete("/api/admin/societa/x")
+                                .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void senzaLoginNonSiElimina() throws Exception {
+        mockMvc.perform(delete("/api/admin/societa/1")).andExpect(status().isUnauthorized());
+
+        verify(service, never()).elimina(any());
     }
 }
