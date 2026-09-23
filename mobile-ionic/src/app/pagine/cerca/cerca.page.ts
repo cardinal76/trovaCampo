@@ -30,42 +30,13 @@ import { addIcons } from 'ionicons';
 import { searchOutline } from 'ionicons/icons';
 import * as L from 'leaflet';
 import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap } from 'rxjs';
-import { Societa, SocietaGeolocalizzata, haCoordinate, indirizzoCompleto, nomeCompleto } from '../../modelli/societa';
+import { Societa, haCoordinate, indirizzoCompleto, nomeCompleto } from '../../modelli/societa';
 import { ZOOM_ICONE, iconaCampo } from '../../mappa/icona-campo';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
 import { SocietaService } from '../../servizi/societa.service';
 
-/** L'Italia intera, finché non arrivano i campi da inquadrare. */
-const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
-
-/** Lato delle celle, in gradi, con cui si cerca la zona con più campi. */
-const CELLA_ZONA = 0.04;
-
-/**
- * Centro della zona con più campi: divide la mappa in celle di circa 4 km,
- * sceglie la più affollata e ne restituisce il baricentro.
- */
-function zonaPiuFitta(campi: SocietaGeolocalizzata[]): L.LatLng {
-  const celle = new Map<string, SocietaGeolocalizzata[]>();
-  for (const campo of campi) {
-    const chiave = `${Math.floor(campo.lat / CELLA_ZONA)}:${Math.floor(campo.lng / CELLA_ZONA)}`;
-    const cella = celle.get(chiave);
-    if (cella) {
-      cella.push(campo);
-    } else {
-      celle.set(chiave, [campo]);
-    }
-  }
-  let migliore: SocietaGeolocalizzata[] = [];
-  for (const cella of celle.values()) {
-    if (cella.length > migliore.length) {
-      migliore = cella;
-    }
-  }
-  const lat = migliore.reduce((somma, c) => somma + c.lat, 0) / migliore.length;
-  const lng = migliore.reduce((somma, c) => somma + c.lng, 0) / migliore.length;
-  return L.latLng(lat, lng);
-}
+/** Centro dello sfondo: Roma, piazza Venezia. */
+const ROMA = L.latLng(41.8964, 12.4823);
 
 /** Lettere da scrivere prima che compaiano i suggerimenti. */
 const MINIMO_SUGGERIMENTI = 3;
@@ -77,10 +48,9 @@ const MASSIMO_SUGGERIMENTI = 6;
  * ricerca e pulsante "Vai", come nei mockup grafica/home.jpg e
  * grafica/FunzioneUnoSchermataUno.jpg.
  *
- * Sullo sfondo c'è la mappa, ferma e schiarita da un velo, inquadrata allo
- * zoom delle icone (ZOOM_ICONE) sulla zona con più campi: così i campi si
- * vedono come nella pagina Mappa. Se i campi non arrivano resta la sola
- * mappa dell'Italia.
+ * Sullo sfondo c'è la mappa di Roma, ferma e schiarita da un velo, allo zoom
+ * delle icone (ZOOM_ICONE): i campi si vedono come nella pagina Mappa. Se
+ * i campi non arrivano resta la sola mappa.
  */
 @Component({
   selector: 'pagina-cerca',
@@ -185,7 +155,7 @@ export class CercaPage implements OnDestroy {
         keyboard: false,
       });
       this.mappa = mappa;
-      mappa.fitBounds(ITALIA);
+      mappa.setView(ROMA, ZOOM_ICONE);
 
       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -205,9 +175,6 @@ export class CercaPage implements OnDestroy {
         }
 
         this.zona.runOutsideAngular(() => {
-          const centro = zonaPiuFitta(geolocalizzati);
-          mappa.setView(centro, ZOOM_ICONE);
-
           // Solo i campi attorno alla zona inquadrata: a questo zoom sono pochi.
           const visibili = mappa.getBounds().pad(0.5);
           for (const campo of geolocalizzati) {
@@ -221,7 +188,7 @@ export class CercaPage implements OnDestroy {
           }
         });
       },
-      // Lo sfondo è solo decorazione: senza campi resta la mappa dell'Italia.
+      // Lo sfondo è solo decorazione: senza campi resta la sola mappa.
       error: () => undefined,
     });
   }
