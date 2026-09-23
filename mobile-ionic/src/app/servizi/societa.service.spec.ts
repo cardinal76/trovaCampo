@@ -62,4 +62,10 @@ describe('SocietaService', () => {
     expect(richiesta.request.body).toEqual(campo);
     richiesta.flush({ id: 'nuovo', ...campo });
   });
+
+  it('richiede le squadre della società', () => {
+    service.squadre('abc 1').subscribe();
+
+    http.expectOne(`${base}/abc%201/squadre`).flush([]);
+  });
 });

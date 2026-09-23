@@ -13,6 +13,23 @@ export class ImportazioneService {
   private readonly url = `${environment.apiUrl}/api/admin/importazione`;
 
   /**
+   * I campi dell'anagrafica di presenze (società e campi letti dai Comunicati
+   * Ufficiali), adesso invece che al prossimo giro programmato. Stesso esito
+   * e stessa prova di un file.
+   */
+  sincronizza(prova: boolean): Observable<EsitoImportazione> {
+    return from(this.autenticazione.token()).pipe(
+      switchMap((token) =>
+        this.http.post<EsitoImportazione>(`${environment.apiUrl}/api/admin/anagrafica`, null, {
+          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
+          params: new HttpParams().set('prova', String(prova)),
+        }),
+      ),
+      catchError((errore: unknown) => throwError(() => new Error(messaggioErrore(errore)))),
+    );
+  }
+
+  /**
    * Carica il file Excel con il token di chi è entrato. Con `prova` il server
    * non salva niente e restituisce solo cosa succederebbe. In caso di errore
    * l'Observable fallisce con un messaggio già pronto da mostrare.

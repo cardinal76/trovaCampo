@@ -86,6 +86,23 @@
             </ion-item>
           </ion-list>
 
+          <ion-text color="medium">
+            <p>
+              Oppure prendi i campi dall'<strong>anagrafica di presenze</strong>, che legge da sola
+              i Comunicati Ufficiali del Comitato Lazio: ogni società con il campo dove gioca in casa.
+              Lo fa comunque tre volte al giorno; qui lo fai subito.
+            </p>
+          </ion-text>
+          <ion-button
+            expand="block"
+            fill="outline"
+            [disabled]="!autenticazione.amministratore() || inCorso()"
+            (click)="controllaAnagrafica()"
+          >
+            <ion-icon slot="start" name="sync"></ion-icon>
+            Controlla l'anagrafica di presenze
+          </ion-button>
+
           @if (errore(); as messaggio) {
             <ion-card color="danger" class="avviso">
               <ion-card-content>
@@ -180,11 +197,17 @@
                 } @else {
                   <ion-icon slot="start" name="cloud-upload"></ion-icon>
                   Importa {{ daScrivere() }} campi
+                  @if (sorgente() === 'anagrafica') {
+                    dall'anagrafica
+                  }
                 }
               </ion-button>
             } @else {
               <ion-text color="medium">
-                <p>Non c'è niente da importare: l'archivio è già allineato con questo file.</p>
+                <p>
+                  Non c'è niente da importare: l'archivio è già allineato
+                  {{ sorgente() === 'anagrafica' ? "con l'anagrafica di presenze" : 'con questo file' }}.
+                </p>
               </ion-text>
             }
           }

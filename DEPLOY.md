@@ -112,6 +112,29 @@ Il commit deve essere uno già passato dal workflow: le immagini nel registro
 ci sono solo per quelli, e la pulizia settimanale di presenze tiene le ultime
 dieci versioni di ciascuna.
 
+## I campi dall'anagrafica di presenze
+
+presenze legge da solo i Comunicati Ufficiali del Comitato Lazio (organici,
+gironi, calendari, programmi gare) e ne ricava un'anagrafica: ogni società,
+le sue squadre con il campionato di ognuna, il campo dove gioca in casa.
+TrovaCampo la legge dall'API pubblica di presenze, per la rete Docker
+condivisa (`ANAGRAFICA_URL=http://presenze-backend:8080` in
+`docker-compose.prod.yml`), senza passare da Caddy.
+
+- **I campi** arrivano da soli alle 7:45, 13:45 e 19:45, mezz'ora dopo i giri
+  di lettura di presenze (`ANAGRAFICA_SINCRONIZZAZIONE`). Ogni coppia
+  società–campo è una riga, con le stesse regole di un file importato: stessa
+  chiave, niente cancellazioni, coordinate di presenze se ci sono, altrimenti
+  la geocodifica di TrovaCampo. Da `/admin/importazione`, «Controlla
+  l'anagrafica di presenze» fa lo stesso subito, con prima il controllo.
+- **Le squadre** non si copiano: la scheda di una società venuta
+  dall'anagrafica le chiede a presenze quando si apre
+  (`GET /api/societa/{id}/squadre`). Se presenze non risponde, la scheda si
+  vede lo stesso, con un avviso al posto delle squadre.
+
+Perché ci sia qualcosa da leggere, in presenze va accesa la lettura
+automatica dei comunicati (da `/campionato`, vedi il suo DEPLOY.md).
+
 ## Importare i campi
 
 Società, impianti e indirizzi si caricano dalla pagina

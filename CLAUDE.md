@@ -5,6 +5,10 @@ backend Spring Boot 3 / Java 21 / MongoDB in `backend-java`, frontend Ionic 8
 / Angular 20 standalone in `mobile-ionic`. Login solo per l'amministrazione,
 sul Keycloak di presenze (realm `presenze`, client `trovacampo-frontend`,
 ruolo di realm `trovacampo-admin`); ricerca, elenco e mappa restano pubblici.
+Società, campi e squadre con i loro campionati arrivano anche
+dall'anagrafica di presenze (Comunicati Ufficiali del Lazio), letta dalla
+sua API pubblica `/api/pubblico/anagrafica/`: i campi si sincronizzano in
+Mongo, le squadre si chiedono a presenze all'apertura della scheda.
 Rilascio e importazione dei campi sono spiegati in DEPLOY.md.
 
 ## Macchine e tunnel

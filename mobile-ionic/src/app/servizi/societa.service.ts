@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { NuovoCampo, Societa } from '../modelli/societa';
+import { Squadra } from '../modelli/squadra';
 
 @Injectable({ providedIn: 'root' })
 export class SocietaService {
@@ -28,6 +29,11 @@ export class SocietaService {
   /** Funzioni 2 e 3: anagrafica e campionati della società. */
   perId(id: string): Observable<Societa> {
     return this.http.get<Societa>(`${this.base}/${encodeURIComponent(id)}`);
+  }
+
+  /** Le squadre della società con il campionato di ognuna, dall'anagrafica di presenze. */
+  squadre(id: string): Observable<Squadra[]> {
+    return this.http.get<Squadra[]>(`${this.base}/${encodeURIComponent(id)}/squadre`);
   }
 
   inserisci(campo: NuovoCampo): Observable<Societa> {

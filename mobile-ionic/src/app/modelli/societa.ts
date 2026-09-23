@@ -31,6 +31,9 @@ export interface Societa {
   prezziScuolaCalcio?: string;
 
   campionati?: Campionato[];
+
+  /** La stessa società nell'anagrafica di presenze: da lì arrivano squadre e campionati. */
+  anagraficaSocietaId?: number;
 }
 
 /** La scheda come la manda la pagina di modifica: tutto tranne l'id. */

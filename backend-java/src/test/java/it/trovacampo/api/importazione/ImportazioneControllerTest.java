@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -24,6 +25,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.ResourceAccessException;
 
 @WebMvcTest(ImportazioneController.class)
 @Import(ConfigurazioneSicurezza.class)
@@ -32,6 +34,8 @@ class ImportazioneControllerTest {
     @Autowired private MockMvc mockMvc;
 
     @MockitoBean private ImportazioneService service;
+
+    @MockitoBean private SincronizzazioneAnagrafica sincronizzazione;
 
     private static MockMultipartFile excel() {
         return new MockMultipartFile(
@@ -94,5 +98,36 @@ class ImportazioneControllerTest {
                                 .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errore").value("Mancano le colonne obbligatorie: indirizzo"));
+    }
+
+    @Test
+    void lAnagraficaDiPresenzeSiImportaSoloConIlRuolo() throws Exception {
+        when(sincronizzazione.sincronizza(true))
+                .thenReturn(new EsitoImportazione(true, 3, 2, 1, 0, List.of(), 0, List.of()));
+
+        mockMvc.perform(
+                        post("/api/admin/anagrafica")
+                                .param("prova", "true")
+                                .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.inserite").value(2));
+
+        mockMvc.perform(post("/api/admin/anagrafica").with(conRuolo("superadmin")))
+                .andExpect(status().isForbidden());
+        verify(sincronizzazione, never()).sincronizza(false);
+    }
+
+    @Test
+    void presenzeCheNonRispondeDiventaUn502() throws Exception {
+        when(sincronizzazione.sincronizza(false))
+                .thenThrow(new ResourceAccessException("Connection refused"));
+
+        mockMvc.perform(
+                        post("/api/admin/anagrafica")
+                                .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isBadGateway())
+                .andExpect(
+                        jsonPath("$.errore")
+                                .value("L'anagrafica di presenze non risponde: riprova tra poco"));
     }
 }

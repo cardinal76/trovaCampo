@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import it.trovacampo.api.anagrafica.SquadreSocieta;
 import it.trovacampo.api.config.ConfigurazioneSicurezza;
 import it.trovacampo.api.dominio.Campionato;
 import it.trovacampo.api.dominio.Societa;
@@ -21,6 +22,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.client.ResourceAccessException;
 
 /** Con la sicurezza vera: ricerca e segnalazione devono restare pubbliche. */
 @WebMvcTest(SocietaController.class)
@@ -30,6 +32,8 @@ class SocietaControllerTest {
     @Autowired private MockMvc mockMvc;
 
     @MockitoBean private SocietaService service;
+
+    @MockitoBean private SquadreSocieta squadre;
 
     private Societa certosa() {
         return new Societa()
@@ -138,5 +142,37 @@ class SocietaControllerTest {
                                 .content("{\"nomeSocieta\": \"Certosa Calcio\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errore").exists());
+    }
+
+    @Test
+    void leSquadreDellaSocietaSonoPubbliche() throws Exception {
+        Societa certosa = certosa().setAnagraficaSocietaId(42L);
+        when(service.perId("1")).thenReturn(Optional.of(certosa));
+        when(squadre.di(certosa))
+                .thenReturn(
+                        List.of(
+                                new SquadreSocieta.Squadra(
+                                        "ECCELLENZA", "Regionali", "2026/2027", "A", "", false,
+                                        "Campo Certosa")));
+
+        mockMvc.perform(get("/api/societa/1/squadre"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].campionato").value("ECCELLENZA"))
+                .andExpect(jsonPath("$[0].girone").value("A"));
+    }
+
+    @Test
+    void leSquadreDiUnaSocietaCheNonCeRispondono404() throws Exception {
+        when(service.perId("9")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/societa/9/squadre")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void senzaPresenzeLeSquadreRispondono502() throws Exception {
+        when(service.perId("1")).thenReturn(Optional.of(certosa()));
+        when(squadre.di(any())).thenThrow(new ResourceAccessException("Connection refused"));
+
+        mockMvc.perform(get("/api/societa/1/squadre")).andExpect(status().isBadGateway());
     }
 }
