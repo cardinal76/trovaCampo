@@ -1,4 +1,14 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  NgZone,
+  OnDestroy,
+  computed,
+  effect,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   IonBackButton,
@@ -18,12 +28,28 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { create } from 'ionicons/icons';
-import { Societa, indirizzoCompleto, nomeCompleto } from '../../modelli/societa';
+import * as L from 'leaflet';
+import {
+  Societa,
+  SocietaGeolocalizzata,
+  haCoordinate,
+  indirizzoCompleto,
+  nomeCompleto,
+} from '../../modelli/societa';
 import { Squadra, dettaglioSquadra } from '../../modelli/squadra';
+import { iconaCampo } from '../../mappa/icona-campo';
 import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
 import { SocietaService } from '../../servizi/societa.service';
 
 type Stato = 'caricamento' | 'completata' | 'errore';
+
+/**
+ * Zoom della mappa della scheda: sopra ZOOM_ICONE, così il campo si vede
+ * subito con l'icona e non come pin. Il nome accanto all'icona resta spento
+ * (manca la classe mostra-nomi-campi): qui sarebbe la ripetizione del titolo
+ * che sta due righe più su.
+ */
+const ZOOM_SCHEDA = 16;
 
 /**
  * Funzioni 2 e 3 riunite in un'unica schermata, come nel mockup
@@ -50,10 +76,16 @@ type Stato = 'caricamento' | 'completata' | 'errore';
     IonToolbar,
   ],
   templateUrl: './scheda.page.html',
+  styleUrl: './scheda.page.scss',
 })
-export class SchedaPage {
+export class SchedaPage implements OnDestroy {
   private readonly rotta = inject(ActivatedRoute);
   private readonly service = inject(SocietaService);
+  private readonly zona = inject(NgZone);
+
+  private readonly contenitoreMappa = viewChild<ElementRef<HTMLDivElement>>('contenitoreMappa');
+  private mappa: L.Map | null = null;
+  private segnaposto: L.Marker | null = null;
 
   readonly id = this.rotta.snapshot.paramMap.get('id') ?? '';
   readonly societa = signal<Societa | null>(null);
@@ -73,6 +105,16 @@ export class SchedaPage {
   readonly titolo = computed(() => {
     const societa = this.societa();
     return societa ? nomeCompleto(societa) : 'Scheda società';
+  });
+
+  /**
+   * La società da mostrare sulla mappa, se se ne conosce la posizione. Per un
+   * campo segnalato a mano e non geocodificato è null: al posto della mappa
+   * la scheda lo dice, invece di mostrarne una vuota in mezzo all'oceano.
+   */
+  readonly campoGeolocalizzato = computed<SocietaGeolocalizzata | null>(() => {
+    const societa = this.societa();
+    return societa && haCoordinate(societa) ? societa : null;
   });
 
   /** Un campo inserito a mano con la sola Funzione 1 non ha anagrafica. */
@@ -111,6 +153,29 @@ export class SchedaPage {
 
   constructor() {
     addIcons({ create });
+
+    // La mappa nasce quando il suo contenitore compare (cioè a dati caricati e
+    // solo se il campo ha una posizione) e si riallinea se i dati cambiano,
+    // per esempio tornando qui dopo aver corretto l'indirizzo.
+    effect(() => {
+      const contenitore = this.contenitoreMappa();
+      const campo = this.campoGeolocalizzato();
+
+      if (contenitore && campo) {
+        this.disegnaMappa(contenitore.nativeElement, campo);
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.mappa?.remove();
+    this.mappa = null;
+    this.segnaposto = null;
+  }
+
+  /** Rientrando nella pagina il contenitore è stato ridimensionato dalla transizione. */
+  ionViewDidEnter(): void {
+    this.mappa?.invalidateSize();
   }
 
   /**
@@ -126,6 +191,44 @@ export class SchedaPage {
         this.caricaSquadre(dati);
       },
       error: () => this.stato.set('errore'),
+    });
+  }
+
+  /**
+   * Mappa con il solo campo di questa società, segnato con l'icona del campo
+   * da calcio usata dalle altre mappe. Nessun altro campo: qui interessa
+   * dove si gioca, non cosa c'è intorno.
+   */
+  private disegnaMappa(contenitore: HTMLElement, campo: SocietaGeolocalizzata): void {
+    // Leaflet lavora sul DOM: fuori dalla zona Angular, così pan e zoom non
+    // fanno girare il rilevamento delle modifiche a ogni evento.
+    this.zona.runOutsideAngular(() => {
+      if (!this.mappa) {
+        this.mappa = L.map(contenitore, {
+          attributionControl: true,
+          // La scheda è una pagina che scorre: con la rotella attiva il
+          // puntatore sopra la mappa zoomerebbe invece di scorrere la pagina.
+          scrollWheelZoom: false,
+        });
+
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '© OpenStreetMap',
+        }).addTo(this.mappa);
+      }
+
+      const posizione = L.latLng(campo.lat, campo.lng);
+      this.mappa.setView(posizione, ZOOM_SCHEDA);
+
+      this.segnaposto?.remove();
+      this.segnaposto = L.marker(posizione, {
+        icon: iconaCampo(campo),
+        interactive: false,
+        keyboard: false,
+      }).addTo(this.mappa);
+
+      // Le dimensioni definitive arrivano solo a transizione di pagina finita.
+      setTimeout(() => this.mappa?.invalidateSize(), 200);
     });
   }
 

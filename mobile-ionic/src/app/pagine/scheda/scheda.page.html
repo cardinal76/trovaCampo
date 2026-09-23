@@ -48,6 +48,12 @@
         </ion-label>
       </ion-item>
 
+      @if (campoGeolocalizzato()) {
+        <div #contenitoreMappa class="mappa-campo"></div>
+      } @else {
+        <p class="posizione-assente">Posizione del campo non ancora disponibile.</p>
+      }
+
       <ion-list-header>
         <ion-label>Anagrafica società</ion-label>
       </ion-list-header>
