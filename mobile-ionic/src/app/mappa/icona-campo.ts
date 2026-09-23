@@ -2,15 +2,15 @@ import * as L from 'leaflet';
 import { SocietaGeolocalizzata, nomeCompleto, testoSicuro } from '../modelli/societa';
 
 /** Da questo zoom in su i campi si disegnano con l'icona di un campo da calcio. */
-export const ZOOM_ICONE = 13;
+export const ZOOM_ICONE = 14;
 
 /** Da questo zoom in su accanto all'icona compare il nome della società. */
-export const ZOOM_NOMI = 15;
+export const ZOOM_NOMI = 17;
 
 /** Campo da calcio visto dall'alto, disegnato in SVG per non dipendere da immagini. */
 const SVG_CAMPO = `
   <svg viewBox="0 0 28 20" width="28" height="20" aria-hidden="true">
-    <rect x="0.5" y="0.5" width="27" height="19" rx="2" fill="#2e8b3d" stroke="#fff" />
+    <rect x="0.5" y="0.5" width="27" height="19" rx="2" fill="#14532d" stroke="#fff" />
     <g fill="none" stroke="#fff" stroke-width="1">
       <rect x="2.5" y="2.5" width="23" height="15" />
       <line x1="14" y1="2.5" x2="14" y2="17.5" />
