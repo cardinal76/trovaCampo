@@ -9,7 +9,7 @@ import { SocietaGeolocalizzata, nomeCompleto, testoSicuro } from '../modelli/soc
 export const ZOOM_ICONE = 14;
 
 /** Da questo zoom in su accanto all'icona compare il nome della società. */
-export const ZOOM_NOMI = 16;
+export const ZOOM_NOMI = 18;
 
 /** Campo da calcio visto dall'alto, disegnato in SVG per non dipendere da immagini. */
 const SVG_CAMPO = `
@@ -24,9 +24,13 @@ const SVG_CAMPO = `
     </g>
   </svg>`;
 
-/** Dimensioni dell'icona in pixel, uguali per l'HTML e per il canvas. */
+/** Dimensioni dell'icona HTML in pixel. */
 const LARGHEZZA = 35;
 const ALTEZZA = 25;
+
+/** Da lontano, sul canvas, l'icona è più piccola: i campi vicini si coprono meno. */
+const LARGHEZZA_CANVAS = 21;
+const ALTEZZA_CANVAS = 15;
 
 /** Icona del campo con il nome, che il CSS mostra solo agli zoom più alti. */
 export function iconaCampo(campo: SocietaGeolocalizzata): L.DivIcon {
@@ -76,10 +80,10 @@ const CampoSuCanvas = (L.CircleMarker as unknown as typeof L.Class).extend({
   }) {
     this._renderer._ctx?.drawImage(
       this.options.immagine,
-      this._point.x - LARGHEZZA / 2,
-      this._point.y - ALTEZZA / 2,
-      LARGHEZZA,
-      ALTEZZA,
+      this._point.x - LARGHEZZA_CANVAS / 2,
+      this._point.y - ALTEZZA_CANVAS / 2,
+      LARGHEZZA_CANVAS,
+      ALTEZZA_CANVAS,
     );
   },
 }) as unknown as new (posizione: L.LatLngExpression, opzioni: OpzioniCampoSuCanvas) => L.CircleMarker;
@@ -88,5 +92,5 @@ export function campoSuCanvas(
   posizione: L.LatLngExpression,
   immagine: HTMLImageElement,
 ): L.CircleMarker {
-  return new CampoSuCanvas(posizione, { immagine, radius: LARGHEZZA / 2 });
+  return new CampoSuCanvas(posizione, { immagine, radius: LARGHEZZA_CANVAS / 2 });
 }
