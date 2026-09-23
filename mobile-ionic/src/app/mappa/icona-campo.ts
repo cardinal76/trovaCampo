@@ -2,7 +2,7 @@ import * as L from 'leaflet';
 import { SocietaGeolocalizzata, nomeCompleto, testoSicuro } from '../modelli/societa';
 
 /** Da questo zoom in su i campi si disegnano con l'icona di un campo da calcio. */
-export const ZOOM_ICONE = 15;
+export const ZOOM_ICONE = 14;
 
 /** Da questo zoom in su accanto all'icona compare il nome della società. */
 export const ZOOM_NOMI = 17;
