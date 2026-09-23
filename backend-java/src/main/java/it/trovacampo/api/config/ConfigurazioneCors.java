@@ -22,6 +22,11 @@ public class ConfigurazioneCors implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/api/**").allowedOriginPatterns(origini).allowedMethods("GET", "POST");
+        registry.addMapping("/api/**")
+                .allowedOriginPatterns(origini)
+                // PUT e DELETE servono all'amministrazione delle schede
+                // (/api/admin/societa): senza, il browser si ferma alla
+                // preflight e la modifica fallisce con 403.
+                .allowedMethods("GET", "POST", "PUT", "DELETE");
     }
 }
