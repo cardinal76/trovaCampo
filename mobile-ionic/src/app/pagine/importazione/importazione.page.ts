@@ -1,5 +1,4 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import {
   IonBackButton,
   IonButton,
@@ -12,7 +11,6 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
-  IonInput,
   IonItem,
   IonLabel,
   IonList,
@@ -23,13 +21,18 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, cloudUpload, documentAttach, warning } from 'ionicons/icons';
+import { checkmarkCircle, cloudUpload, documentAttach, logOut, warning } from 'ionicons/icons';
 import { EsitoImportazione } from '../../modelli/importazione';
+import {
+  AutenticazioneService,
+  RUOLO_AMMINISTRATORE,
+} from '../../servizi/autenticazione.service';
 import { ImportazioneService } from '../../servizi/importazione.service';
 
 /**
  * Importazione da Excel per chi amministra. Non è collegata dal resto
- * dell'app: ci si arriva da /admin/importazione e serve il token del server.
+ * dell'app: ci si arriva da /admin/importazione, e aprirla porta al login del
+ * Keycloak di presenze. Serve il ruolo trovacampo-admin.
  *
  * Il salvataggio vero è possibile solo dopo una prova andata a buon fine sullo
  * stesso file, così prima di scrivere nell'archivio si vede sempre cosa
@@ -38,7 +41,6 @@ import { ImportazioneService } from '../../servizi/importazione.service';
 @Component({
   selector: 'pagina-importazione',
   imports: [
-    FormsModule,
     IonBackButton,
     IonButton,
     IonButtons,
@@ -50,8 +52,7 @@ import { ImportazioneService } from '../../servizi/importazione.service';
     IonContent,
     IonHeader,
     IonIcon,
-    IonInput,
-    IonItem,
+      IonItem,
     IonLabel,
     IonList,
     IonNote,
@@ -65,8 +66,11 @@ import { ImportazioneService } from '../../servizi/importazione.service';
 })
 export class ImportazionePage {
   private readonly service = inject(ImportazioneService);
+  readonly autenticazione = inject(AutenticazioneService);
+  readonly ruolo = RUOLO_AMMINISTRATORE;
 
-  readonly token = signal(leggiTokenSalvato());
+  /** Il login su Keycloak: finché non è 'entrato' il form non si vede. */
+  readonly accesso = signal<'in-corso' | 'entrato' | 'errore'>('in-corso');
   readonly file = signal<File | null>(null);
   readonly inCorso = signal(false);
   readonly errore = signal<string | null>(null);
@@ -76,7 +80,9 @@ export class ImportazionePage {
   readonly salvato = signal<EsitoImportazione | null>(null);
 
   readonly esito = computed(() => this.salvato() ?? this.prova());
-  readonly pronto = computed(() => this.token().trim().length > 0 && this.file() !== null);
+  readonly pronto = computed(
+    () => this.autenticazione.amministratore() && this.file() !== null,
+  );
   readonly daScrivere = computed(() => {
     const esito = this.prova();
     return esito ? esito.inserite + esito.aggiornate : 0;
@@ -87,12 +93,20 @@ export class ImportazionePage {
   );
 
   constructor() {
-    addIcons({ checkmarkCircle, cloudUpload, documentAttach, warning });
+    addIcons({ checkmarkCircle, cloudUpload, documentAttach, logOut, warning });
+    this.entra();
   }
 
-  cambiaToken(valore: string | null | undefined): void {
-    this.token.set(valore ?? '');
-    this.azzera();
+  entra(): void {
+    this.accesso.set('in-corso');
+    this.autenticazione.accedi().then(
+      (entrato) => this.accesso.set(entrato ? 'entrato' : 'errore'),
+      () => this.accesso.set('errore'),
+    );
+  }
+
+  esci(): void {
+    void this.autenticazione.esci();
   }
 
   scegliFile(evento: Event): void {
@@ -123,10 +137,9 @@ export class ImportazionePage {
     this.inCorso.set(true);
     this.errore.set(null);
 
-    this.service.importa(file, this.token(), prova).subscribe({
+    this.service.importa(file, prova).subscribe({
       next: (esito) => {
         this.inCorso.set(false);
-        salvaToken(this.token());
         if (prova) {
           this.prova.set(esito);
         } else {
@@ -144,28 +157,5 @@ export class ImportazionePage {
     this.prova.set(null);
     this.salvato.set(null);
     this.errore.set(null);
-  }
-}
-
-/*
- * Il token resta solo per la sessione del browser: comodo per più file di
- * fila, senza lasciarlo su un dispositivo condiviso. sessionStorage può non
- * esserci (navigazione privata, cookie bloccati): allora si riscrive.
- */
-const CHIAVE_TOKEN = 'trovacampo.tokenImportazione';
-
-function leggiTokenSalvato(): string {
-  try {
-    return sessionStorage.getItem(CHIAVE_TOKEN) ?? '';
-  } catch {
-    return '';
-  }
-}
-
-function salvaToken(token: string): void {
-  try {
-    sessionStorage.setItem(CHIAVE_TOKEN, token.trim());
-  } catch {
-    // Pazienza: al prossimo caricamento andrà reinserito.
   }
 }

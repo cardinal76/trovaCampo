@@ -39,6 +39,11 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+    <!-- Login con il Keycloak di presenze: valida i token dell'area di amministrazione. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+    </dependency>
     <!-- Lettura dei file Excel dell'importazione, sia .xlsx sia il vecchio .xls. -->
     <dependency>
       <groupId>org.apache.poi</groupId>
@@ -49,6 +54,11 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-test</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

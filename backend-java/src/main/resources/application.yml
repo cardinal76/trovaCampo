@@ -26,9 +26,15 @@ trovacampo:
     user-agent: "TrovaCampo/0.1 (progetto di analisi calcio dilettantistico)"
   seed:
     abilitato: true
-  importazione:
-    # Vuoto = endpoint /api/admin/importazione spento (risponde 404).
-    token: ${TROVACAMPO_IMPORTAZIONE_TOKEN:}
+  # Il Keycloak di presenze, che protegge solo /api/admin/** (importazione).
+  # I valori di default sono quelli dello stack di sviluppo di presenze, dove
+  # Keycloak sta sulla 8081 senza /auth.
+  keycloak:
+    # L'indirizzo scritto nei token, cioe' quello pubblico.
+    issuer: ${KEYCLOAK_ISSUER:http://localhost:8081/realms/presenze}
+    # Da dove leggere le chiavi: in produzione la rete interna di Docker.
+    jwks-uri: ${KEYCLOAK_JWKS_URI:http://localhost:8081/realms/presenze/protocol/openid-connect/certs}
+    client-id: trovacampo-frontend
   geocodifica:
     # Dà le coordinate, una al secondo, alle societa' che non le hanno.
     automatica: true
