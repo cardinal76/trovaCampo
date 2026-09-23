@@ -31,6 +31,16 @@ public class Societa {
     private Double lat;
     private Double lng;
 
+    /**
+     * Vero quando il segnaposto l'ha messo la geocodifica automatica senza il
+     * civico che l'indirizzo aveva: sta sulla via giusta, ma non per forza
+     * davanti al campo. Chi amministra filtra l'elenco su questo per
+     * correggerlo a mano. Vuoto (e quindi assente dal JSON) negli altri casi:
+     * coordinate da un file, da presenze o dal modulo di modifica valgono
+     * come precise.
+     */
+    private Boolean posizioneApprossimata;
+
     private String matricola;
     private String presidente;
     private String indirizzoSede;
@@ -157,6 +167,15 @@ public class Societa {
 
     public Societa setLng(Double lng) {
         this.lng = lng;
+        return this;
+    }
+
+    public Boolean getPosizioneApprossimata() {
+        return posizioneApprossimata;
+    }
+
+    public Societa setPosizioneApprossimata(Boolean posizioneApprossimata) {
+        this.posizioneApprossimata = posizioneApprossimata;
         return this;
     }
 

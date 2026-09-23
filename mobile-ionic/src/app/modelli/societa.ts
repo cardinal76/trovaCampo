@@ -19,6 +19,11 @@ export interface Societa {
   provinciaImpianto: string;
   lat?: number;
   lng?: number;
+  /**
+   * Il segnaposto l'ha messo la geocodifica senza il civico: sta sulla via,
+   * non per forza davanti al campo. Assente quando è preciso.
+   */
+  posizioneApprossimata?: boolean;
 
   matricola?: string;
   presidente?: string;
@@ -50,6 +55,15 @@ export type SocietaGeolocalizzata = Societa & { lat: number; lng: number };
 
 export function haCoordinate(societa: Societa): societa is SocietaGeolocalizzata {
   return typeof societa.lat === 'number' && typeof societa.lng === 'number';
+}
+
+/**
+ * Da correggere a mano: senza coordinate, o con un segnaposto che la
+ * geocodifica ha trovato solo togliendo il civico. È il filtro che chi
+ * amministra usa nell'elenco.
+ */
+export function senzaPosizionePrecisa(societa: Societa): boolean {
+  return !haCoordinate(societa) || societa.posizioneApprossimata === true;
 }
 
 export function nomeCompleto(societa: Societa): string {

@@ -72,7 +72,18 @@ class SocietaControllerTest {
         mockMvc.perform(get("/api/campi"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].nomeSocieta").value("Certosa Calcio"))
-                .andExpect(jsonPath("$[0].testoRicerca").doesNotExist());
+                .andExpect(jsonPath("$[0].testoRicerca").doesNotExist())
+                // Solo le società col segnaposto approssimato lo dicono.
+                .andExpect(jsonPath("$[0].posizioneApprossimata").doesNotExist());
+    }
+
+    @Test
+    void lElencoDiceQualiSegnapostiSonoApprossimati() throws Exception {
+        when(service.tuttiICampi()).thenReturn(List.of(certosa().setPosizioneApprossimata(true)));
+
+        mockMvc.perform(get("/api/campi"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].posizioneApprossimata").value(true));
     }
 
     @Test

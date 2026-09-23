@@ -183,6 +183,29 @@ class SocietaServiceTest {
     }
 
     @Test
+    void ilSegnapostoCorrettoAManoNonEPiuApprossimato() {
+        when(repository.findById("1")).thenReturn(Optional.of(salvata().setPosizioneApprossimata(true)));
+        when(repository.save(any())).thenAnswer(invocazione -> invocazione.getArgument(0));
+
+        Societa modificata =
+                service().modifica("1", modulo("Via della Certosa 12", 41.9, 12.5)).orElseThrow();
+
+        assertThat(modificata.getPosizioneApprossimata()).isNull();
+    }
+
+    @Test
+    void lasciandoIlSegnapostoComEraRestaApprossimato() {
+        when(repository.findById("1")).thenReturn(Optional.of(salvata().setPosizioneApprossimata(true)));
+        when(repository.save(any())).thenAnswer(invocazione -> invocazione.getArgument(0));
+
+        Societa modificata =
+                service().modifica("1", modulo("Via della Certosa 12", 41.89, 12.48)).orElseThrow();
+
+        // Cambiare il telefono non rende preciso il segnaposto: resta nel filtro.
+        assertThat(modificata.getPosizioneApprossimata()).isTrue();
+    }
+
+    @Test
     void coordinateSvuotateSiRicalcolano() {
         assertThat(modifica(modulo("Via della Certosa 12", null, null)).getLat()).isNull();
     }

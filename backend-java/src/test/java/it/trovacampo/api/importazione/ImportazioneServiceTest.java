@@ -112,6 +112,17 @@ class ImportazioneServiceTest {
     }
 
     @Test
+    void leCoordinateDelFileSostituisconoUnSegnapostoApprossimato() {
+        when(repository.findAll()).thenReturn(List.of(certosa().setPosizioneApprossimata(true)));
+
+        service.importa(
+                flusso(INTESTAZIONE, riga("Certosa Calcio", "Campo Certosa", "Via della Certosa 12", "Roma", "RM", 41.9, 12.5)),
+                false);
+
+        assertThat(salvate().getFirst().getPosizioneApprossimata()).isNull();
+    }
+
+    @Test
     void unIndirizzoNuovoRidaUnaPossibilitaAllaGeocodifica() {
         Societa fallita = certosa().setLat(null).setLng(null).setGeocodificaFallitaVersione(1);
         when(repository.findAll()).thenReturn(List.of(fallita));

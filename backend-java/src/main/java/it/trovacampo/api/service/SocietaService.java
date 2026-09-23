@@ -131,8 +131,9 @@ public class SocietaService {
         }
         if (coordinateCorrette || societa.getLat() == null) {
             // Un indirizzo nuovo, o un segnaposto messo a mano,
-            // chiudono la partita con i tentativi andati male.
-            societa.setGeocodificaFallitaVersione(null);
+            // chiudono la partita con i tentativi andati male. Il segnaposto
+            // messo a mano è anche la correzione di uno approssimato.
+            societa.setGeocodificaFallitaVersione(null).setPosizioneApprossimata(null);
         }
 
         boolean scuolaCalcio = Boolean.TRUE.equals(richiesta.scuolaCalcio());
