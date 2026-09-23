@@ -3,8 +3,8 @@ name: Deploy produzione
 # Rilascio di TrovaCampo sul server di presenze: push sul branch
 # "produzione", oppure a mano dalla scheda Actions sullo stesso commit.
 #
-# Stesso giro di presenze (vedi il suo DEPLOY.md): un runner self-hosted di
-# casa costruisce le immagini, le spinge nel registro che gira sul server
+# Stesso giro di presenze (vedi il suo DEPLOY.md): un runner self-hosted su
+# server2 costruisce le immagini, le spinge nel registro che gira sul server
 # (solo su 127.0.0.1:5000, raggiunto con un tunnel SSH) e poi ordina al server
 # di ricreare i container. Niente runner a pagamento, niente GHCR.
 on:
