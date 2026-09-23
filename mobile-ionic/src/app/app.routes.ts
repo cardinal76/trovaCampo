@@ -17,5 +17,11 @@ export const routes: Routes = [
     path: 'aggiungi',
     loadComponent: () => import('./pagine/aggiungi/aggiungi.page').then((m) => m.AggiungiPage),
   },
+  {
+    // Per chi amministra: non collegata dal resto dell'app, protetta dal token.
+    path: 'admin/importazione',
+    loadComponent: () =>
+      import('./pagine/importazione/importazione.page').then((m) => m.ImportazionePage),
+  },
   { path: '**', redirectTo: '' },
 ];

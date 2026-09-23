@@ -52,6 +52,10 @@ services:
       # Mongo, che vive nel database admin e non in trovacampo.
       MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@trovacampo-mongo:27017/trovacampo?authSource=admin
       PORT: "3000"
+      # Token dell'importazione Excel (POST /api/admin/importazione). Vuoto
+      # o assente = endpoint spento: non c'e' niente da proteggere finche'
+      # nessuno lo accende di proposito.
+      TROVACAMPO_IMPORTAZIONE_TOKEN: ${IMPORTAZIONE_TOKEN:-}
       # Senza un limite la JVM si prende un quarto della RAM dell'host, non
       # del container.
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75

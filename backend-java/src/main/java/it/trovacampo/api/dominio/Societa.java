@@ -51,6 +51,14 @@ public class Societa {
     @JsonIgnore
     private String testoRicerca;
 
+    /**
+     * Vero quando la geocodifica automatica ha provato e non ha riconosciuto
+     * l'indirizzo: evita di riprovare all'infinito lo stesso indirizzo. Torna
+     * vuoto quando l'indirizzo cambia.
+     */
+    @JsonIgnore
+    private Boolean geocodificaFallita;
+
     public String getId() {
         return id;
     }
@@ -237,6 +245,15 @@ public class Societa {
 
     public Societa setTestoRicerca(String testoRicerca) {
         this.testoRicerca = testoRicerca;
+        return this;
+    }
+
+    public Boolean getGeocodificaFallita() {
+        return geocodificaFallita;
+    }
+
+    public Societa setGeocodificaFallita(Boolean geocodificaFallita) {
+        this.geocodificaFallita = geocodificaFallita;
         return this;
     }
 }

@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 /** Errori nella forma {"errore": "..."} usata anche dall'API Node. */
 @RestControllerAdvice
@@ -29,5 +30,12 @@ public class GestoreErrori {
                         .collect(Collectors.joining(", "));
 
         return ResponseEntity.badRequest().body(Map.of("errore", messaggio));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<Map<String, String>> fileTroppoGrande(
+            MaxUploadSizeExceededException eccezione) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(Map.of("errore", "Il file supera i 20 MB"));
     }
 }

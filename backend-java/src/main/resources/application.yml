@@ -4,6 +4,12 @@ spring:
   data:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/trovacampo}
+  servlet:
+    # I file Excel dell'importazione: qualche migliaio di righe sta sotto
+    # il mega, 20 lascia margine a fogli con formattazione pesante.
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
   jackson:
     # I campi facoltativi (anagrafica, campionati, coordinate) restano fuori
     # dal JSON quando mancano, come nell'API Node.
@@ -20,6 +26,12 @@ trovacampo:
     user-agent: "TrovaCampo/0.1 (progetto di analisi calcio dilettantistico)"
   seed:
     abilitato: true
+  importazione:
+    # Vuoto = endpoint /api/admin/importazione spento (risponde 404).
+    token: ${TROVACAMPO_IMPORTAZIONE_TOKEN:}
+  geocodifica:
+    # Dà le coordinate, una al secondo, alle societa' che non le hanno.
+    automatica: true
 
 # Solo /actuator/health, che e' quello che guarda l'healthcheck del container
 # in produzione. Comprende il controllo su MongoDB: un backend acceso ma senza

@@ -9,10 +9,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Verifica che tutti i bean dell'applicazione si costruiscano davvero.
- * Il caricamento dei dati di esempio è disattivato perché è l'unico punto
- * che aprirebbe una connessione a MongoDB all'avvio.
+ * Dati di esempio e geocodifica automatica sono disattivati perché sono gli
+ * unici punti che aprirebbero una connessione a MongoDB all'avvio.
  */
-@SpringBootTest(properties = "trovacampo.seed.abilitato=false")
+@SpringBootTest(
+        properties = {"trovacampo.seed.abilitato=false", "trovacampo.geocodifica.automatica=false"})
 class TrovaCampoApplicationTest {
 
     @Autowired private SocietaController controller;
