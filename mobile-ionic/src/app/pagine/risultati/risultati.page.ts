@@ -35,6 +35,7 @@ import {
   haCoordinate,
   indirizzoCompleto,
   nomeCompleto,
+  testoSicuro,
 } from '../../modelli/societa';
 import { SocietaService } from '../../servizi/societa.service';
 
@@ -42,23 +43,6 @@ type Stato = 'caricamento' | 'completata' | 'errore';
 
 /** Zoom usato quando c'è un solo campo da inquadrare. */
 const ZOOM_SINGOLO = 15;
-
-const ENTITA_HTML: Record<string, string> = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;',
-};
-
-/**
- * Il contenuto dei popup di Leaflet è HTML: i dati che ci finiscono dentro
- * arrivano dall'API (comprese le segnalazioni degli utenti) e vanno quindi
- * neutralizzati.
- */
-function testoSicuro(valore: string): string {
-  return valore.replace(/[&<>"']/g, (carattere) => ENTITA_HTML[carattere]);
-}
 
 /**
  * Seconda schermata della Funzione 1: la mappa dei campi trovati (mockup

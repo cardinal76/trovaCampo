@@ -1,0 +1,78 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Elenco campi</ion-title>
+    <ion-buttons slot="end">
+      <ion-button routerLink="/mappa" aria-label="Vedi tutti i campi sulla mappa">
+        <ion-icon slot="start" name="map"></ion-icon>
+        Mappa
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-searchbar
+      placeholder="Filtra per società, campo o indirizzo"
+      [debounce]="150"
+      [value]="filtro()"
+      (ionInput)="cambiaFiltro($any($event.target).value)"
+      (ionClear)="cambiaFiltro('')"
+    ></ion-searchbar>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  @switch (stato()) {
+    @case ('caricamento') {
+      <div class="centrato">
+        <ion-spinner></ion-spinner>
+      </div>
+    }
+    @case ('errore') {
+      <div class="centrato">
+        <p>Impossibile caricare l'elenco. Controlla la connessione e riprova.</p>
+        <ion-button fill="outline" (click)="carica()">Riprova</ion-button>
+      </div>
+    }
+    @case ('pronto') {
+      <div class="contenuto-largo">
+        <ion-list>
+          <ion-list-header>
+            <ion-label>
+              @if (filtro()) {
+                {{ filtrati().length }} di {{ campi().length }} campi
+              } @else {
+                {{ campi().length === 1 ? '1 campo' : campi().length + ' campi' }}
+              }
+            </ion-label>
+          </ion-list-header>
+
+          @for (campo of visibili(); track campo.id) {
+            <ion-item button [routerLink]="['/societa', campo.id]" detail>
+              <ion-label>
+                <h2>{{ nomeCompleto(campo) }}</h2>
+                <p>{{ campo.nomeImpianto }}</p>
+                <p>{{ indirizzoCompleto(campo) }}</p>
+              </ion-label>
+              @if (campo.lat === undefined || campo.lng === undefined) {
+                <ion-note slot="end">senza posizione</ion-note>
+              }
+            </ion-item>
+          } @empty {
+            <ion-item lines="none">
+              <ion-label color="medium">Nessun campo corrisponde a "{{ filtro() }}".</ion-label>
+            </ion-item>
+          }
+        </ion-list>
+
+        <ion-infinite-scroll
+          [disabled]="visibili().length >= filtrati().length"
+          (ionInfinite)="altri($event)"
+        >
+          <ion-infinite-scroll-content></ion-infinite-scroll-content>
+        </ion-infinite-scroll>
+      </div>
+    }
+  }
+</ion-content>

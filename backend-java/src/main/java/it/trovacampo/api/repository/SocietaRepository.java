@@ -19,6 +19,20 @@ public interface SocietaRepository extends MongoRepository<Societa, String> {
     List<Societa> cercaPerTesto(String regexNormalizzata);
 
     /**
+     * Tutti i campi, per l'elenco e la mappa completi. Solo i campi che
+     * servono a quelle due pagine: con qualche migliaio di società l'anagrafica
+     * e i campionati moltiplicherebbero il peso della risposta per niente.
+     */
+    @Query(
+            value = "{}",
+            fields =
+                    "{ 'siglaSocieta': 1, 'nomeSocieta': 1, 'nomeImpianto': 1,"
+                            + " 'indirizzoImpianto': 1, 'localitaImpianto': 1,"
+                            + " 'provinciaImpianto': 1, 'lat': 1, 'lng': 1 }",
+            sort = "{ 'nomeSocieta': 1, 'nomeImpianto': 1 }")
+    List<Societa> tuttiICampi();
+
+    /**
      * Una società senza coordinate su cui la geocodifica non ha ancora
      * rinunciato. {@code lat: null} comprende anche il campo assente.
      */

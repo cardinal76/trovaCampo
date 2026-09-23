@@ -30,6 +30,12 @@ public class SocietaController {
         return service.cerca(nome);
     }
 
+    /** Elenco e mappa di tutti i campi: pubblici come la ricerca. */
+    @GetMapping("/campi")
+    public List<Societa> tuttiICampi() {
+        return service.tuttiICampi();
+    }
+
     @GetMapping("/societa/{id}")
     public Societa dettaglio(@PathVariable String id) {
         return service.perId(id).orElseThrow(SocietaNonTrovataException::new);

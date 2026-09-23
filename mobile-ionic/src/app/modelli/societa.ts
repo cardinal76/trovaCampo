@@ -56,3 +56,20 @@ export function indirizzoCompleto(societa: Societa): string {
   const provincia = societa.provinciaImpianto ? ` (${societa.provinciaImpianto})` : '';
   return `${societa.indirizzoImpianto}${localita}${provincia}`;
 }
+
+const ENTITA_HTML: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+/**
+ * Il contenuto dei popup di Leaflet è HTML: i dati che ci finiscono dentro
+ * arrivano dall'API (comprese le segnalazioni degli utenti) e vanno quindi
+ * neutralizzati.
+ */
+export function testoSicuro(valore: string): string {
+  return valore.replace(/[&<>"']/g, (carattere) => ENTITA_HTML[carattere]);
+}
