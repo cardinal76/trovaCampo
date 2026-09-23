@@ -44,10 +44,12 @@ import { SocietaService } from '../../servizi/societa.service';
 type Stato = 'caricamento' | 'completata' | 'errore';
 
 /**
- * Zoom della mappa della scheda: sopra ZOOM_ICONE, così il campo si vede
- * subito con l'icona e non come pin. Il nome accanto all'icona resta spento
- * (manca la classe mostra-nomi-campi): qui sarebbe la ripetizione del titolo
- * che sta due righe più su.
+ * Zoom della mappa della scheda: abbastanza vicino da riconoscere le vie
+ * intorno al campo, senza perdere il quartiere.
+ *
+ * Il nome accanto all'icona resta spento, perché la mappa non riceve mai la
+ * classe mostra-nomi-campi (non chiama aggiornaNomiCampi): qui ripeterebbe il
+ * titolo della scheda, poche righe più su.
  */
 const ZOOM_SCHEDA = 16;
 
