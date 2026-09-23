@@ -1,0 +1,14 @@
+.pagina {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mappa {
+  flex: 1 1 auto;
+}
+
+.coordinate {
+  padding-inline-start: 1rem;
+  font-size: 0.85rem;
+}

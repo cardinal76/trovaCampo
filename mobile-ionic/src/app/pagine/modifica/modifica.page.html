@@ -85,6 +85,12 @@
               <ion-input label="Longitudine" labelPlacement="stacked" inputmode="decimal" placeholder="es. 12,4863" [(ngModel)]="m.lng"></ion-input>
             </ion-item>
             <ion-item lines="none">
+              <ion-button fill="outline" (click)="posizionaSullaMappa(m)">
+                <ion-icon slot="start" name="location"></ion-icon>
+                Posiziona sulla mappa
+              </ion-button>
+            </ion-item>
+            <ion-item lines="none">
               <ion-note class="nota">
                 Se cambi l'indirizzo lasciando le coordinate com'erano, o le svuoti, il server le
                 ricalcola da solo. Se le correggi a mano, valgono quelle che scrivi.
