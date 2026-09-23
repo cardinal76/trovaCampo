@@ -16,7 +16,14 @@ permissions:
   contents: read
 
 env:
-  REGISTRO: localhost:5000
+  # Il registro del server visto da qui, attraverso il tunnel: porta 5001 e
+  # non 5000, perche' sulla stessa macchina gira anche il runner di presenze,
+  # che per lo stesso tunnel usa la 5000. Due rilasci contemporanei sulla
+  # stessa porta si scontrerebbero, e il secondo fallirebbe con "porta
+  # occupata". Il registro e' lo stesso: sul server resta 127.0.0.1:5000, e
+  # le immagini che il compose cerca come localhost:5000/trovacampo-* sono
+  # quelle spinte qui come localhost:5001/trovacampo-*.
+  REGISTRO: localhost:5001
 
 # Segreti del repository, gli stessi valori di presenze:
 #   PRODUZIONE_HOST     indirizzo del server
@@ -69,7 +76,7 @@ jobs:
             || { echo "Manca ~/trovacampo/.env.prod sul server: vedi DEPLOY.md" >&2; exit 1; }
           FINE
 
-      # ExitOnForwardFailure: se la 5000 fosse occupata su questa macchina, il
+      # ExitOnForwardFailure: se la 5001 fosse occupata su questa macchina, il
       # push finirebbe su qualunque cosa risponda qui invece che sul server.
       - name: Apre il tunnel verso il registro
         run: |
@@ -78,7 +85,7 @@ jobs:
               -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts" \
               -o BatchMode=yes \
               -o ExitOnForwardFailure=yes \
-              -L 5000:127.0.0.1:5000 \
+              -L 5001:127.0.0.1:5000 \
               "${{ secrets.PRODUZIONE_USER }}@${{ secrets.PRODUZIONE_HOST }}"
 
       - name: Spinge le immagini

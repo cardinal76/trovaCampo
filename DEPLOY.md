@@ -9,9 +9,10 @@ TrovaCampo gira **sullo stesso server di presenze**, e ne riusa quasi tutto:
 | Rete Docker `presenze_default` | compose di presenze |
 | MongoDB, backend Spring Boot, app Ionic | `docker-compose.prod.yml` di questo repository, in `~/trovacampo` sul server |
 
-Il rilascio segue lo stesso schema: un runner self-hosted a casa costruisce le
-due immagini, le spinge nel registro del server con un tunnel SSH, poi ricrea
-i container. Il workflow è `.github/workflows/produzione.yml` e parte a ogni
+Il rilascio segue lo stesso schema: un runner self-hosted su **server2** (il
+VPS Contabo che fa solo da macchina di build, per presenze e per TrovaCampo)
+costruisce le due immagini, le spinge nel registro del server con un tunnel
+SSH, poi ricrea i container. Il workflow è `.github/workflows/produzione.yml` e parte a ogni
 push sul branch `produzione`, oppure a mano dalla scheda Actions.
 
 ```
@@ -48,9 +49,9 @@ workflow a ogni rilascio.
 ### 3. Il runner
 
 Un runner self-hosted su un account personale vale per **un solo**
-repository, quindi quello di presenze non vede i job di TrovaCampo. Se ne
-registra un secondo, anche sulla stessa macchina di casa, in una cartella
-sua:
+repository, quindi quello di presenze non vede i job di TrovaCampo. Su server2
+ce ne sono due, ognuno in una cartella sua: `presenze-build` e questo. Si
+registra così:
 
 **Settings → Actions → Runners → New self-hosted runner** di
 `cardinal76/trovacampo`, seguendo le righe proposte, con l'etichetta:
@@ -64,6 +65,11 @@ e poi come servizio, perché sopravviva a un riavvio:
 ```bash
 sudo ./svc.sh install && sudo ./svc.sh start
 ```
+
+Due runner sulla stessa macchina aprono il tunnel verso il registro nello
+stesso momento se due rilasci si accavallano: per questo TrovaCampo usa la
+porta locale **5001** e presenze la 5000 (vedi `REGISTRO` nel workflow). Sul
+server il registro è uno solo, sempre su 127.0.0.1:5000.
 
 ### 4. I segreti
 
