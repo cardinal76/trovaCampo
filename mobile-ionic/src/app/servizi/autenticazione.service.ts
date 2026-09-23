@@ -1,6 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import Keycloak from 'keycloak-js';
 import { environment } from '../../environments/environment';
+import { ricordaAmministratore } from './amministratore-ricordato';
 
 /** Ruolo di realm, nel Keycloak di presenze, che apre l'importazione. */
 export const RUOLO_AMMINISTRATORE = 'trovacampo-admin';
@@ -46,6 +47,9 @@ export class AutenticazioneService {
   }
 
   async esci(): Promise<void> {
+    // Prima del logout, che porta via dalla pagina: il pulsante in home deve
+    // sparire con l'uscita.
+    ricordaAmministratore(false);
     await this.keycloak?.logout({ redirectUri: `${window.location.origin}/` });
   }
 
@@ -69,6 +73,8 @@ export class AutenticazioneService {
   private aggiornaUtente(keycloak: Keycloak): void {
     const profilo = keycloak.tokenParsed as { preferred_username?: string; name?: string } | undefined;
     this.nome.set(profilo?.name ?? profilo?.preferred_username ?? null);
-    this.amministratore.set(keycloak.hasRealmRole(RUOLO_AMMINISTRATORE));
+    const amministratore = keycloak.hasRealmRole(RUOLO_AMMINISTRATORE);
+    this.amministratore.set(amministratore);
+    ricordaAmministratore(amministratore);
   }
 }
