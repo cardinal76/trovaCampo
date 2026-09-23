@@ -94,7 +94,7 @@ export class SchedaPage implements OnDestroy {
   readonly stato = signal<Stato>('caricamento');
   /** Le squadre dall'anagrafica di presenze: si caricano a parte, e possono mancare. */
   readonly squadre = signal<Squadra[]>([]);
-  readonly statoSquadre = signal<Stato | 'assenti'>('assenti');
+  readonly statoSquadre = signal<Stato>('caricamento');
   readonly dettaglioSquadra = dettaglioSquadra;
   /** Il pulsante "Modifica": solo se su questo browser è entrato un amministratore. */
   readonly amministratore = signal(amministratoreRicordato());
@@ -235,15 +235,11 @@ export class SchedaPage implements OnDestroy {
   }
 
   /**
-   * Solo per le società che vengono dall'anagrafica di presenze. Se presenze
-   * non risponde la scheda resta com'è, con un avviso al posto delle squadre.
+   * Per ogni società, anche quelle non ancora legate all'anagrafica di
+   * presenze: il backend le cerca per nome. Se presenze non risponde la
+   * scheda resta com'è, con un avviso al posto dei campionati.
    */
   private caricaSquadre(societa: Societa): void {
-    if (!societa.anagraficaSocietaId) {
-      this.squadre.set([]);
-      this.statoSquadre.set('assenti');
-      return;
-    }
     this.statoSquadre.set('caricamento');
     this.service.squadre(societa.id).subscribe({
       next: (squadre) => {

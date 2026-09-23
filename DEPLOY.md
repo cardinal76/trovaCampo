@@ -142,10 +142,13 @@ condivisa (`ANAGRAFICA_URL=http://presenze-backend:8080` in
   chiave, niente cancellazioni, coordinate di presenze se ci sono, altrimenti
   la geocodifica di TrovaCampo. Da `/admin/importazione`, «Controlla
   l'anagrafica di presenze» fa lo stesso subito, con prima il controllo.
-- **Le squadre** non si copiano: la scheda di una società venuta
-  dall'anagrafica le chiede a presenze quando si apre
-  (`GET /api/societa/{id}/squadre`). Se presenze non risponde, la scheda si
-  vede lo stesso, con un avviso al posto delle squadre.
+- **I campionati** di una società non si copiano: la scheda li chiede a
+  presenze quando si apre (`GET /api/societa/{id}/squadre`), una riga per
+  squadra. Una società non ancora legata all'anagrafica (arrivata da un file
+  o inserita a mano) si cerca per nome: se presenze ne ha una con lo stesso
+  nome, o una sola che risponde a quel nome, il legame si salva e resta. Se
+  presenze non risponde, la scheda si vede lo stesso, con un avviso al posto
+  dei campionati.
 
 Perché ci sia qualcosa da leggere, in presenze va accesa la lettura
 automatica dei comunicati (da `/campionato`, vedi il suo DEPLOY.md).

@@ -121,39 +121,39 @@
         </ion-item>
       }
 
-      @if (statoSquadre() !== 'assenti') {
-        <ion-list-header>
-          <ion-label>Squadre e campionati</ion-label>
-        </ion-list-header>
-        @switch (statoSquadre()) {
-          @case ('caricamento') {
-            <ion-item lines="none">
-              <ion-spinner name="crescent"></ion-spinner>
-            </ion-item>
-          }
-          @case ('errore') {
-            <ion-item lines="none">
+      <ion-list-header>
+        <ion-label>Campionati</ion-label>
+      </ion-list-header>
+      @switch (statoSquadre()) {
+        @case ('caricamento') {
+          <ion-item lines="none">
+            <ion-spinner name="crescent"></ion-spinner>
+          </ion-item>
+        }
+        @case ('errore') {
+          <ion-item lines="none">
+            <ion-label class="ion-text-wrap">
+              <p>I campionati non sono disponibili in questo momento: riprova tra poco.</p>
+            </ion-label>
+          </ion-item>
+        }
+        @default {
+          @for (squadra of squadre(); track $index) {
+            <ion-item>
               <ion-label class="ion-text-wrap">
-                <p>Le squadre non sono disponibili in questo momento: riprova tra poco.</p>
+                <h3>{{ squadra.campionato }}</h3>
+                <p>{{ dettaglioSquadra(squadra) }}</p>
+                @if (squadra.campo && squadra.campo !== societa()!.nomeImpianto) {
+                  <p>Gioca in casa a {{ squadra.campo }}</p>
+                }
               </ion-label>
+              <ion-note slot="end">{{ squadra.stagione }}</ion-note>
             </ion-item>
-          }
-          @default {
-            @for (squadra of squadre(); track $index) {
-              <ion-item>
-                <ion-label class="ion-text-wrap">
-                  <h3>{{ squadra.campionato }}</h3>
-                  <p>{{ dettaglioSquadra(squadra) }}</p>
-                  @if (squadra.campo && squadra.campo !== societa()!.nomeImpianto) {
-                    <p>Gioca in casa a {{ squadra.campo }}</p>
-                  }
-                </ion-label>
-                <ion-note slot="end">{{ squadra.stagione }}</ion-note>
-              </ion-item>
-            } @empty {
+          } @empty {
+            @if (campionati().length === 0) {
               <ion-item lines="none">
                 <ion-label class="ion-text-wrap">
-                  <p>Nessuna squadra nei comunicati letti finora.</p>
+                  <p>Nessun campionato nei comunicati letti finora.</p>
                 </ion-label>
               </ion-item>
             }
@@ -189,16 +189,6 @@
         }
       }
 
-      @if (campionati().length === 0 && statoSquadre() === 'assenti') {
-        <ion-list-header>
-          <ion-label>Campionati</ion-label>
-        </ion-list-header>
-        <ion-item lines="none">
-          <ion-label class="ion-text-wrap">
-            <p>Nessun campionato registrato.</p>
-          </ion-label>
-        </ion-item>
-      }
     </ion-list>
   }
 </ion-content>
