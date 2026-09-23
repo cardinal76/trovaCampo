@@ -120,6 +120,17 @@ export class SchedaPage implements OnDestroy {
   });
 
   /** Un campo inserito a mano con la sola Funzione 1 non ha anagrafica. */
+  /**
+   * Presidente, sede e contatti non li scrivono i comunicati: mancano anche
+   * alle società che vengono dall'anagrafica di presenze, che a mano non sono
+   * state inserite. Il motivo cambia, e la frase con lui.
+   */
+  readonly testoSenzaAnagrafica = computed(() =>
+    this.societa()?.anagraficaSocietaId || this.squadre().length > 0
+      ? 'Presidente, sede e contatti non sono ancora stati inseriti.'
+      : 'Anagrafica non ancora disponibile per questo campo (inserito manualmente).',
+  );
+
   readonly haAnagrafica = computed(() => {
     const societa = this.societa();
     return Boolean(
