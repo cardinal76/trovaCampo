@@ -5,7 +5,7 @@ import { SocietaGeolocalizzata, nomeCompleto, testoSicuro } from '../modelli/soc
 export const ZOOM_ICONE = 14;
 
 /** Da questo zoom in su accanto all'icona compare il nome della società. */
-export const ZOOM_NOMI = 17;
+export const ZOOM_NOMI = 16;
 
 /** Campo da calcio visto dall'alto, disegnato in SVG per non dipendere da immagini. */
 const SVG_CAMPO = `
