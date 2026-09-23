@@ -44,7 +44,8 @@ class LettoreExcel {
         } catch (IOException | RuntimeException eccezione) {
             // POI lancia eccezioni diverse per un CSV, un PDF o un xlsx
             // troncato: per chi carica il file sono tutte la stessa cosa.
-            throw new FileNonValidoException("Il file non è un Excel leggibile (.xlsx o .xls)");
+            throw new FileNonValidoException(
+                    "Il file non è un Excel leggibile (.xlsx o .xls) né il PDF di un comunicato");
         }
 
         try (cartella) {

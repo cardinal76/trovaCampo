@@ -4,8 +4,13 @@ import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.dominio.Testo;
 import it.trovacampo.api.repository.SocietaRepository;
 import it.trovacampo.api.service.SocietaService;
+import java.io.BufferedInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -16,7 +21,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
- * Importa società, impianti e indirizzi da un file Excel.
+ * Importa società, impianti e indirizzi da un file Excel o dal PDF di un
+ * Comunicato Ufficiale LND (programma gare): il formato si riconosce dal
+ * contenuto, non dal nome del file.
  *
  * <p>Una riga corrisponde a una società già presente quando coincidono nome
  * della società e nome dell'impianto (senza badare a maiuscole, accenti e
@@ -30,16 +37,18 @@ import org.springframework.stereotype.Service;
 public class ImportazioneService {
 
     private static final Logger log = LoggerFactory.getLogger(ImportazioneService.class);
+    private static final byte[] FIRMA_PDF = "%PDF".getBytes(StandardCharsets.US_ASCII);
 
     private final SocietaRepository repository;
-    private final LettoreExcel lettore = new LettoreExcel();
+    private final LettoreExcel lettoreExcel = new LettoreExcel();
+    private final LettoreComunicato lettoreComunicato = new LettoreComunicato();
 
     public ImportazioneService(SocietaRepository repository) {
         this.repository = repository;
     }
 
     public EsitoImportazione importa(InputStream file, boolean prova) {
-        LettoreExcel.Lettura lettura = lettore.leggi(file);
+        LettoreExcel.Lettura lettura = leggi(file);
         List<Scarto> scarti = new ArrayList<>(lettura.scarti());
 
         Map<String, Societa> esistenti = new HashMap<>();
@@ -93,6 +102,21 @@ public class ImportazioneService {
                 scarti,
                 daGeocodificare,
                 lettura.colonneIgnorate());
+    }
+
+    /** Un PDF comincia sempre con "%PDF"; tutto il resto lo prova Excel. */
+    private LettoreExcel.Lettura leggi(InputStream file) {
+        BufferedInputStream flusso = new BufferedInputStream(file);
+        try {
+            flusso.mark(FIRMA_PDF.length);
+            byte[] inizio = flusso.readNBytes(FIRMA_PDF.length);
+            flusso.reset();
+            return Arrays.equals(inizio, FIRMA_PDF)
+                    ? lettoreComunicato.leggi(flusso)
+                    : lettoreExcel.leggi(flusso);
+        } catch (IOException eccezione) {
+            throw new UncheckedIOException(eccezione);
+        }
     }
 
     /**

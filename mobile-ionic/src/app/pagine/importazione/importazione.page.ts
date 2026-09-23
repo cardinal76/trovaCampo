@@ -30,9 +30,10 @@ import {
 import { ImportazioneService } from '../../servizi/importazione.service';
 
 /**
- * Importazione da Excel per chi amministra. Non è collegata dal resto
- * dell'app: ci si arriva da /admin/importazione, e aprirla porta al login del
- * Keycloak di presenze. Serve il ruolo trovacampo-admin.
+ * Importazione di campi, da Excel o dal PDF di un comunicato, per chi
+ * amministra. Ci si arriva dal pulsante in home (solo per l'amministratore) o
+ * da /admin/importazione, e aprirla porta al login del Keycloak di presenze.
+ * Serve il ruolo trovacampo-admin.
  *
  * Il salvataggio vero è possibile solo dopo una prova andata a buon fine sullo
  * stesso file, così prima di scrivere nell'archivio si vede sempre cosa

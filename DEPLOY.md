@@ -106,16 +106,37 @@ Il commit deve essere uno già passato dal workflow: le immagini nel registro
 ci sono solo per quelli, e la pulizia settimanale di presenze tiene le ultime
 dieci versioni di ciascuna.
 
-## Importare da Excel
+## Importare i campi
 
-Società, impianti e indirizzi si caricano da un file Excel (`.xlsx` o `.xls`)
-dalla pagina **https://trovacampo.footballer.it/admin/importazione**. Il
-modello da compilare è
-[`documenti/importazione/modello-importazione.xlsx`](documenti/importazione/modello-importazione.xlsx).
+Società, impianti e indirizzi si caricano dalla pagina
+**https://trovacampo.footballer.it/admin/importazione** (in home c'è il
+pulsante "Importa campi", visibile a chi è già entrato come amministratore da
+quel browser). Si possono caricare due tipi di file, e il server riconosce da
+solo quale dei due è arrivato.
 
 Il resto dell'app resta pubblico: solo questa pagina chiede il login.
 
-### Il file
+### Il PDF di un Comunicato Ufficiale
+
+Il PDF del programma gare, così come lo pubblica il comitato LND: per ogni
+partita si prende il campo della **squadra di casa** (quella a sinistra), con
+il nome dell'impianto, l'indirizzo (la riga sotto) e il comune.
+
+- il fondo fra parentesi ("(SINTEX)", "(ERBA)") e la frazione ("ROMA
+  (CAMILLUCCIA)" diventa "ROMA") restano fuori;
+- la stessa squadra in più campionati sullo stesso campo conta una volta sola;
+- le partite con il campo "DA DEFINIRE" finiscono fra gli scarti.
+
+Il PDF deve avere il testo selezionabile, com'è quello del comitato: una
+scansione non si legge. Le colonne si leggono per posizione, come nel
+tabulato di oggi: se un comitato usasse un'impaginazione diversa, il controllo
+lo dice con un "riga non nel formato del programma gare" invece di importare
+dati sbagliati.
+
+### Il file Excel
+
+Il modello da compilare è
+[`documenti/importazione/modello-importazione.xlsx`](documenti/importazione/modello-importazione.xlsx).
 
 Conta solo il **primo foglio**. L'intestazione può stare anche sotto un titolo
 (entro le prime dieci righe) e le colonne si riconoscono dal nome, senza badare
