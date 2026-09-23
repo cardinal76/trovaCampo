@@ -38,6 +38,7 @@ import {
   testoSicuro,
 } from '../../modelli/societa';
 import { SocietaService } from '../../servizi/societa.service';
+import { ZOOM_ICONE, aggiornaNomiCampi, iconaCampo } from '../../mappa/icona-campo';
 
 type Stato = 'caricamento' | 'completata' | 'errore';
 
@@ -88,6 +89,7 @@ export class RisultatiPage implements OnDestroy {
 
   private mappa?: L.Map;
   private pin?: L.LayerGroup;
+  private segnaposto: { marker: L.Marker; campo: SocietaGeolocalizzata }[] = [];
 
   readonly nomeCompleto = nomeCompleto;
   readonly indirizzoCompleto = indirizzoCompleto;
@@ -174,15 +176,17 @@ export class RisultatiPage implements OnDestroy {
           attribution: '© OpenStreetMap',
         }).addTo(this.mappa);
         this.pin = L.layerGroup().addTo(this.mappa);
+        this.mappa.on('zoomend', () => this.aggiornaIcone());
       }
 
       this.pin?.clearLayers();
 
-      for (const campo of campi) {
-        L.marker([campo.lat, campo.lng], { icon: this.icona(), title: nomeCompleto(campo) })
+      this.segnaposto = campi.map((campo) => ({
+        campo,
+        marker: L.marker([campo.lat, campo.lng], { icon: this.icona(), title: nomeCompleto(campo) })
           .addTo(this.pin!)
-          .bindPopup(this.contenutoPopup(campo));
-      }
+          .bindPopup(this.contenutoPopup(campo)),
+      }));
 
       if (campi.length === 1) {
         this.mappa.setView([campi[0].lat, campi[0].lng], ZOOM_SINGOLO);
@@ -192,12 +196,30 @@ export class RisultatiPage implements OnDestroy {
         });
       }
 
+      this.aggiornaIcone();
+
       // Il contenitore prende le sue dimensioni definitive solo a
       // transizione di pagina conclusa.
       setTimeout(() => this.mappa?.invalidateSize(), 200);
     });
 
     this.collegaPopupAllaScheda();
+  }
+
+  /**
+   * Come nella pagina Mappa: pin da lontano, icona di un campo da calcio da
+   * ZOOM_ICONE in su e, più vicino ancora, il nome della società.
+   */
+  private aggiornaIcone(): void {
+    const mappa = this.mappa;
+    if (!mappa) {
+      return;
+    }
+    aggiornaNomiCampi(mappa);
+    const vicino = mappa.getZoom() >= ZOOM_ICONE;
+    for (const { marker, campo } of this.segnaposto) {
+      marker.setIcon(vicino ? iconaCampo(campo) : this.icona());
+    }
   }
 
   /** Pin disegnato in CSS: evita le immagini di Leaflet, che i bundler non risolvono. */
