@@ -8,10 +8,12 @@ Versione dell'app TrovaCampo con **Ionic 8 + Angular 20 standalone + Capacitor**
 | -------------- | -------------- | ------------------------------------------------------------ |
 | `/`            | Cerca Campo    | Funzione 1: titolo, casella di ricerca e pulsante "Vai"       |
 | `/risultati?q=`| Risultati      | Funzione 1: mappa dei campi trovati ed elenco dei risultati   |
-| `/societa/:id` | Scheda società | Funzioni 2 e 3: anagrafica e campionati                       |
+| `/societa/:id` | Scheda società | Funzioni 2 e 3: anagrafica, campionati e mappa del campo      |
 | `/aggiungi`    | Aggiungi campo | Segnalazione di un campo mancante                             |
 
 La mappa usa **Leaflet** con le tile di OpenStreetMap: nessuna chiave API e nessun SDK proprietario. I pin sono `divIcon` disegnati in CSS, così non servono le immagini di Leaflet, che i bundler non risolvono. Le tile di OSM hanno una [usage policy](https://operations.osmfoundation.org/policies/tiles/) che vieta l'uso massivo: per un'app pubblicata serve un provider di tile proprio.
+
+La scheda società ha la sua mappa nella sezione "Campo": inquadra il solo campo di quella società, segnato con l'icona del campo da calcio delle altre mappe e senza nessun altro campo intorno. Il nome accanto all'icona resta spento, perché sarebbe la ripetizione del titolo che sta poche righe più su, e la rotella del mouse non zooma, per non rubare lo scorrimento alla pagina. Se del campo non si conosce la posizione, al posto della mappa compare un avviso invece di una mappa vuota.
 
 Le società senza coordinate (per esempio i campi appena segnalati, se la geocodifica non ha riconosciuto l'indirizzo) non compaiono sulla mappa ma restano nell'elenco, marcate con "senza posizione".
 
