@@ -14,6 +14,14 @@ export const routes: Routes = [
     loadComponent: () => import('./pagine/scheda/scheda.page').then((m) => m.SchedaPage),
   },
   {
+    path: 'campi',
+    loadComponent: () => import('./pagine/elenco/elenco.page').then((m) => m.ElencoPage),
+  },
+  {
+    path: 'mappa',
+    loadComponent: () => import('./pagine/mappa/mappa.page').then((m) => m.MappaPage),
+  },
+  {
     path: 'aggiungi',
     loadComponent: () => import('./pagine/aggiungi/aggiungi.page').then((m) => m.AggiungiPage),
   },

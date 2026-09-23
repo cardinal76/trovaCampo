@@ -103,4 +103,12 @@ class SocietaServiceTest {
 
         assertThat(service().perId("1")).containsSame(societa);
     }
+
+    @Test
+    void elencaTuttiICampiDalRepository() {
+        List<Societa> campi = List.of(new Societa().setNomeSocieta("Certosa Calcio"));
+        when(repository.tuttiICampi()).thenReturn(campi);
+
+        assertThat(service().tuttiICampi()).isSameAs(campi);
+    }
 }

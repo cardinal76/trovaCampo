@@ -20,6 +20,11 @@ export class SocietaService {
     return this.http.get<Societa[]>(this.base, { params: new HttpParams().set('nome', termine) });
   }
 
+  /** Tutti i campi, in ordine di nome, per l'elenco e la mappa completi. */
+  tutti(): Observable<Societa[]> {
+    return this.http.get<Societa[]>(`${environment.apiUrl}/api/campi`);
+  }
+
   /** Funzioni 2 e 3: anagrafica e campionati della società. */
   perId(id: string): Observable<Societa> {
     return this.http.get<Societa>(`${this.base}/${encodeURIComponent(id)}`);

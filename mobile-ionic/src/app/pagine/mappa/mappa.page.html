@@ -1,0 +1,42 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Mappa campi</ion-title>
+    <ion-buttons slot="end">
+      <ion-button routerLink="/campi" aria-label="Vedi l'elenco di tutti i campi">
+        <ion-icon slot="start" name="list"></ion-icon>
+        Elenco
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [scrollY]="false">
+  @switch (stato()) {
+    @case ('caricamento') {
+      <div class="centrato">
+        <ion-spinner></ion-spinner>
+      </div>
+    }
+    @case ('errore') {
+      <div class="centrato">
+        <p>Impossibile caricare i campi. Controlla la connessione e riprova.</p>
+        <ion-button fill="outline" (click)="carica()">Riprova</ion-button>
+      </div>
+    }
+    @case ('pronto') {
+      <div class="pagina">
+        <div class="riepilogo">
+          {{ geolocalizzati().length === 1 ? '1 campo' : geolocalizzati().length + ' campi' }}
+          sulla mappa
+          @if (senzaPosizione() > 0) {
+            · <a routerLink="/campi">{{ senzaPosizione() }} ancora senza posizione</a>
+          }
+        </div>
+        <div #contenitoreMappa class="mappa"></div>
+      </div>
+    }
+  }
+</ion-content>

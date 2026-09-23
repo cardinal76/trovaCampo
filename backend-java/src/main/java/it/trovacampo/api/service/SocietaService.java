@@ -31,6 +31,11 @@ public class SocietaService {
         return repository.cercaPerTesto(Testo.perRegex(termine));
     }
 
+    /** Tutti i campi, in ordine di nome della società, senza anagrafica. */
+    public List<Societa> tuttiICampi() {
+        return repository.tuttiICampi();
+    }
+
     /** Funzioni 2 e 3: anagrafica e campionati della società. */
     public Optional<Societa> perId(String id) {
         return repository.findById(id);

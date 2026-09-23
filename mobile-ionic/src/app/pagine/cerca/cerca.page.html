@@ -17,6 +17,11 @@
 
     <ion-button class="vai" [disabled]="!pronto()" (click)="cerca()">Vai</ion-button>
 
+    <div class="sfoglia">
+      <ion-button fill="outline" routerLink="/campi">Elenco dei campi</ion-button>
+      <ion-button fill="outline" routerLink="/mappa">Mappa dei campi</ion-button>
+    </div>
+
     <ion-button class="aggiungi" fill="clear" size="small" routerLink="/aggiungi">
       Non trovi un campo? Aggiungilo
     </ion-button>

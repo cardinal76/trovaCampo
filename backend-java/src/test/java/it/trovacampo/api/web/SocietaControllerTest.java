@@ -62,6 +62,16 @@ class SocietaControllerTest {
     }
 
     @Test
+    void restituisceTuttiICampiSenzaLogin() throws Exception {
+        when(service.tuttiICampi()).thenReturn(List.of(certosa()));
+
+        mockMvc.perform(get("/api/campi"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].nomeSocieta").value("Certosa Calcio"))
+                .andExpect(jsonPath("$[0].testoRicerca").doesNotExist());
+    }
+
+    @Test
     void nonEsponeIlTestoDiRicercaInterno() throws Exception {
         when(service.cerca("certosa")).thenReturn(List.of(certosa()));
 

@@ -36,6 +36,12 @@ describe('SocietaService', () => {
     richiesta.flush([]);
   });
 
+  it('richiede tutti i campi', () => {
+    service.tutti().subscribe();
+
+    http.expectOne(`${environment.apiUrl}/api/campi`).flush([]);
+  });
+
   it('richiede la scheda della società per id', () => {
     service.perId('1').subscribe();
 
