@@ -165,11 +165,19 @@ export class SchedaPage implements OnDestroy {
 
       if (contenitore && campo) {
         this.disegnaMappa(contenitore.nativeElement, campo);
+      } else {
+        // Il contenitore è sparito (il campo ha perso la posizione): la mappa
+        // legata a lui va buttata, e se torna se ne crea una nuova.
+        this.rimuoviMappa();
       }
     });
   }
 
   ngOnDestroy(): void {
+    this.rimuoviMappa();
+  }
+
+  private rimuoviMappa(): void {
     this.mappa?.remove();
     this.mappa = null;
     this.segnaposto = null;
@@ -205,6 +213,10 @@ export class SchedaPage implements OnDestroy {
     // Leaflet lavora sul DOM: fuori dalla zona Angular, così pan e zoom non
     // fanno girare il rilevamento delle modifiche a ogni evento.
     this.zona.runOutsideAngular(() => {
+      // Un contenitore nuovo (ricreato dal template) vuole una mappa nuova.
+      if (this.mappa && this.mappa.getContainer() !== contenitore) {
+        this.rimuoviMappa();
+      }
       if (!this.mappa) {
         this.mappa = L.map(contenitore, {
           attributionControl: true,
