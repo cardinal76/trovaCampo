@@ -8,4 +8,13 @@
 export const environment = {
   production: false,
   apiUrl: 'http://localhost:3000',
+  /**
+   * Il Keycloak dello stack di sviluppo di presenze: sulla 8081, senza /auth.
+   * Serve solo alla pagina /admin/importazione, il resto dell'app è pubblico.
+   */
+  keycloak: {
+    url: 'http://localhost:8081',
+    realm: 'presenze',
+    clientId: 'trovacampo-frontend',
+  },
 };

@@ -108,9 +108,12 @@ dieci versioni di ciascuna.
 
 ## Importare da Excel
 
-Società, impianti e indirizzi si caricano da un file Excel (`.xlsx` o `.xls`),
-con una chiamata protetta da token. Il modello da compilare è
+Società, impianti e indirizzi si caricano da un file Excel (`.xlsx` o `.xls`)
+dalla pagina **https://trovacampo.footballer.it/admin/importazione**. Il
+modello da compilare è
 [`documenti/importazione/modello-importazione.xlsx`](documenti/importazione/modello-importazione.xlsx).
+
+Il resto dell'app resta pubblico: solo questa pagina chiede il login.
 
 ### Il file
 
@@ -143,39 +146,44 @@ del campo" scritto diversamente si scopre lì.
   comune migliora molto la precisione;
 - le righe incomplete vengono scartate con il numero di riga e il motivo.
 
-### Il token
+### Chi può importare
 
-Una volta sola, sul server:
+Il login è quello di **presenze**: stesso Keycloak, stesso utente e stessa
+password. Per importare serve in più il ruolo di realm **`trovacampo-admin`**,
+che non dà nessun permesso dentro presenze. Client e ruolo li crea nel realm
+il deploy di presenze (`riconcilia-realm.py`); il ruolo però va **assegnato**
+a mano, una volta per persona.
+
+Dal server, senza aprire la console:
 
 ```bash
-cd ~/trovacampo
-echo "IMPORTAZIONE_TOKEN=$(openssl rand -hex 32)" >> .env.prod
-docker compose -p trovacampo -f docker-compose.prod.yml --env-file .env.prod up -d trovacampo-backend
-grep IMPORTAZIONE_TOKEN .env.prod
+cd ~/presenze && set -a && . ./.env.prod && set +a
+docker exec presenze-keycloak /opt/keycloak/bin/kcadm.sh config credentials \
+  --server http://localhost:8080/auth --realm master \
+  --user "$KEYCLOAK_ADMIN" --password "$KEYCLOAK_ADMIN_PASSWORD"
+docker exec presenze-keycloak /opt/keycloak/bin/kcadm.sh add-roles \
+  -r presenze --uusername NOME_UTENTE --rolename trovacampo-admin
 ```
 
-Senza token l'endpoint risponde 404, come se non esistesse.
+Oppure dalla console di Keycloak (tunnel sulla 18081, vedi il `DEPLOY.md` di
+presenze): realm **presenze** → **Users** → l'utente → **Role mapping** →
+**Assign role** → `trovacampo-admin`.
+
+Chi è già dentro deve **uscire e rientrare** dalla pagina: il ruolo compare
+nel token solo al login successivo.
 
 ### Caricare
 
-Dal browser, su **https://trovacampo.footballer.it/admin/importazione**. La
-pagina non è collegata dal resto dell'app, quindi va aperta scrivendo
-l'indirizzo:
-
-1. incolla il token (`IMPORTAZIONE_TOKEN`), che resta ricordato finché non chiudi
-   il browser;
+1. apri https://trovacampo.footballer.it/admin/importazione ed entra con
+   l'utente di presenze;
 2. scegli il file;
 3. **Controlla il file**: il server lo legge senza salvare niente e mostra quante
    righe inserirebbe, aggiornerebbe o scarterebbe, e perché;
 4. se l'esito torna, **Importa**. Il pulsante compare solo dopo un controllo
    riuscito sullo stesso file.
 
-Lo stesso si può fare senza browser, per esempio da uno script:
-
-```bash
-curl -sS -H "X-Token-Importazione: $TOKEN" -F file=@campi.xlsx \
-     "https://trovacampo.footballer.it/api/admin/importazione?prova=true"
-```
+Chi importa finisce nel log del backend (`docker logs trovacampo-backend`),
+con il nome del file e quante righe ha scritto.
 
 ## Memoria
 

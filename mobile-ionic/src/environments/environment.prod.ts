@@ -8,4 +8,10 @@
 export const environment = {
   production: true,
   apiUrl: 'https://trovacampo.footballer.it',
+  /** Il Keycloak di presenze, che sta sullo stesso server sotto /auth. */
+  keycloak: {
+    url: 'https://presenze.footballer.it/auth',
+    realm: 'presenze',
+    clientId: 'trovacampo-frontend',
+  },
 };

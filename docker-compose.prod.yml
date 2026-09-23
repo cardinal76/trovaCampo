@@ -52,10 +52,12 @@ services:
       # Mongo, che vive nel database admin e non in trovacampo.
       MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@trovacampo-mongo:27017/trovacampo?authSource=admin
       PORT: "3000"
-      # Token dell'importazione Excel (POST /api/admin/importazione). Vuoto
-      # o assente = endpoint spento: non c'e' niente da proteggere finche'
-      # nessuno lo accende di proposito.
-      TROVACAMPO_IMPORTAZIONE_TOKEN: ${IMPORTAZIONE_TOKEN:-}
+      # Il login dell'amministrazione e' il Keycloak di presenze. Issuer
+      # pubblico (quello scritto nei token) e chiavi lette per rete interna:
+      # questo container e' sulla rete presenze_default, quindi raggiunge
+      # Keycloak per nome senza passare da Caddy.
+      KEYCLOAK_ISSUER: https://presenze.footballer.it/auth/realms/presenze
+      KEYCLOAK_JWKS_URI: http://presenze-keycloak:8080/auth/realms/presenze/protocol/openid-connect/certs
       # Senza un limite la JVM si prende un quarto della RAM dell'host, non
       # del container.
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75

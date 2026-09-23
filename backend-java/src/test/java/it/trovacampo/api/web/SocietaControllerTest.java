@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import it.trovacampo.api.config.ConfigurazioneSicurezza;
 import it.trovacampo.api.dominio.Campionato;
 import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.dominio.TipoCampionato;
@@ -16,11 +17,14 @@ import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+/** Con la sicurezza vera: ricerca e segnalazione devono restare pubbliche. */
 @WebMvcTest(SocietaController.class)
+@Import(ConfigurazioneSicurezza.class)
 class SocietaControllerTest {
 
     @Autowired private MockMvc mockMvc;
