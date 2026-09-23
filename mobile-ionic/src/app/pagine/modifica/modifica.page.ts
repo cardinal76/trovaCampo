@@ -23,11 +23,13 @@ import {
   IonTitle,
   IonToggle,
   IonToolbar,
+  ModalController,
   NavController,
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { add, logOut, trash, warning } from 'ionicons/icons';
+import { add, location, logOut, trash, warning } from 'ionicons/icons';
+import { SelettoreMappaComponent } from '../../componenti/selettore-mappa/selettore-mappa.component';
 import { ModificaSocieta, Societa, TipoCampionato } from '../../modelli/societa';
 import { AmministrazioneService } from '../../servizi/amministrazione.service';
 import {
@@ -148,6 +150,7 @@ export class ModificaPage {
   private readonly toast = inject(ToastController);
   private readonly avvisi = inject(AlertController);
   private readonly navigazione = inject(NavController);
+  private readonly modaleControllo = inject(ModalController);
   private readonly societa = inject(SocietaService);
   private readonly amministrazione = inject(AmministrazioneService);
   readonly autenticazione = inject(AutenticazioneService);
@@ -163,7 +166,7 @@ export class ModificaPage {
   readonly errore = signal<string | null>(null);
 
   constructor() {
-    addIcons({ add, logOut, trash, warning });
+    addIcons({ add, location, logOut, trash, warning });
     this.entra();
   }
 
@@ -185,6 +188,26 @@ export class ModificaPage {
 
   togliCampionato(modulo: Modulo, indice: number): void {
     modulo.campionati.splice(indice, 1);
+  }
+
+  /** Apre la mappa a schermo intero per scegliere le coordinate a tocco, invece di scriverle a mano. */
+  async posizionaSullaMappa(modulo: Modulo): Promise<void> {
+    const lat = coordinata(modulo.lat);
+    const lng = coordinata(modulo.lng);
+    const modale = await this.modaleControllo.create({
+      component: SelettoreMappaComponent,
+      componentProps: {
+        lat: typeof lat === 'number' ? lat : undefined,
+        lng: typeof lng === 'number' ? lng : undefined,
+      },
+    });
+    await modale.present();
+
+    const { data, role } = await modale.onDidDismiss<{ lat: number; lng: number }>();
+    if (role === 'confirm' && data) {
+      modulo.lat = data.lat.toFixed(6);
+      modulo.lng = data.lng.toFixed(6);
+    }
   }
 
   salva(): void {

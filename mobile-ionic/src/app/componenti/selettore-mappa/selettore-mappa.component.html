@@ -1,0 +1,31 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button (click)="annulla()" aria-label="Annulla">
+        <ion-icon slot="icon-only" name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Posiziona il campo</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [scrollY]="false">
+  <div class="pagina">
+    <div #contenitoreMappa class="mappa"></div>
+  </div>
+</ion-content>
+
+<ion-footer>
+  <ion-toolbar>
+    @if (posizione(); as p) {
+      <ion-note slot="start" class="coordinate">{{ p.lat | number: '1.5-5' }}, {{ p.lng | number: '1.5-5' }}</ion-note>
+    } @else {
+      <ion-note slot="start" class="coordinate">Tocca la mappa per posizionare il campo</ion-note>
+    }
+    <ion-buttons slot="end">
+      <ion-button fill="solid" color="primary" [disabled]="!posizione()" (click)="conferma()">
+        Conferma posizione
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-footer>
