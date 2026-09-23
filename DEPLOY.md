@@ -206,7 +206,7 @@ nel token solo al login successivo.
 Chi importa finisce nel log del backend (`docker logs trovacampo-backend`),
 con il nome del file e quante righe ha scritto.
 
-## Modificare una scheda
+## Creare, modificare, eliminare una scheda
 
 Chi ha il ruolo `trovacampo-admin` vede il pulsante **Modifica** in cima alla
 scheda di ogni società (dopo essere entrato almeno una volta da quel browser,
@@ -216,6 +216,12 @@ log chi ha modificato cosa.
 
 Le coordinate: se cambi l'indirizzo lasciandole com'erano, o le svuoti, le
 ricalcola la geocodifica automatica; se le correggi a mano, valgono quelle.
+
+In home, all'amministratore, c'è anche **Nuova società**: lo stesso modulo,
+vuoto. In fondo al modulo di modifica c'è **Elimina società**, con una
+conferma: la società sparisce da ricerca, elenco e mappa e non si recupera
+(se non da un backup di Mongo). Creazioni ed eliminazioni finiscono nel log
+del backend con il nome di chi le ha fatte.
 
 ## Memoria
 

@@ -74,66 +74,88 @@ public class SocietaService {
     /**
      * Sostituisce la scheda con quella mandata da chi amministra. Vuoto se
      * la società non esiste.
+     */
+    public Optional<Societa> modifica(String id, ModificaSocietaRequest richiesta) {
+        controllaCoordinate(richiesta);
+        return repository.findById(id).map(societa -> applicaModulo(societa, richiesta));
+    }
+
+    /** Una società nuova dal modulo completo di chi amministra. */
+    public Societa crea(ModificaSocietaRequest richiesta) {
+        controllaCoordinate(richiesta);
+        return applicaModulo(new Societa(), richiesta);
+    }
+
+    /** Toglie la società dall'archivio. Falso se non c'era. */
+    public boolean elimina(String id) {
+        if (!repository.existsById(id)) {
+            return false;
+        }
+        repository.deleteById(id);
+        return true;
+    }
+
+    private static void controllaCoordinate(ModificaSocietaRequest richiesta) {
+        if ((richiesta.lat() == null) != (richiesta.lng() == null)) {
+            throw new DatiNonValidiException("latitudine e longitudine vanno date insieme");
+        }
+    }
+
+    /**
+     * Copia il modulo sulla società e la salva.
      *
      * <p>Le coordinate seguono tre regole: se il modulo ne porta di diverse
      * dalle attuali, valgono quelle (correzione a mano del segnaposto); se le
      * svuota, o se cambia l'indirizzo lasciandole com'erano, si tolgono e le
-     * ricalcola la geocodifica automatica; altrimenti restano.
+     * ricalcola la geocodifica automatica; altrimenti restano. Per una
+     * società nuova "le attuali" sono nessuna: le coordinate del modulo, se
+     * ci sono, valgono, altrimenti ci pensa la geocodifica.
      */
-    public Optional<Societa> modifica(String id, ModificaSocietaRequest richiesta) {
-        if ((richiesta.lat() == null) != (richiesta.lng() == null)) {
-            throw new DatiNonValidiException("latitudine e longitudine vanno date insieme");
+    private Societa applicaModulo(Societa societa, ModificaSocietaRequest richiesta) {
+        String indirizzo = richiesta.indirizzoImpianto().strip();
+        String localita = oVuoto(richiesta.localitaImpianto());
+        String provincia = oVuoto(richiesta.provinciaImpianto()).toUpperCase(Locale.ITALIAN);
+        boolean spostata =
+                !indirizzo.equals(societa.getIndirizzoImpianto())
+                        || !localita.equals(Objects.toString(societa.getLocalitaImpianto(), ""))
+                        || !provincia.equals(Objects.toString(societa.getProvinciaImpianto(), ""));
+        boolean coordinateCorrette =
+                richiesta.lat() != null
+                        && (!richiesta.lat().equals(societa.getLat())
+                                || !richiesta.lng().equals(societa.getLng()));
+
+        if (coordinateCorrette) {
+            societa.setLat(richiesta.lat()).setLng(richiesta.lng());
+        } else if (richiesta.lat() == null || spostata) {
+            societa.setLat(null).setLng(null);
+        }
+        if (coordinateCorrette || societa.getLat() == null) {
+            // Un indirizzo nuovo, o un segnaposto messo a mano,
+            // chiudono la partita con i tentativi andati male.
+            societa.setGeocodificaFallitaVersione(null);
         }
 
-        return repository
-                .findById(id)
-                .map(
-                        societa -> {
-                            String indirizzo = richiesta.indirizzoImpianto().strip();
-                            String localita = oVuoto(richiesta.localitaImpianto());
-                            String provincia = oVuoto(richiesta.provinciaImpianto()).toUpperCase(Locale.ITALIAN);
-                            boolean spostata =
-                                    !indirizzo.equals(societa.getIndirizzoImpianto())
-                                            || !localita.equals(Objects.toString(societa.getLocalitaImpianto(), ""))
-                                            || !provincia.equals(Objects.toString(societa.getProvinciaImpianto(), ""));
-                            boolean coordinateCorrette =
-                                    richiesta.lat() != null
-                                            && (!richiesta.lat().equals(societa.getLat())
-                                                    || !richiesta.lng().equals(societa.getLng()));
+        boolean scuolaCalcio = Boolean.TRUE.equals(richiesta.scuolaCalcio());
+        societa.setSiglaSocieta(oVuoto(richiesta.siglaSocieta()))
+                .setNomeSocieta(richiesta.nomeSocieta().strip())
+                .setComitatoRegionale(oVuoto(richiesta.comitatoRegionale()))
+                .setNomeImpianto(richiesta.nomeImpianto().strip())
+                .setIndirizzoImpianto(indirizzo)
+                .setLocalitaImpianto(localita)
+                .setProvinciaImpianto(provincia)
+                .setMatricola(oNull(richiesta.matricola()))
+                .setPresidente(oNull(richiesta.presidente()))
+                .setIndirizzoSede(oNull(richiesta.indirizzoSede()))
+                .setTelefono(oNull(richiesta.telefono()))
+                .setFax(oNull(richiesta.fax()))
+                .setEmail(oNull(richiesta.email()))
+                .setSitoWeb(oNull(richiesta.sitoWeb()))
+                .setScuolaCalcio(richiesta.scuolaCalcio())
+                .setPrezziScuolaCalcio(
+                        scuolaCalcio ? oNull(richiesta.prezziScuolaCalcio()) : null)
+                .setCampionati(campionati(richiesta.campionati()));
 
-                            if (coordinateCorrette) {
-                                societa.setLat(richiesta.lat()).setLng(richiesta.lng());
-                            } else if (richiesta.lat() == null || spostata) {
-                                societa.setLat(null).setLng(null);
-                            }
-                            if (coordinateCorrette || societa.getLat() == null) {
-                                // Un indirizzo nuovo, o un segnaposto messo a mano,
-                                // chiudono la partita con i tentativi andati male.
-                                societa.setGeocodificaFallitaVersione(null);
-                            }
-
-                            boolean scuolaCalcio = Boolean.TRUE.equals(richiesta.scuolaCalcio());
-                            societa.setSiglaSocieta(oVuoto(richiesta.siglaSocieta()))
-                                    .setNomeSocieta(richiesta.nomeSocieta().strip())
-                                    .setComitatoRegionale(oVuoto(richiesta.comitatoRegionale()))
-                                    .setNomeImpianto(richiesta.nomeImpianto().strip())
-                                    .setIndirizzoImpianto(indirizzo)
-                                    .setLocalitaImpianto(localita)
-                                    .setProvinciaImpianto(provincia)
-                                    .setMatricola(oNull(richiesta.matricola()))
-                                    .setPresidente(oNull(richiesta.presidente()))
-                                    .setIndirizzoSede(oNull(richiesta.indirizzoSede()))
-                                    .setTelefono(oNull(richiesta.telefono()))
-                                    .setFax(oNull(richiesta.fax()))
-                                    .setEmail(oNull(richiesta.email()))
-                                    .setSitoWeb(oNull(richiesta.sitoWeb()))
-                                    .setScuolaCalcio(richiesta.scuolaCalcio())
-                                    .setPrezziScuolaCalcio(
-                                            scuolaCalcio ? oNull(richiesta.prezziScuolaCalcio()) : null)
-                                    .setCampionati(campionati(richiesta.campionati()));
-
-                            return repository.save(aggiornaTestoRicerca(societa));
-                        });
+        return repository.save(aggiornaTestoRicerca(societa));
     }
 
     /** Le righe senza descrizione sono righe lasciate vuote nel modulo. */

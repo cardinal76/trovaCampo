@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { IonButton, IonContent, IonIcon, IonInput } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { cloudUpload } from 'ionicons/icons';
+import { add, cloudUpload } from 'ionicons/icons';
 import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
 
 /**
@@ -26,7 +26,7 @@ export class CercaPage {
   readonly amministratore = signal(amministratoreRicordato());
 
   constructor() {
-    addIcons({ cloudUpload });
+    addIcons({ add, cloudUpload });
   }
 
   /**
