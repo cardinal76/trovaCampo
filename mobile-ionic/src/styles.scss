@@ -13,6 +13,42 @@
   transform: rotate(-45deg);
 }
 
+/*
+ * Icona di campo da calcio della pagina Mappa, dallo zoom 13 in su. Il nome
+ * della società resta nascosto finché la mappa non ha la classe
+ * mostra-nomi-campi, cioè dallo zoom 15.
+ */
+.icona-campo {
+  overflow: visible;
+
+  svg {
+    display: block;
+    filter: drop-shadow(0 1px 2px rgb(0 0 0 / 45%));
+  }
+
+  .nome-campo {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 4px);
+    transform: translateY(-50%);
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgb(255 255 255 / 90%);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 30%);
+    color: #1f2d1f;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+}
+
+.mostra-nomi-campi .icona-campo .nome-campo {
+  display: block;
+}
+
 .collegamento-scheda {
   margin-top: 0.4rem;
   padding: 0;

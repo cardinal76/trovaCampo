@@ -34,6 +34,25 @@ import { SocietaService } from '../../servizi/societa.service';
 /** L'Italia intera, finché non ci sono campi da inquadrare. */
 const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
 
+/** Da questo zoom in su i punti diventano l'icona di un campo da calcio. */
+const ZOOM_ICONE = 13;
+
+/** Da questo zoom in su accanto all'icona compare il nome della società. */
+const ZOOM_NOMI = 15;
+
+/** Campo da calcio visto dall'alto, disegnato in SVG per non dipendere da immagini. */
+const SVG_CAMPO = `
+  <svg viewBox="0 0 28 20" width="28" height="20" aria-hidden="true">
+    <rect x="0.5" y="0.5" width="27" height="19" rx="2" fill="#2e8b3d" stroke="#fff" />
+    <g fill="none" stroke="#fff" stroke-width="1">
+      <rect x="2.5" y="2.5" width="23" height="15" />
+      <line x1="14" y1="2.5" x2="14" y2="17.5" />
+      <circle cx="14" cy="10" r="3" />
+      <rect x="2.5" y="6" width="3.5" height="8" />
+      <rect x="22" y="6" width="3.5" height="8" />
+    </g>
+  </svg>`;
+
 /**
  * Tutti i campi con una posizione, su una mappa sola.
  *
@@ -41,6 +60,11 @@ const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
  * pagina dei risultati: con qualche migliaio di campi, un elemento del DOM
  * per ciascuno renderebbe lento ogni spostamento della mappa, mentre il
  * canvas li ridisegna tutti in un colpo.
+ *
+ * Solo da vicino (zoom {@link ZOOM_ICONE}) i cerchi lasciano il posto
+ * all'icona di un campo, e solo per i campi dentro la porzione visibile:
+ * a quello zoom sono pochi, quindi gli elementi del DOM restano gestibili.
+ * Da {@link ZOOM_NOMI} in su l'icona mostra anche il nome della società.
  */
 @Component({
   selector: 'pagina-mappa',
@@ -65,6 +89,9 @@ export class MappaPage implements OnDestroy {
 
   private readonly contenitore = viewChild<ElementRef<HTMLElement>>('contenitoreMappa');
   private mappa: L.Map | null = null;
+  private cerchi: L.LayerGroup | null = null;
+  private icone: L.LayerGroup | null = null;
+  private readonly segnaposto = new Map<string, L.Marker>();
 
   readonly stato = signal<'caricamento' | 'pronto' | 'errore'>('caricamento');
   readonly campi = signal<Societa[]>([]);
@@ -100,6 +127,7 @@ export class MappaPage implements OnDestroy {
   ngOnDestroy(): void {
     this.mappa?.remove();
     this.mappa = null;
+    this.segnaposto.clear();
   }
 
   private disegna(contenitore: HTMLElement, campi: SocietaGeolocalizzata[]): void {
@@ -117,18 +145,24 @@ export class MappaPage implements OnDestroy {
         getComputedStyle(document.documentElement).getPropertyValue('--ion-color-primary').trim() ||
         '#2f6fce';
 
+      const cerchi = L.layerGroup();
       for (const campo of campi) {
-        L.circleMarker([campo.lat, campo.lng], {
-          radius: 6,
-          color: '#fff',
-          weight: 1.5,
-          fillColor: colore,
-          fillOpacity: 0.9,
-        })
-          .bindTooltip(testoSicuro(nomeCompleto(campo)))
-          .bindPopup(this.popup(campo))
-          .addTo(mappa);
+        this.conDettagli(
+          L.circleMarker([campo.lat, campo.lng], {
+            radius: 6,
+            color: '#fff',
+            weight: 1.5,
+            fillColor: colore,
+            fillOpacity: 0.9,
+          }),
+          campo,
+        ).addTo(cerchi);
       }
+      this.cerchi = cerchi;
+      this.icone = L.layerGroup();
+      this.segnaposto.clear();
+
+      mappa.on('zoomend moveend', () => this.aggiornaSegnaposto(mappa, campi));
 
       if (campi.length > 0) {
         mappa.fitBounds(L.latLngBounds(campi.map((c) => L.latLng(c.lat, c.lng))), {
@@ -138,6 +172,7 @@ export class MappaPage implements OnDestroy {
       } else {
         mappa.fitBounds(ITALIA);
       }
+      this.aggiornaSegnaposto(mappa, campi);
 
       mappa.on('popupopen', (evento: L.PopupEvent) => {
         const bottone = evento.popup
@@ -153,6 +188,69 @@ export class MappaPage implements OnDestroy {
 
       // Le dimensioni definitive arrivano solo a transizione di pagina finita.
       setTimeout(() => mappa.invalidateSize(), 200);
+    });
+  }
+
+  /**
+   * Cerchi da lontano, icone da vicino. Le icone si creano solo per i campi
+   * visibili (con un po' di margine) e si riusano tra uno spostamento e
+   * l'altro.
+   */
+  private aggiornaSegnaposto(mappa: L.Map, campi: SocietaGeolocalizzata[]): void {
+    const cerchi = this.cerchi;
+    const icone = this.icone;
+    if (!cerchi || !icone) {
+      return;
+    }
+
+    const zoom = mappa.getZoom();
+    mappa.getContainer().classList.toggle('mostra-nomi-campi', zoom >= ZOOM_NOMI);
+
+    if (zoom < ZOOM_ICONE) {
+      icone.remove();
+      cerchi.addTo(mappa);
+      return;
+    }
+    cerchi.remove();
+    icone.addTo(mappa);
+
+    const visibili = mappa.getBounds().pad(0.3);
+    for (const campo of campi) {
+      const dentro = visibili.contains([campo.lat, campo.lng]);
+      let segnaposto = this.segnaposto.get(campo.id);
+      if (dentro && !segnaposto) {
+        segnaposto = this.conDettagli(
+          L.marker([campo.lat, campo.lng], { icon: this.iconaCampo(campo) }),
+          campo,
+        );
+        this.segnaposto.set(campo.id, segnaposto);
+      }
+      if (!segnaposto) {
+        continue;
+      }
+      if (dentro) {
+        icone.addLayer(segnaposto);
+      } else if (!segnaposto.isPopupOpen()) {
+        icone.removeLayer(segnaposto);
+      }
+    }
+  }
+
+  private conDettagli<T extends L.Layer>(livello: T, campo: SocietaGeolocalizzata): T {
+    return livello
+      .bindTooltip(testoSicuro(nomeCompleto(campo)))
+      .bindPopup(this.popup(campo));
+  }
+
+  /** Icona del campo con il nome, che il CSS mostra solo agli zoom più alti. */
+  private iconaCampo(campo: SocietaGeolocalizzata): L.DivIcon {
+    return L.divIcon({
+      className: 'icona-campo',
+      html: `${SVG_CAMPO}<span class="nome-campo">${testoSicuro(nomeCompleto(campo))}</span>`,
+      iconSize: [28, 20],
+      iconAnchor: [14, 10],
+      popupAnchor: [0, -10],
+      tooltipAnchor: [14, 0],
     });
   }
 
