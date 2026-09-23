@@ -161,6 +161,21 @@ class ImportazioneServiceTest {
     }
 
     @Test
+    void riconosceIlPdfDelComunicatoDalContenuto() throws Exception {
+        when(repository.findAll()).thenReturn(List.of());
+
+        EsitoImportazione esito;
+        try (var pdf = getClass().getResourceAsStream("/comunicati/cu20-lnd-lazio-2026.pdf")) {
+            esito = service.importa(pdf, true);
+        }
+
+        assertThat(esito.inserite()).isEqualTo(59);
+        assertThat(esito.scartate()).hasSize(5);
+        assertThat(esito.daGeocodificare()).isEqualTo(59);
+        verify(repository, never()).saveAll(any());
+    }
+
+    @Test
     void laChiaveIgnoraMaiuscoleAccentiEPunteggiatura() {
         assertThat(ImportazioneService.chiave("A.S.D. Città  Calcio", "Sant'Anna \"A\""))
                 .isEqualTo(ImportazioneService.chiave("asd citta calcio", "santanna a"));

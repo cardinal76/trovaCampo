@@ -147,6 +147,6 @@ class LettoreExcelTest {
 
         assertThatThrownBy(() -> lettore.leggi(new ByteArrayInputStream(csv)))
                 .isInstanceOf(LettoreExcel.FileNonValidoException.class)
-                .hasMessage("Il file non è un Excel leggibile (.xlsx o .xls)");
+                .hasMessageStartingWith("Il file non è un Excel leggibile");
     }
 }

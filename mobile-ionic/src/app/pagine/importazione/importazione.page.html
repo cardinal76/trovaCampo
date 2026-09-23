@@ -3,7 +3,7 @@
     <ion-buttons slot="start">
       <ion-back-button defaultHref="/"></ion-back-button>
     </ion-buttons>
-    <ion-title>Importa da Excel</ion-title>
+    <ion-title>Importa campi</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -47,12 +47,19 @@
           </ion-card>
         } @else {
           <ion-text color="medium">
-            <p>
-              Carica un file <strong>.xlsx</strong> o <strong>.xls</strong> con le colonne
-              <strong>Società</strong>, <strong>Impianto</strong> e <strong>Indirizzo</strong>
-              (Comune, Provincia e coordinate sono facoltative). Prima si controlla il file, poi si
-              importa: nel controllo non viene salvato niente.
-            </p>
+            <p>Puoi caricare:</p>
+            <ul>
+              <li>
+                il <strong>PDF di un Comunicato Ufficiale</strong> LND con il programma gare: per ogni
+                partita si prende il campo della squadra di casa, con nome, indirizzo e comune;
+              </li>
+              <li>
+                un file <strong>Excel</strong> (.xlsx o .xls) con le colonne <strong>Società</strong>,
+                <strong>Impianto</strong> e <strong>Indirizzo</strong> (Comune, Provincia e coordinate
+                sono facoltative).
+              </li>
+            </ul>
+            <p>Prima si controlla il file, poi si importa: nel controllo non viene salvato niente.</p>
           </ion-text>
 
           <ion-list>
@@ -73,7 +80,7 @@
                 #selettore
                 class="nascosto"
                 type="file"
-                accept=".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
+                accept=".pdf,.xlsx,.xls,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
                 (change)="scegliFile($event)"
               />
             </ion-item>
