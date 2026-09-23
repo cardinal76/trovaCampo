@@ -19,6 +19,7 @@ import {
 import { addIcons } from 'ionicons';
 import { create } from 'ionicons/icons';
 import { Societa, indirizzoCompleto, nomeCompleto } from '../../modelli/societa';
+import { Squadra, dettaglioSquadra } from '../../modelli/squadra';
 import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
 import { SocietaService } from '../../servizi/societa.service';
 
@@ -57,6 +58,10 @@ export class SchedaPage {
   readonly id = this.rotta.snapshot.paramMap.get('id') ?? '';
   readonly societa = signal<Societa | null>(null);
   readonly stato = signal<Stato>('caricamento');
+  /** Le squadre dall'anagrafica di presenze: si caricano a parte, e possono mancare. */
+  readonly squadre = signal<Squadra[]>([]);
+  readonly statoSquadre = signal<Stato | 'assenti'>('assenti');
+  readonly dettaglioSquadra = dettaglioSquadra;
   /** Il pulsante "Modifica": solo se su questo browser è entrato un amministratore. */
   readonly amministratore = signal(amministratoreRicordato());
 
@@ -118,8 +123,29 @@ export class SchedaPage {
       next: (dati) => {
         this.societa.set(dati);
         this.stato.set('completata');
+        this.caricaSquadre(dati);
       },
       error: () => this.stato.set('errore'),
+    });
+  }
+
+  /**
+   * Solo per le società che vengono dall'anagrafica di presenze. Se presenze
+   * non risponde la scheda resta com'è, con un avviso al posto delle squadre.
+   */
+  private caricaSquadre(societa: Societa): void {
+    if (!societa.anagraficaSocietaId) {
+      this.squadre.set([]);
+      this.statoSquadre.set('assenti');
+      return;
+    }
+    this.statoSquadre.set('caricamento');
+    this.service.squadre(societa.id).subscribe({
+      next: (squadre) => {
+        this.squadre.set(squadre);
+        this.statoSquadre.set('completata');
+      },
+      error: () => this.statoSquadre.set('errore'),
     });
   }
 }

@@ -82,4 +82,34 @@ describe('ImportazioneService', () => {
     http.expectNone(() => true);
     expect((errore as Error).message).toContain('sessione è scaduta');
   });
+
+  it("chiede l'anagrafica di presenze con il token e la modalità prova", async () => {
+    const esito = firstValueFrom(service.sincronizza(true));
+    await Promise.resolve();
+    await Promise.resolve();
+    const chiamata = http.expectOne((r) => r.url === `${environment.apiUrl}/api/admin/anagrafica`);
+
+    expect(chiamata.request.method).toBe('POST');
+    expect(chiamata.request.headers.get('Authorization')).toBe('Bearer abc.def.ghi');
+    expect(chiamata.request.params.get('prova')).toBe('true');
+    chiamata.flush({ prova: true, inserite: 3 });
+
+    expect(await esito).toEqual(jasmine.objectContaining({ inserite: 3 }));
+  });
+
+  it("mostra il motivo quando presenze non risponde", async () => {
+    const esito = firstValueFrom(service.sincronizza(false)).catch((e: Error) => e);
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .expectOne((r) => r.url === `${environment.apiUrl}/api/admin/anagrafica`)
+      .flush(
+        { errore: "L'anagrafica di presenze non risponde: riprova tra poco" },
+        { status: 502, statusText: 'Bad Gateway' },
+      );
+
+    expect(((await esito) as Error).message).toBe(
+      "L'anagrafica di presenze non risponde: riprova tra poco",
+    );
+  });
 });

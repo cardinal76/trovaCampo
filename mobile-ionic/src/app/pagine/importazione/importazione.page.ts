@@ -21,7 +21,7 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, cloudUpload, documentAttach, logOut, warning } from 'ionicons/icons';
+import { checkmarkCircle, cloudUpload, documentAttach, logOut, sync, warning } from 'ionicons/icons';
 import { EsitoImportazione } from '../../modelli/importazione';
 import {
   AutenticazioneService,
@@ -73,6 +73,8 @@ export class ImportazionePage {
   /** Il login su Keycloak: finché non è 'entrato' il form non si vede. */
   readonly accesso = signal<'in-corso' | 'entrato' | 'errore'>('in-corso');
   readonly file = signal<File | null>(null);
+  /** Da dove vengono le righe dell'ultimo controllo: il file scelto o l'anagrafica di presenze. */
+  readonly sorgente = signal<'file' | 'anagrafica'>('file');
   readonly inCorso = signal(false);
   readonly errore = signal<string | null>(null);
   /** Esito dell'ultima prova sul file scelto: sblocca il salvataggio. */
@@ -94,7 +96,7 @@ export class ImportazionePage {
   );
 
   constructor() {
-    addIcons({ checkmarkCircle, cloudUpload, documentAttach, logOut, warning });
+    addIcons({ checkmarkCircle, cloudUpload, documentAttach, logOut, sync, warning });
     this.entra();
   }
 
@@ -113,6 +115,7 @@ export class ImportazionePage {
   scegliFile(evento: Event): void {
     const input = evento.target as HTMLInputElement;
     this.file.set(input.files?.[0] ?? null);
+    this.sorgente.set('file');
     this.azzera();
     // Svuotato così scegliere di nuovo lo stesso file (magari corretto nel
     // frattempo) fa scattare comunque l'evento.
@@ -120,6 +123,17 @@ export class ImportazionePage {
   }
 
   controlla(): void {
+    this.invia(true);
+  }
+
+  /**
+   * I campi letti da presenze nei Comunicati Ufficiali: si controllano come
+   * un file, e il file eventualmente scelto non conta più.
+   */
+  controllaAnagrafica(): void {
+    this.file.set(null);
+    this.sorgente.set('anagrafica');
+    this.azzera();
     this.invia(true);
   }
 
@@ -131,14 +145,18 @@ export class ImportazionePage {
 
   private invia(prova: boolean): void {
     const file = this.file();
-    if (!this.pronto() || !file || this.inCorso()) {
+    const dallAnagrafica = this.sorgente() === 'anagrafica';
+    if (!this.autenticazione.amministratore() || this.inCorso() || (!dallAnagrafica && !file)) {
       return;
     }
 
     this.inCorso.set(true);
     this.errore.set(null);
 
-    this.service.importa(file, prova).subscribe({
+    const richiesta = dallAnagrafica
+      ? this.service.sincronizza(prova)
+      : this.service.importa(file!, prova);
+    richiesta.subscribe({
       next: (esito) => {
         this.inCorso.set(false);
         if (prova) {

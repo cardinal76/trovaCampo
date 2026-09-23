@@ -44,6 +44,13 @@ public class Societa {
     private List<Campionato> campionati;
 
     /**
+     * La stessa società nell'anagrafica di presenze, letta dai Comunicati
+     * Ufficiali: da lì arrivano le sue squadre con il campionato di ognuna.
+     * Vuoto per i campi inseriti a mano o importati da un file.
+     */
+    private Long anagraficaSocietaId;
+
+    /**
      * Copia normalizzata (minuscolo, senza accenti) dei campi ricercabili:
      * permette una ricerca insensibile ad accenti e maiuscole con una sola
      * espressione regolare. Non fa parte della risposta dell'API.
@@ -231,6 +238,15 @@ public class Societa {
 
     public Societa setPrezziScuolaCalcio(String prezziScuolaCalcio) {
         this.prezziScuolaCalcio = prezziScuolaCalcio;
+        return this;
+    }
+
+    public Long getAnagraficaSocietaId() {
+        return anagraficaSocietaId;
+    }
+
+    public Societa setAnagraficaSocietaId(Long anagraficaSocietaId) {
+        this.anagraficaSocietaId = anagraficaSocietaId;
         return this;
     }
 

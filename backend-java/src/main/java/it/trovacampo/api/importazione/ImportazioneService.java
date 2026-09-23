@@ -48,7 +48,14 @@ public class ImportazioneService {
     }
 
     public EsitoImportazione importa(InputStream file, boolean prova) {
-        LettoreExcel.Lettura lettura = leggi(file);
+        return importaRighe(leggi(file), prova);
+    }
+
+    /**
+     * Le righe già lette, da un file o dall'anagrafica di presenze: stessa
+     * chiave (società e impianto), stesse regole su indirizzi e coordinate.
+     */
+    EsitoImportazione importaRighe(LettoreExcel.Lettura lettura, boolean prova) {
         List<Scarto> scarti = new ArrayList<>(lettura.scarti());
 
         Map<String, Societa> esistenti = new HashMap<>();
@@ -149,6 +156,11 @@ public class ImportazioneService {
         if (!riga.provincia().isEmpty() && !riga.provincia().equals(societa.getProvinciaImpianto())) {
             societa.setProvinciaImpianto(riga.provincia());
             cambiata = spostata = true;
+        }
+        if (riga.anagraficaSocietaId() != null
+                && !riga.anagraficaSocietaId().equals(societa.getAnagraficaSocietaId())) {
+            societa.setAnagraficaSocietaId(riga.anagraficaSocietaId());
+            cambiata = true;
         }
         // Una società nuova senza località resta con "" come quelle inserite
         // dall'app, non con null.

@@ -1,5 +1,6 @@
 package it.trovacampo.api.web;
 
+import it.trovacampo.api.anagrafica.SquadreSocieta;
 import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.service.SocietaService;
 import jakarta.validation.Valid;
@@ -20,9 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class SocietaController {
 
     private final SocietaService service;
+    private final SquadreSocieta squadre;
 
-    public SocietaController(SocietaService service) {
+    public SocietaController(SocietaService service, SquadreSocieta squadre) {
         this.service = service;
+        this.squadre = squadre;
     }
 
     @GetMapping("/societa")
@@ -39,6 +42,15 @@ public class SocietaController {
     @GetMapping("/societa/{id}")
     public Societa dettaglio(@PathVariable String id) {
         return service.perId(id).orElseThrow(SocietaNonTrovataException::new);
+    }
+
+    /**
+     * Le squadre della società con il campionato di ognuna, lette
+     * dall'anagrafica di presenze. Vuoto per un campo che non viene da lì.
+     */
+    @GetMapping("/societa/{id}/squadre")
+    public List<SquadreSocieta.Squadra> squadre(@PathVariable String id) {
+        return squadre.di(service.perId(id).orElseThrow(SocietaNonTrovataException::new));
     }
 
     @PostMapping("/societa")

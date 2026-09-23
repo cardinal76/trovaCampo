@@ -38,6 +38,14 @@ trovacampo:
   geocodifica:
     # Dà le coordinate, una al secondo, alle societa' che non le hanno.
     automatica: true
+  # L'anagrafica di presenze (società, squadre, campionati e campi dai
+  # Comunicati Ufficiali): in sviluppo il backend di presenze sulla 8080, in
+  # produzione lo stesso dalla rete Docker condivisa.
+  anagrafica:
+    url: ${ANAGRAFICA_URL:http://localhost:8080}
+    # Tre volte al giorno porta i campi nuovi in TrovaCampo. Spenta in
+    # sviluppo; in produzione la accende docker-compose.prod.yml.
+    sincronizzazione: ${ANAGRAFICA_SINCRONIZZAZIONE:false}
 
 # Solo /actuator/health, che e' quello che guarda l'healthcheck del container
 # in produzione. Comprende il controllo su MongoDB: un backend acceso ma senza

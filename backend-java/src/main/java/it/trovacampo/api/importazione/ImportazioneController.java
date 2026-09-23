@@ -27,9 +27,12 @@ public class ImportazioneController {
     private static final Logger log = LoggerFactory.getLogger(ImportazioneController.class);
 
     private final ImportazioneService service;
+    private final SincronizzazioneAnagrafica sincronizzazione;
 
-    public ImportazioneController(ImportazioneService service) {
+    public ImportazioneController(
+            ImportazioneService service, SincronizzazioneAnagrafica sincronizzazione) {
         this.service = service;
+        this.sincronizzazione = sincronizzazione;
     }
 
     @PostMapping(path = "/importazione", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -56,6 +59,24 @@ public class ImportazioneController {
             }
             return ResponseEntity.ok(esito);
         }
+    }
+
+    /**
+     * I campi dell'anagrafica di presenze, adesso invece che al prossimo giro
+     * programmato. Con {@code prova} non si salva niente, come per un file.
+     */
+    @PostMapping("/anagrafica")
+    public EsitoImportazione sincronizza(
+            @RequestParam(name = "prova", defaultValue = "false") boolean prova, Authentication chi) {
+        EsitoImportazione esito = sincronizzazione.sincronizza(prova);
+        if (!prova) {
+            log.info(
+                    "Anagrafica di presenze importata da {}: {} inserite, {} aggiornate",
+                    chi.getName(),
+                    esito.inserite(),
+                    esito.aggiornate());
+        }
+        return esito;
     }
 
     @ExceptionHandler(LettoreExcel.FileNonValidoException.class)
