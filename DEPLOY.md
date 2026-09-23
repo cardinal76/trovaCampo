@@ -100,6 +100,21 @@ rilasciato presenze con il blocco `trovacampo.footballer.it` nel Caddyfile:
 git checkout produzione && git merge --ff-only master && git push origin produzione
 ```
 
+Le PR si uniscono **sempre in `master`**, mai direttamente in `produzione`:
+`produzione` deve restare un passo indietro a `master` o uguale, così il
+rilascio è un avanzamento veloce. Una PR unita in `produzione` vi aggiunge un
+commit di merge che `master` non ha, e il comando qui sopra si ferma con
+`fatal: Not possible to fast-forward`. Se succede, prima si porta `master` in
+pari con `produzione`, che così riceve anche quello che era finito solo in
+produzione, poi si rilascia come al solito. Il controllo `merge-base` evita il
+push se `master` ha nel frattempo commit che `produzione` non ha: in quel caso
+serve un merge normale di `master` in `produzione`.
+
+```bash
+git fetch origin
+git merge-base --is-ancestor origin/master origin/produzione && git push origin origin/produzione:master
+```
+
 A mano sul server, per un rollback o con Actions ferma:
 
 ```bash
