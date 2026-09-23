@@ -30,7 +30,13 @@ import {
 } from '../../modelli/societa';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
 import { SocietaService } from '../../servizi/societa.service';
-import { ZOOM_ICONE, aggiornaNomiCampi, iconaCampo } from '../../mappa/icona-campo';
+import {
+  ZOOM_ICONE,
+  aggiornaNomiCampi,
+  campoSuCanvas,
+  iconaCampo,
+  immagineCampo,
+} from '../../mappa/icona-campo';
 
 /** L'Italia intera, finché non ci sono campi da inquadrare. */
 const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
@@ -38,15 +44,14 @@ const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
 /**
  * Tutti i campi con una posizione, su una mappa sola.
  *
- * I punti sono cerchi disegnati su canvas e non segnaposto HTML come nella
- * pagina dei risultati: con qualche migliaio di campi, un elemento del DOM
- * per ciascuno renderebbe lento ogni spostamento della mappa, mentre il
- * canvas li ridisegna tutti in un colpo.
+ * Ogni campo ha l'icona di un campo da calcio a tutti gli zoom. Da lontano è
+ * disegnata sul canvas e non come segnaposto HTML: con qualche migliaio di
+ * campi, un elemento del DOM per ciascuno renderebbe lento ogni spostamento
+ * della mappa, mentre il canvas li ridisegna tutti in un colpo.
  *
- * Solo da vicino (da ZOOM_ICONE) i cerchi lasciano il posto
- * all'icona di un campo, e solo per i campi dentro la porzione visibile:
- * a quello zoom sono pochi, quindi gli elementi del DOM restano gestibili.
- * Da ZOOM_NOMI in su l'icona mostra anche il nome della società.
+ * Da vicino (da ZOOM_ICONE) la stessa icona diventa un elemento HTML, solo
+ * per i campi dentro la porzione visibile: a quello zoom sono pochi, e da
+ * ZOOM_NOMI in su l'icona mostra anche il nome della società.
  */
 @Component({
   selector: 'pagina-mappa',
@@ -71,7 +76,7 @@ export class MappaPage implements OnDestroy {
 
   private readonly contenitore = viewChild<ElementRef<HTMLElement>>('contenitoreMappa');
   private mappa: L.Map | null = null;
-  private cerchi: L.LayerGroup | null = null;
+  private sulCanvas: L.LayerGroup | null = null;
   private icone: L.LayerGroup | null = null;
   private readonly segnaposto = new Map<string, L.Marker>();
 
@@ -90,7 +95,13 @@ export class MappaPage implements OnDestroy {
     effect(() => {
       const contenitore = this.contenitore()?.nativeElement;
       if (contenitore && this.stato() === 'pronto') {
-        this.disegna(contenitore, this.geolocalizzati());
+        const campi = this.geolocalizzati();
+        // L'icona per il canvas si carica una volta sola, di solito subito.
+        immagineCampo().then((immagine) => {
+          if (this.contenitore()?.nativeElement === contenitore) {
+            this.disegna(contenitore, campi, immagine);
+          }
+        });
       }
     });
   }
@@ -112,7 +123,11 @@ export class MappaPage implements OnDestroy {
     this.segnaposto.clear();
   }
 
-  private disegna(contenitore: HTMLElement, campi: SocietaGeolocalizzata[]): void {
+  private disegna(
+    contenitore: HTMLElement,
+    campi: SocietaGeolocalizzata[],
+    immagine: HTMLImageElement,
+  ): void {
     this.zona.runOutsideAngular(() => {
       this.mappa?.remove();
       const mappa = L.map(contenitore, { preferCanvas: true });
@@ -123,24 +138,11 @@ export class MappaPage implements OnDestroy {
         attribution: '© OpenStreetMap',
       }).addTo(mappa);
 
-      const colore =
-        getComputedStyle(document.documentElement).getPropertyValue('--ion-color-primary').trim() ||
-        '#2f6fce';
-
-      const cerchi = L.layerGroup();
+      const sulCanvas = L.layerGroup();
       for (const campo of campi) {
-        this.conDettagli(
-          L.circleMarker([campo.lat, campo.lng], {
-            radius: 6,
-            color: '#fff',
-            weight: 1.5,
-            fillColor: colore,
-            fillOpacity: 0.9,
-          }),
-          campo,
-        ).addTo(cerchi);
+        this.conDettagli(campoSuCanvas([campo.lat, campo.lng], immagine), campo).addTo(sulCanvas);
       }
-      this.cerchi = cerchi;
+      this.sulCanvas = sulCanvas;
       this.icone = L.layerGroup();
       this.segnaposto.clear();
 
@@ -174,24 +176,24 @@ export class MappaPage implements OnDestroy {
   }
 
   /**
-   * Cerchi da lontano, icone da vicino. Le icone si creano solo per i campi
-   * visibili (con un po' di margine) e si riusano tra uno spostamento e
-   * l'altro.
+   * Icone sul canvas da lontano, icone HTML da vicino. Queste ultime si
+   * creano solo per i campi visibili (con un po' di margine) e si riusano
+   * tra uno spostamento e l'altro.
    */
   private aggiornaSegnaposto(mappa: L.Map, campi: SocietaGeolocalizzata[]): void {
-    const cerchi = this.cerchi;
+    const sulCanvas = this.sulCanvas;
     const icone = this.icone;
-    if (!cerchi || !icone) {
+    if (!sulCanvas || !icone) {
       return;
     }
 
     aggiornaNomiCampi(mappa);
     if (mappa.getZoom() < ZOOM_ICONE) {
       icone.remove();
-      cerchi.addTo(mappa);
+      sulCanvas.addTo(mappa);
       return;
     }
-    cerchi.remove();
+    sulCanvas.remove();
     icone.addTo(mappa);
 
     const visibili = mappa.getBounds().pad(0.3);
