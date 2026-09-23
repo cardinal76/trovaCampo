@@ -7,27 +7,63 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="ion-padding">
+<ion-content class="contenuto">
+  <div #sfondoMappa slot="fixed" class="sfondo-mappa" aria-hidden="true"></div>
+  <div slot="fixed" class="velo" aria-hidden="true"></div>
+
   <div class="cerca">
-    <h1 class="titolo">Cerca Campo</h1>
+    <div class="riquadro">
+      <h1 class="titolo">Cerca Campo</h1>
+      <p class="sottotitolo">Trova dove gioca una società di calcio dilettantistico</p>
 
-    <ion-input
-      class="casella"
-      fill="outline"
-      placeholder="cerca per nome Società oppure cerca per indirizzo"
-      enterkeyhint="search"
-      autocapitalize="off"
-      [spellcheck]="false"
-      aria-label="Nome società o indirizzo del campo"
-      [ngModel]="testo()"
-      (ngModelChange)="testo.set($event)"
-      (keyup.enter)="cerca()"
-    ></ion-input>
+      <ion-input
+        class="casella"
+        fill="outline"
+        placeholder="Nome della società o indirizzo"
+        enterkeyhint="search"
+        autocapitalize="off"
+        [spellcheck]="false"
+        aria-label="Nome società o indirizzo del campo"
+        [ngModel]="testo()"
+        (ngModelChange)="testo.set($event)"
+        (keyup.enter)="cerca()"
+      >
+        <ion-icon slot="start" name="search-outline" aria-hidden="true"></ion-icon>
+      </ion-input>
 
-    <ion-button class="vai" [disabled]="!pronto()" (click)="cerca()">Vai</ion-button>
+      @if (caricamentoSuggerimenti() && suggerimenti() === null) {
+        <div class="suggerimenti suggerimenti--attesa">
+          <ion-spinner name="dots"></ion-spinner>
+        </div>
+      } @else if (suggerimenti(); as trovati) {
+        <ion-list class="suggerimenti" lines="full">
+          @for (societa of trovati; track societa.id) {
+            <ion-item button detail="false" (click)="apriScheda(societa)">
+              <ion-label>
+                <h3>{{ nomeCompleto(societa) }}</h3>
+                <p>{{ societa.nomeImpianto }} · {{ indirizzoCompleto(societa) }}</p>
+              </ion-label>
+            </ion-item>
+          } @empty {
+            <ion-item lines="none">
+              <ion-label class="nessuno">Nessun campo trovato</ion-label>
+            </ion-item>
+          }
+          @if (altriSuggerimenti() > 0) {
+            <ion-item button detail="false" lines="none" class="altri" (click)="cerca()">
+              <ion-label>Vedi tutti i risultati (+{{ altriSuggerimenti() }})</ion-label>
+            </ion-item>
+          }
+        </ion-list>
+      }
 
-    <ion-button class="aggiungi" fill="clear" size="small" routerLink="/aggiungi">
-      Non trovi un campo? Aggiungilo
-    </ion-button>
+      <ion-button class="vai" expand="block" shape="round" [disabled]="!pronto()" (click)="cerca()">
+        Vai
+      </ion-button>
+
+      <ion-button class="aggiungi" fill="clear" size="small" routerLink="/aggiungi">
+        Non trovi un campo? Aggiungilo
+      </ion-button>
+    </div>
   </div>
 </ion-content>
