@@ -2,6 +2,7 @@ package it.trovacampo.api.importazione;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -10,76 +11,138 @@ import static org.mockito.Mockito.when;
 import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.repository.SocietaRepository;
 import it.trovacampo.api.service.Geocoding;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class GeocodificaAutomaticaTest {
 
     private final SocietaRepository repository = mock(SocietaRepository.class);
 
-    private Societa senzaCoordinate() {
+    private GeocodificaAutomatica con(Geocoding geocoding) {
+        return new GeocodificaAutomatica(repository, geocoding, Duration.ZERO);
+    }
+
+    private Societa campo(String indirizzo, String localita) {
         return new Societa()
                 .setNomeSocieta("Virtus Ostia")
-                .setIndirizzoImpianto("Via delle Baleniere 5")
-                .setLocalitaImpianto("Ostia")
-                .setProvinciaImpianto("RM");
+                .setIndirizzoImpianto(indirizzo)
+                .setLocalitaImpianto(localita)
+                .setProvinciaImpianto("");
     }
 
     @Test
     void cercaLIndirizzoCompletoDiLocalitaEPaese() {
-        AtomicReference<String> cercato = new AtomicReference<>();
-        Societa societa = senzaCoordinate();
-        when(repository.primaDaGeocodificare()).thenReturn(Optional.of(societa));
+        List<String> cercati = new ArrayList<>();
+        Societa societa = campo("Via delle Baleniere 5", "Ostia").setProvinciaImpianto("RM");
+        when(repository.primaDaGeocodificare(GeocodificaAutomatica.VERSIONE))
+                .thenReturn(Optional.of(societa));
 
-        new GeocodificaAutomatica(
-                        repository,
-                        indirizzo -> {
-                            cercato.set(indirizzo);
-                            return Optional.of(new Geocoding.Coordinate(41.73, 12.28));
-                        })
+        con(indirizzo -> {
+                    cercati.add(indirizzo);
+                    return Optional.of(new Geocoding.Coordinate(41.73, 12.28));
+                })
                 .geocodificaLaProssima();
 
-        assertThat(cercato).hasValue("Via delle Baleniere 5, Ostia RM, Italia");
+        assertThat(cercati).containsExactly("VIA DELLE BALENIERE 5, Ostia RM, Italia");
         assertThat(societa.getLat()).isEqualTo(41.73);
-        assertThat(societa.getLng()).isEqualTo(12.28);
+        assertThat(societa.getGeocodificaFallitaVersione()).isNull();
         verify(repository).save(societa);
     }
 
     @Test
-    void segnaGliIndirizziNonRiconosciutiPerNonRiprovarliAllInfinito() {
-        Societa societa = senzaCoordinate();
-        when(repository.primaDaGeocodificare()).thenReturn(Optional.of(societa));
+    void seLIndirizzoNonSiTrovaRiprovaSenzaCivico() {
+        List<String> cercati = new ArrayList<>();
+        Societa societa = campo("VIA DELLA CAMILLUCCIA 120", "ROMA");
 
-        new GeocodificaAutomatica(repository, indirizzo -> Optional.empty()).geocodificaLaProssima();
+        con(indirizzo -> {
+                    cercati.add(indirizzo);
+                    return cercati.size() == 1
+                            ? Optional.empty()
+                            : Optional.of(new Geocoding.Coordinate(41.93, 12.44));
+                })
+                .geocodifica(societa);
 
-        assertThat(societa.getGeocodificaFallita()).isTrue();
+        assertThat(cercati)
+                .containsExactly(
+                        "VIA DELLA CAMILLUCCIA 120, ROMA, Italia", "VIA DELLA CAMILLUCCIA, ROMA, Italia");
+        assertThat(societa.getLat()).isEqualTo(41.93);
+    }
+
+    @Test
+    void segnaLaVersioneCheHaRinunciato() {
+        Societa societa = campo("VIA INESISTENTE 1", "ROMA");
+
+        con(indirizzo -> Optional.empty()).geocodifica(societa);
+
+        assertThat(societa.getGeocodificaFallitaVersione()).isEqualTo(GeocodificaAutomatica.VERSIONE);
         assertThat(societa.getLat()).isNull();
         verify(repository).save(societa);
     }
 
     @Test
-    void nonFaNienteSeNonCeNullaDaGeocodificare() {
-        when(repository.primaDaGeocodificare()).thenReturn(Optional.empty());
+    void chiedeAlDatabaseSoloICampiNonRinunciatiDaQuestaVersione() {
+        when(repository.primaDaGeocodificare(anyInt())).thenReturn(Optional.empty());
 
-        new GeocodificaAutomatica(repository, indirizzo -> Optional.empty()).geocodificaLaProssima();
+        con(indirizzo -> Optional.empty()).geocodificaLaProssima();
 
+        verify(repository).primaDaGeocodificare(GeocodificaAutomatica.VERSIONE);
         verify(repository, never()).save(any());
     }
 
     @Test
     void unErroreDelDatabaseNonFermaLoScheduler() {
-        when(repository.primaDaGeocodificare()).thenThrow(new IllegalStateException("mongo giù"));
+        when(repository.primaDaGeocodificare(anyInt())).thenThrow(new IllegalStateException("mongo giù"));
 
-        new GeocodificaAutomatica(repository, indirizzo -> Optional.empty()).geocodificaLaProssima();
+        con(indirizzo -> Optional.empty()).geocodificaLaProssima();
 
         verify(repository, never()).save(any());
     }
 
     @Test
-    void senzaLocalitaUsaIndirizzoEPaese() {
-        Societa societa = new Societa().setIndirizzoImpianto("Via Roma 1").setLocalitaImpianto("");
+    void senzaCivicoNonRipeteLaStessaRicerca() {
+        assertThat(GeocodificaAutomatica.tentativi(campo("VIA GALTELLI SNC", "FIUMICINO")))
+                .containsExactly("VIA GALTELLI, FIUMICINO, Italia");
+    }
 
-        assertThat(GeocodificaAutomatica.indirizzoCompleto(societa)).isEqualTo("Via Roma 1, Italia");
+    @Test
+    void senzaLocalitaUsaIndirizzoEPaese() {
+        assertThat(GeocodificaAutomatica.tentativi(campo("Via Roma", "")))
+                .containsExactly("VIA ROMA, Italia");
+    }
+
+    /** Indirizzi presi dal Comunicato Ufficiale n. 20 del CRL Lazio. */
+    @ParameterizedTest
+    @CsvSource(
+            delimiter = '|',
+            value = {
+                "VIA GALTELLI SNC                | VIA GALTELLI",
+                "VIA TIBERINA KM 11.00           | VIA TIBERINA",
+                "VIA TIBERINA KM. 21,500         | VIA TIBERINA",
+                "P.ZA MARTIRI DELLA LIBERTA' 27  | PIAZZA MARTIRI DELLA LIBERTA' 27",
+                "VIALE  SPAGNA SNC               | VIALE SPAGNA",
+                "S.P. SACROFANO-CASSIA           | STRADA PROVINCIALE SACROFANO-CASSIA",
+                "VIA PANTANE 9/11                | VIA PANTANE 9",
+                "LUNGOTEVERE DANTE 3/5           | LUNGOTEVERE DANTE 3",
+                "VIA CASTIGLION FIORENTINO 40/5  | VIA CASTIGLION FIORENTINO 40",
+                "LARGO MARTIRI DI VIA FANI SNC   | LARGO MARTIRI DI VIA FANI",
+                "VIA DELLA CAMILLUCCIA 120       | VIA DELLA CAMILLUCCIA 120",
+                "V.LE DELLE OLIMPIADI 4          | VIALE DELLE OLIMPIADI 4",
+                "via della certosa 12            | VIA DELLA CERTOSA 12",
+            })
+    void ripulisceGliIndirizziDeiComunicati(String indirizzo, String atteso) {
+        assertThat(GeocodificaAutomatica.pulisci(indirizzo)).isEqualTo(atteso);
+    }
+
+    @Test
+    void ilCivicoInCodaSiTogliePerIlSecondoTentativo() {
+        assertThat(GeocodificaAutomatica.tentativi(campo("VIA UMBERTO I, 3", "GUIDONIA MONTECELIO")))
+                .containsExactly(
+                        "VIA UMBERTO I, 3, GUIDONIA MONTECELIO, Italia",
+                        "VIA UMBERTO I, GUIDONIA MONTECELIO, Italia");
     }
 }

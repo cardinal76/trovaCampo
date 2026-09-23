@@ -113,14 +113,14 @@ class ImportazioneServiceTest {
 
     @Test
     void unIndirizzoNuovoRidaUnaPossibilitaAllaGeocodifica() {
-        Societa fallita = certosa().setLat(null).setLng(null).setGeocodificaFallita(true);
+        Societa fallita = certosa().setLat(null).setLng(null).setGeocodificaFallitaVersione(1);
         when(repository.findAll()).thenReturn(List.of(fallita));
 
         service.importa(
                 flusso(INTESTAZIONE, riga("Certosa Calcio", "Campo Certosa", "Via Certosa 12", "Roma", "RM")),
                 false);
 
-        assertThat(salvate().getFirst().getGeocodificaFallita()).isNull();
+        assertThat(salvate().getFirst().getGeocodificaFallitaVersione()).isNull();
     }
 
     @Test

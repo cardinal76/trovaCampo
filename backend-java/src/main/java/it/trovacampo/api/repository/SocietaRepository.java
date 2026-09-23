@@ -33,13 +33,15 @@ public interface SocietaRepository extends MongoRepository<Societa, String> {
     List<Societa> tuttiICampi();
 
     /**
-     * Una società senza coordinate su cui la geocodifica non ha ancora
-     * rinunciato. {@code lat: null} comprende anche il campo assente.
+     * Una società senza coordinate su cui la versione corrente della
+     * geocodifica non ha ancora rinunciato. {@code lat: null} comprende anche
+     * il campo assente, e {@code $not $gte} anche una versione mai scritta:
+     * così i campi rinunciati da una versione precedente tornano in coda.
      */
-    @Query("{ 'lat': null, 'geocodificaFallita': { $ne: true } }")
-    List<Societa> daGeocodificare(Pageable pagina);
+    @Query("{ 'lat': null, 'geocodificaFallitaVersione': { $not: { $gte: ?0 } } }")
+    List<Societa> daGeocodificare(int versione, Pageable pagina);
 
-    default Optional<Societa> primaDaGeocodificare() {
-        return daGeocodificare(PageRequest.of(0, 1)).stream().findFirst();
+    default Optional<Societa> primaDaGeocodificare(int versione) {
+        return daGeocodificare(versione, PageRequest.of(0, 1)).stream().findFirst();
     }
 }

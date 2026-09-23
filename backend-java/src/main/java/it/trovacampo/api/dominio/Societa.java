@@ -52,12 +52,16 @@ public class Societa {
     private String testoRicerca;
 
     /**
-     * Vero quando la geocodifica automatica ha provato e non ha riconosciuto
-     * l'indirizzo: evita di riprovare all'infinito lo stesso indirizzo. Torna
-     * vuoto quando l'indirizzo cambia.
+     * La versione della geocodifica automatica che ha provato e non ha
+     * riconosciuto l'indirizzo: evita di riprovare all'infinito lo stesso
+     * indirizzo con lo stesso metodo. Torna vuoto quando l'indirizzo cambia.
+     *
+     * <p>Un numero e non un sì/no perché quando la ricerca migliora (è
+     * successo con la pulizia di "SNC" e delle abbreviazioni) i campi che la
+     * versione vecchia non aveva trovato vanno ritentati da soli.
      */
     @JsonIgnore
-    private Boolean geocodificaFallita;
+    private Integer geocodificaFallitaVersione;
 
     public String getId() {
         return id;
@@ -248,12 +252,12 @@ public class Societa {
         return this;
     }
 
-    public Boolean getGeocodificaFallita() {
-        return geocodificaFallita;
+    public Integer getGeocodificaFallitaVersione() {
+        return geocodificaFallitaVersione;
     }
 
-    public Societa setGeocodificaFallita(Boolean geocodificaFallita) {
-        this.geocodificaFallita = geocodificaFallita;
+    public Societa setGeocodificaFallitaVersione(Integer geocodificaFallitaVersione) {
+        this.geocodificaFallitaVersione = geocodificaFallitaVersione;
         return this;
     }
 }
