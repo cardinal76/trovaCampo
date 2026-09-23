@@ -158,28 +158,24 @@ Senza token l'endpoint risponde 404, come se non esistesse.
 
 ### Caricare
 
-Prima **in prova**, che non salva niente e dice cosa succederebbe:
+Dal browser, su **https://trovacampo.footballer.it/admin/importazione**. La
+pagina non è collegata dal resto dell'app, quindi va aperta scrivendo
+l'indirizzo:
+
+1. incolla il token (`IMPORTAZIONE_TOKEN`), che resta ricordato finché non chiudi
+   il browser;
+2. scegli il file;
+3. **Controlla il file**: il server lo legge senza salvare niente e mostra quante
+   righe inserirebbe, aggiornerebbe o scarterebbe, e perché;
+4. se l'esito torna, **Importa**. Il pulsante compare solo dopo un controllo
+   riuscito sullo stesso file.
+
+Lo stesso si può fare senza browser, per esempio da uno script:
 
 ```bash
-TOKEN=...   # il valore di IMPORTAZIONE_TOKEN
 curl -sS -H "X-Token-Importazione: $TOKEN" -F file=@campi.xlsx \
      "https://trovacampo.footballer.it/api/admin/importazione?prova=true"
 ```
-
-```json
-{
-  "prova": true,
-  "righeLette": 120,
-  "inserite": 112,
-  "aggiornate": 5,
-  "invariate": 1,
-  "scartate": [{ "riga": 14, "motivo": "mancano indirizzo" }],
-  "daGeocodificare": 117,
-  "colonneIgnorate": ["Presidente"]
-}
-```
-
-Se l'esito torna, la stessa chiamata **senza `?prova=true`** salva davvero.
 
 ## Memoria
 

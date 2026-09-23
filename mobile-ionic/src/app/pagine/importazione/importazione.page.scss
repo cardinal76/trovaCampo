@@ -1,0 +1,42 @@
+/* L'input vero resta nascosto: lo apre il pulsante "Scegli file". */
+.nascosto {
+  display: none;
+}
+
+.avviso ion-icon {
+  vertical-align: middle;
+  margin-right: 0.4rem;
+}
+
+ion-card-title ion-icon {
+  vertical-align: middle;
+}
+
+.conteggi {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    padding: 0.6rem;
+    border-radius: 8px;
+    background: var(--ion-color-light, #f4f5f8);
+  }
+
+  strong {
+    font-size: 1.4rem;
+    color: var(--ion-text-color, #000);
+  }
+
+  .da-guardare strong {
+    color: var(--ion-color-danger, #c5000f);
+  }
+}
+
+.scarti {
+  max-height: 20rem;
+  overflow-y: auto;
+}

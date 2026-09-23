@@ -31,8 +31,8 @@ L'app gira sullo stesso server di presenze, dietro il suo Caddy, su
 `https://trovacampo.footballer.it`. Passi e dettagli in [`DEPLOY.md`](DEPLOY.md).
 
 I campi si caricano anche in blocco da un file Excel (società, impianto,
-indirizzo): vedi "Importare da Excel" in [`DEPLOY.md`](DEPLOY.md) e il modello in
-[`documenti/importazione/`](documenti/importazione/).
+indirizzo) dalla pagina `/admin/importazione`: vedi "Importare da Excel" in
+[`DEPLOY.md`](DEPLOY.md) e il modello in [`documenti/importazione/`](documenti/importazione/).
 
 ## Struttura del repository
 
