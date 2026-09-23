@@ -206,6 +206,17 @@ nel token solo al login successivo.
 Chi importa finisce nel log del backend (`docker logs trovacampo-backend`),
 con il nome del file e quante righe ha scritto.
 
+## Modificare una scheda
+
+Chi ha il ruolo `trovacampo-admin` vede il pulsante **Modifica** in cima alla
+scheda di ogni società (dopo essere entrato almeno una volta da quel browser,
+come per il pulsante dell'importazione). Il modulo contiene campo, anagrafica
+e campionati; salvando si torna alla scheda aggiornata, e il backend annota nel
+log chi ha modificato cosa.
+
+Le coordinate: se cambi l'indirizzo lasciandole com'erano, o le svuoti, le
+ricalcola la geocodifica automatica; se le correggi a mano, valgono quelle.
+
 ## Memoria
 
 Il server ha già Keycloak, Postgres e lo Spring Boot di presenze. Per questo

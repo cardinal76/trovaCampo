@@ -32,6 +32,11 @@ public class GestoreErrori {
         return ResponseEntity.badRequest().body(Map.of("errore", messaggio));
     }
 
+    @ExceptionHandler(DatiNonValidiException.class)
+    public ResponseEntity<Map<String, String>> datiIncoerenti(DatiNonValidiException eccezione) {
+        return ResponseEntity.badRequest().body(Map.of("errore", eccezione.getMessage()));
+    }
+
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<Map<String, String>> fileTroppoGrande(
             MaxUploadSizeExceededException eccezione) {

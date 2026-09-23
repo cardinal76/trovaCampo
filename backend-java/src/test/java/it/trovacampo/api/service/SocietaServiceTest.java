@@ -1,6 +1,7 @@
 package it.trovacampo.api.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -10,6 +11,10 @@ import static org.mockito.Mockito.when;
 
 import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.repository.SocietaRepository;
+import it.trovacampo.api.dominio.Campionato;
+import it.trovacampo.api.dominio.TipoCampionato;
+import it.trovacampo.api.web.DatiNonValidiException;
+import it.trovacampo.api.web.ModificaSocietaRequest;
 import it.trovacampo.api.web.NuovoCampoRequest;
 import java.util.List;
 import java.util.Optional;
@@ -110,5 +115,103 @@ class SocietaServiceTest {
         when(repository.tuttiICampi()).thenReturn(campi);
 
         assertThat(service().tuttiICampi()).isSameAs(campi);
+    }
+
+    private Societa salvata() {
+        return new Societa()
+                .setId("1")
+                .setSiglaSocieta("A.S.D.")
+                .setNomeSocieta("Certosa Calcio")
+                .setNomeImpianto("Campo Certosa")
+                .setIndirizzoImpianto("Via della Certosa 12")
+                .setLocalitaImpianto("Roma")
+                .setProvinciaImpianto("RM")
+                .setLat(41.89)
+                .setLng(12.48)
+                .setPresidente("Mario Rossi");
+    }
+
+    private static ModificaSocietaRequest modulo(String indirizzo, Double lat, Double lng) {
+        return new ModificaSocietaRequest(
+                " A.S.D. ", "Certosa Calcio ", "LAZIO", "Campo Certosa", indirizzo, "Roma", "rm",
+                lat, lng, "4521", "  ", null, "06 1234", null, "info@certosa.it", null,
+                true, "180 euro",
+                List.of(
+                        new Campionato("Terza Categoria", "B", "LAZIO", null),
+                        new Campionato("  ", "", "", TipoCampionato.SCUOLA_CALCIO)));
+    }
+
+    private Societa modifica(ModificaSocietaRequest richiesta) {
+        when(repository.findById("1")).thenReturn(Optional.of(salvata()));
+        when(repository.save(any())).thenAnswer(invocazione -> invocazione.getArgument(0));
+        return service().modifica("1", richiesta).orElseThrow();
+    }
+
+    @Test
+    void laModificaSostituisceLaSchedaEPulisceIDati() {
+        Societa modificata = modifica(modulo("Via della Certosa 12", 41.89, 12.48));
+
+        assertThat(modificata.getSiglaSocieta()).isEqualTo("A.S.D.");
+        assertThat(modificata.getNomeSocieta()).isEqualTo("Certosa Calcio");
+        assertThat(modificata.getProvinciaImpianto()).isEqualTo("RM");
+        // Un campo svuotato nel modulo sparisce dalla scheda.
+        assertThat(modificata.getPresidente()).isNull();
+        assertThat(modificata.getTelefono()).isEqualTo("06 1234");
+        // Le righe vuote dei campionati si scartano, il tipo mancante è agonistica.
+        assertThat(modificata.getCampionati())
+                .containsExactly(new Campionato("Terza Categoria", "B", "LAZIO", TipoCampionato.AGONISTICA));
+        assertThat(modificata.getTestoRicerca()).contains("certosa calcio");
+        // Stesso indirizzo e stesse coordinate: il segnaposto resta.
+        assertThat(modificata.getLat()).isEqualTo(41.89);
+    }
+
+    @Test
+    void cambiandoLIndirizzoLeCoordinateSiRicalcolano() {
+        Societa modificata = modifica(modulo("Via della Certosa 99", 41.89, 12.48));
+
+        assertThat(modificata.getLat()).isNull();
+        assertThat(modificata.getLng()).isNull();
+    }
+
+    @Test
+    void coordinateCorretteAManoValgonoAncheSeCambiaLIndirizzo() {
+        Societa modificata = modifica(modulo("Via della Certosa 99", 41.9, 12.5));
+
+        assertThat(modificata.getLat()).isEqualTo(41.9);
+        assertThat(modificata.getLng()).isEqualTo(12.5);
+        assertThat(modificata.getGeocodificaFallitaVersione()).isNull();
+    }
+
+    @Test
+    void coordinateSvuotateSiRicalcolano() {
+        assertThat(modifica(modulo("Via della Certosa 12", null, null)).getLat()).isNull();
+    }
+
+    @Test
+    void senzaScuolaCalcioNonRestanoIPrezzi() {
+        ModificaSocietaRequest m = modulo("Via della Certosa 12", 41.89, 12.48);
+        ModificaSocietaRequest senza =
+                new ModificaSocietaRequest(
+                        m.siglaSocieta(), m.nomeSocieta(), m.comitatoRegionale(), m.nomeImpianto(),
+                        m.indirizzoImpianto(), m.localitaImpianto(), m.provinciaImpianto(), m.lat(), m.lng(),
+                        m.matricola(), m.presidente(), m.indirizzoSede(), m.telefono(), m.fax(), m.email(),
+                        m.sitoWeb(), false, "180 euro", m.campionati());
+
+        assertThat(modifica(senza).getPrezziScuolaCalcio()).isNull();
+    }
+
+    @Test
+    void latitudineSenzaLongitudineERifiutata() {
+        assertThatThrownBy(() -> service().modifica("1", modulo("Via 1", 41.9, null)))
+                .isInstanceOf(DatiNonValidiException.class)
+                .hasMessage("latitudine e longitudine vanno date insieme");
+    }
+
+    @Test
+    void unaSocietaCheNonEsisteNonSiModifica() {
+        when(repository.findById("x")).thenReturn(Optional.empty());
+
+        assertThat(service().modifica("x", modulo("Via 1", null, null))).isEmpty();
+        verify(repository, never()).save(any());
     }
 }

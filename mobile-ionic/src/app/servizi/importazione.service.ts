@@ -1,9 +1,10 @@
-import { HttpClient, HttpErrorResponse, HttpHeaders, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, from, switchMap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { EsitoImportazione } from '../modelli/importazione';
-import { AutenticazioneService, RUOLO_AMMINISTRATORE } from './autenticazione.service';
+import { AutenticazioneService } from './autenticazione.service';
+import { messaggioErrore } from './errori-amministrazione';
 
 @Injectable({ providedIn: 'root' })
 export class ImportazioneService {
@@ -27,27 +28,7 @@ export class ImportazioneService {
           params: new HttpParams().set('prova', String(prova)),
         }),
       ),
-      catchError((errore: unknown) => throwError(() => new Error(messaggio(errore)))),
+      catchError((errore: unknown) => throwError(() => new Error(messaggioErrore(errore)))),
     );
-  }
-}
-
-function messaggio(errore: unknown): string {
-  if (!(errore instanceof HttpErrorResponse)) {
-    // Il rinnovo del token è fallito: la sessione su Keycloak è finita.
-    return 'La sessione è scaduta: ricarica la pagina per rientrare.';
-  }
-  switch (errore.status) {
-    case 0:
-      return 'Server non raggiungibile. Controlla la connessione e riprova.';
-    case 401:
-      return 'La sessione è scaduta: ricarica la pagina per rientrare.';
-    case 403:
-      return `Il tuo utente non ha il ruolo ${RUOLO_AMMINISTRATORE}.`;
-    case 413:
-      return 'Il file supera i 20 MB.';
-    default:
-      // 400 e simili: il backend spiega cosa non va nel file, es. le colonne mancanti.
-      return errore.error?.errore ?? `Errore del server (${errore.status}).`;
   }
 }

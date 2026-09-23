@@ -31,5 +31,10 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pagine/importazione/importazione.page').then((m) => m.ImportazionePage),
   },
+  {
+    // Per chi amministra: si apre dal pulsante "Modifica" della scheda.
+    path: 'admin/societa/:id',
+    loadComponent: () => import('./pagine/modifica/modifica.page').then((m) => m.ModificaPage),
+  },
   { path: '**', redirectTo: '' },
 ];
