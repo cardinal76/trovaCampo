@@ -1,4 +1,4 @@
-import { amministratoreRicordato, ricordaAmministratore } from './amministratore-ricordato';
+import { amministratoreRicordato, nomeRicordato, ricordaAmministratore } from './amministratore-ricordato';
 
 describe('amministratoreRicordato', () => {
   afterEach(() => ricordaAmministratore(false));
@@ -13,6 +13,14 @@ describe('amministratoreRicordato', () => {
 
     ricordaAmministratore(false);
     expect(amministratoreRicordato()).toBeFalse();
+  });
+
+  it('ricorda il nome solo finché l\'amministratore resta entrato', () => {
+    ricordaAmministratore(true, 'Marco');
+    expect(nomeRicordato()).toBe('Marco');
+
+    ricordaAmministratore(false);
+    expect(nomeRicordato()).toBeNull();
   });
 
   it('senza localStorage non mostra il pulsante e non si rompe', () => {

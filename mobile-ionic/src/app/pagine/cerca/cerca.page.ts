@@ -1,10 +1,16 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { IonButton, IonContent, IonIcon, IonInput } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import { add, cloudUpload } from 'ionicons/icons';
-import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
+import {
+  IonButton,
+  IonButtons,
+  IonContent,
+  IonHeader,
+  IonInput,
+  IonTitle,
+  IonToolbar,
+} from '@ionic/angular/standalone';
+import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
 
 /**
  * Prima schermata della Funzione 1 (Ricerca campo): titolo, casella di
@@ -13,7 +19,18 @@ import { amministratoreRicordato } from '../../servizi/amministratore-ricordato'
  */
 @Component({
   selector: 'pagina-cerca',
-  imports: [FormsModule, RouterLink, IonButton, IonContent, IonIcon, IonInput],
+  imports: [
+    FormsModule,
+    RouterLink,
+    MenuUtenteComponent,
+    IonButton,
+    IonButtons,
+    IonContent,
+    IonHeader,
+    IonInput,
+    IonTitle,
+    IonToolbar,
+  ],
   templateUrl: './cerca.page.html',
   styleUrl: './cerca.page.scss',
 })
@@ -22,21 +39,6 @@ export class CercaPage {
 
   readonly testo = signal('');
   readonly pronto = computed(() => this.testo().trim().length > 0);
-  /** Pulsante dell'importazione: solo se qui è entrato un amministratore. */
-  readonly amministratore = signal(amministratoreRicordato());
-
-  constructor() {
-    addIcons({ add, cloudUpload });
-  }
-
-  /**
-   * Ionic tiene in vita la home mentre si naviga: tornando dalla pagina di
-   * importazione, dopo un login o un'uscita, il pulsante va riletto.
-   */
-  ionViewWillEnter(): void {
-    this.amministratore.set(amministratoreRicordato());
-  }
-
   cerca(): void {
     const termine = this.testo().trim();
 

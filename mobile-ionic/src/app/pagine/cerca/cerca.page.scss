@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 15vh;
+  padding-top: 12vh;
 }
 
 .titolo {
@@ -22,22 +22,7 @@
   min-width: 8rem;
 }
 
-.sfoglia {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 2rem;
-}
-
 .aggiungi {
   margin-top: 0.5rem;
 }
 
-.amministrazione {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-top: 2rem;
-}

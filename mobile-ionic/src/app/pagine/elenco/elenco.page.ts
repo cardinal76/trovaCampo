@@ -2,12 +2,10 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
   InfiniteScrollCustomEvent,
-  IonBackButton,
   IonButton,
   IonButtons,
   IonContent,
   IonHeader,
-  IonIcon,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
   IonItem,
@@ -20,8 +18,7 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import { map } from 'ionicons/icons';
+import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
 import { Societa, indirizzoCompleto, nomeCompleto } from '../../modelli/societa';
 import { SocietaService } from '../../servizi/societa.service';
 
@@ -48,12 +45,11 @@ function normalizza(testo: string): string {
   selector: 'pagina-elenco',
   imports: [
     RouterLink,
-    IonBackButton,
+    MenuUtenteComponent,
     IonButton,
     IonButtons,
     IonContent,
     IonHeader,
-    IonIcon,
     IonInfiniteScroll,
     IonInfiniteScrollContent,
     IonItem,
@@ -100,7 +96,6 @@ export class ElencoPage {
   readonly visibili = computed(() => this.filtrati().slice(0, this.mostrati()));
 
   constructor() {
-    addIcons({ map });
     this.carica();
   }
 

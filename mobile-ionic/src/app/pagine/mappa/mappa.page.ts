@@ -11,18 +11,14 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import {
-  IonBackButton,
   IonButton,
   IonButtons,
   IonContent,
   IonHeader,
-  IonIcon,
   IonSpinner,
   IonTitle,
   IonToolbar,
 } from '@ionic/angular/standalone';
-import { addIcons } from 'ionicons';
-import { list } from 'ionicons/icons';
 import * as L from 'leaflet';
 import {
   Societa,
@@ -32,6 +28,7 @@ import {
   nomeCompleto,
   testoSicuro,
 } from '../../modelli/societa';
+import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
 import { SocietaService } from '../../servizi/societa.service';
 
 /** L'Italia intera, finché non ci sono campi da inquadrare. */
@@ -49,12 +46,11 @@ const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
   selector: 'pagina-mappa',
   imports: [
     RouterLink,
-    IonBackButton,
+    MenuUtenteComponent,
     IonButton,
     IonButtons,
     IonContent,
     IonHeader,
-    IonIcon,
     IonSpinner,
     IonTitle,
     IonToolbar,
@@ -78,7 +74,6 @@ export class MappaPage implements OnDestroy {
   );
 
   constructor() {
-    addIcons({ list });
     this.carica();
 
     // Il contenitore esiste solo dopo che i dati sono arrivati: la mappa si
