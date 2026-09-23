@@ -162,12 +162,12 @@ public class ImportazioneService {
         if (riga.lat() != null) {
             if (!Objects.equals(riga.lat(), societa.getLat())
                     || !Objects.equals(riga.lng(), societa.getLng())) {
-                societa.setLat(riga.lat()).setLng(riga.lng()).setGeocodificaFallita(null);
+                societa.setLat(riga.lat()).setLng(riga.lng()).setGeocodificaFallitaVersione(null);
                 cambiata = true;
             }
         } else if (spostata) {
             // Anche un tentativo fallito sull'indirizzo vecchio non conta più.
-            societa.setLat(null).setLng(null).setGeocodificaFallita(null);
+            societa.setLat(null).setLng(null).setGeocodificaFallitaVersione(null);
         }
 
         return cambiata;
