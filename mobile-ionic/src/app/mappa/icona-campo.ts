@@ -9,7 +9,7 @@ export const ZOOM_NOMI = 16;
 
 /** Campo da calcio visto dall'alto, disegnato in SVG per non dipendere da immagini. */
 const SVG_CAMPO = `
-  <svg viewBox="0 0 28 20" width="28" height="20" aria-hidden="true">
+  <svg viewBox="0 0 28 20" width="35" height="25" aria-hidden="true">
     <rect x="0.5" y="0.5" width="27" height="19" rx="2" fill="#14532d" stroke="#fff" />
     <g fill="none" stroke="#fff" stroke-width="1">
       <rect x="2.5" y="2.5" width="23" height="15" />
@@ -25,10 +25,10 @@ export function iconaCampo(campo: SocietaGeolocalizzata): L.DivIcon {
   return L.divIcon({
     className: 'icona-campo',
     html: `${SVG_CAMPO}<span class="nome-campo">${testoSicuro(nomeCompleto(campo))}</span>`,
-    iconSize: [28, 20],
-    iconAnchor: [14, 10],
-    popupAnchor: [0, -10],
-    tooltipAnchor: [14, 0],
+    iconSize: [35, 25],
+    iconAnchor: [17, 12],
+    popupAnchor: [0, -12],
+    tooltipAnchor: [18, 0],
   });
 }
 
