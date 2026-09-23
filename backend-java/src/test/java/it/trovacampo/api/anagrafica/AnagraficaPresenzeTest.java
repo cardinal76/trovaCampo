@@ -69,4 +69,21 @@ class AnagraficaPresenzeTest {
                         new AnagraficaPresenze.Squadra(
                                 "ECCELLENZA", "Regionali", "2026/2027", "A", "", false, 190L));
     }
+
+    @Test
+    void cercaUnaSocietaPerNome() {
+        server.expect(
+                        requestTo(
+                                "http://presenze-backend:8080/api/pubblico/anagrafica/societa?q=A.S.D.%20Boreale"))
+                .andRespond(
+                        withSuccess(
+                                """
+                                [{"id":7,"denominazione":"BOREALE",
+                                  "campo":{"id":190,"nome":"DON ORIONE"}}]
+                                """,
+                                MediaType.APPLICATION_JSON));
+
+        assertThat(anagrafica.cerca("A.S.D. Boreale"))
+                .containsExactly(new AnagraficaPresenze.Riferimento(7L, "BOREALE"));
+    }
 }

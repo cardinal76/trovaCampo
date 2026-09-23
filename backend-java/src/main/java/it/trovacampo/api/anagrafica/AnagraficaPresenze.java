@@ -51,6 +51,20 @@ public class AnagraficaPresenze {
         return impianti == null ? List.of() : List.of(impianti);
     }
 
+    /** Le società che si chiamano, o si sono chiamate, più o meno così (al massimo trenta). */
+    public List<Riferimento> cerca(String nome) {
+        Riferimento[] trovate =
+                client.get()
+                        .uri(
+                                uri ->
+                                        uri.path("/api/pubblico/anagrafica/societa")
+                                                .queryParam("q", nome)
+                                                .build())
+                        .retrieve()
+                        .body(Riferimento[].class);
+        return trovate == null ? List.of() : List.of(trovate);
+    }
+
     /** Una società con tutte le sue squadre. */
     public Scheda scheda(long id) {
         return client.get()
