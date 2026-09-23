@@ -19,6 +19,7 @@
 
   <properties>
     <java.version>21</java.version>
+    <poi.version>5.4.1</poi.version>
   </properties>
 
   <dependencies>
@@ -37,6 +38,12 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <!-- Lettura dei file Excel dell'importazione, sia .xlsx sia il vecchio .xls. -->
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>${poi.version}</version>
     </dependency>
 
     <dependency>
