@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { IonButton, IonContent, IonIcon, IonInput } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { add, cloudUpload } from 'ionicons/icons';
+import { add, cloudUpload, logIn, logOut } from 'ionicons/icons';
 import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
 
 /**
@@ -22,11 +22,14 @@ export class CercaPage {
 
   readonly testo = signal('');
   readonly pronto = computed(() => this.testo().trim().length > 0);
-  /** Pulsante dell'importazione: solo se qui è entrato un amministratore. */
+  /**
+   * Pulsanti di amministrazione, se qui è entrato un amministratore;
+   * altrimenti "Accedi".
+   */
   readonly amministratore = signal(amministratoreRicordato());
 
   constructor() {
-    addIcons({ add, cloudUpload });
+    addIcons({ add, cloudUpload, logIn, logOut });
   }
 
   /**

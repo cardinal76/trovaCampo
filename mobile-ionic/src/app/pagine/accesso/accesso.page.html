@@ -1,0 +1,64 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Accedi</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="contenuto-largo">
+    @switch (stato()) {
+      @case ('in-corso') {
+        <div class="attesa">
+          <ion-spinner name="crescent"></ion-spinner>
+          <p>Accesso in corso…</p>
+        </div>
+      }
+      @case ('errore') {
+        <ion-card color="danger" class="avviso">
+          <ion-card-content>
+            <ion-icon name="warning"></ion-icon>
+            Il login non risponde. Riprova tra poco.
+          </ion-card-content>
+        </ion-card>
+        <ion-button expand="block" (click)="entra()">Riprova</ion-button>
+      }
+      @case ('entrato') {
+        <ion-item lines="full" class="utente">
+          <ion-label>
+            <p>Entrato come</p>
+            <h3>{{ autenticazione.nome() }}</h3>
+          </ion-label>
+          <ion-button slot="end" fill="clear" (click)="esci()">
+            <ion-icon slot="start" name="log-out"></ion-icon>
+            Esci
+          </ion-button>
+        </ion-item>
+
+        <ion-card color="warning" class="avviso">
+          <ion-card-content>
+            <ion-icon name="warning"></ion-icon>
+            Questo utente non ha il ruolo <strong>{{ ruolo }}</strong>. Se non è l'utente giusto,
+            esci e rientra con l'altro; se lo è, fatti assegnare il ruolo di realm in Keycloak e poi
+            esci e rientra.
+          </ion-card-content>
+        </ion-card>
+
+        <ion-text color="medium">
+          <p class="ruoli">
+            Ruoli nel token:
+            @for (r of autenticazione.ruoli(); track r; let ultimo = $last) {
+              <code>{{ r }}</code>{{ ultimo ? '' : ', ' }}
+            } @empty {
+              nessuno
+            }
+          </p>
+        </ion-text>
+
+        <ion-button expand="block" fill="outline" routerLink="/">Torna alla ricerca</ion-button>
+      }
+    }
+  </div>
+</ion-content>

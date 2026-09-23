@@ -21,6 +21,8 @@ export class AutenticazioneService {
 
   readonly nome = signal<string | null>(null);
   readonly amministratore = signal(false);
+  /** I ruoli di realm nel token, per capire cosa manca a chi non entra. */
+  readonly ruoli = signal<string[]>([]);
 
   /**
    * Manda al login di Keycloak se non si è già entrati, e torna qui dopo.
@@ -73,6 +75,7 @@ export class AutenticazioneService {
   private aggiornaUtente(keycloak: Keycloak): void {
     const profilo = keycloak.tokenParsed as { preferred_username?: string; name?: string } | undefined;
     this.nome.set(profilo?.name ?? profilo?.preferred_username ?? null);
+    this.ruoli.set(keycloak.realmAccess?.roles ?? []);
     const amministratore = keycloak.hasRealmRole(RUOLO_AMMINISTRATORE);
     this.amministratore.set(amministratore);
     ricordaAmministratore(amministratore);

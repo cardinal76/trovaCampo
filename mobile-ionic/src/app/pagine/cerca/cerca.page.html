@@ -36,7 +36,16 @@
           <ion-icon slot="start" name="cloud-upload"></ion-icon>
           Importa campi
         </ion-button>
+        <ion-button fill="clear" color="medium" size="small" routerLink="/accedi" [queryParams]="{ esci: 1 }">
+          <ion-icon slot="start" name="log-out"></ion-icon>
+          Esci
+        </ion-button>
       </div>
+    } @else {
+      <ion-button class="accedi" fill="clear" color="medium" size="small" routerLink="/accedi">
+        <ion-icon slot="start" name="log-in"></ion-icon>
+        Accedi
+      </ion-button>
     }
   </div>
 </ion-content>
