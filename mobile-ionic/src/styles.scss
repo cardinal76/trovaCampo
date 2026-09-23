@@ -1,20 +1,12 @@
 /* Stili globali di TrovaCampo. */
 
 /*
- * Leaflet inserisce pin e popup fuori dai template Angular, quindi il loro
+ * Leaflet inserisce icone e popup fuori dai template Angular, quindi il loro
  * stile non può stare nel foglio della pagina: verrebbe scartato
  * dall'incapsulamento dei componenti.
- */
-.pin-campo {
-  background: var(--ion-color-primary, #2f6fce);
-  border: 2px solid #fff;
-  border-radius: 50% 50% 50% 0;
-  box-shadow: 0 1px 4px rgb(0 0 0 / 40%);
-  transform: rotate(-45deg);
-}
-
-/*
- * Icona di campo da calcio delle mappe (src/app/mappa/icona-campo.ts), dallo zoom 14 in su. Il nome
+ *
+ * Icona HTML di campo da calcio delle mappe (src/app/mappa/icona-campo.ts):
+ * nei risultati sempre, nella pagina Mappa dallo zoom 14 in su. Il nome
  * della società resta nascosto finché la mappa non ha la classe
  * mostra-nomi-campi, cioè dallo zoom 16.
  */
