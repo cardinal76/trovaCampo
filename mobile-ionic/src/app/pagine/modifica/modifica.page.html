@@ -1,0 +1,193 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Modifica scheda</ion-title>
+    @if (stato() === 'pronto' && autenticazione.amministratore()) {
+      <ion-buttons slot="end">
+        <ion-button [disabled]="salvataggio()" (click)="salva()">
+          @if (salvataggio()) {
+            <ion-spinner name="crescent"></ion-spinner>
+          } @else {
+            Salva
+          }
+        </ion-button>
+      </ion-buttons>
+    }
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="contenuto-largo">
+    @switch (stato()) {
+      @case ('accesso') {
+        <div class="attesa">
+          <ion-spinner name="crescent"></ion-spinner>
+          <p>Accesso in corso…</p>
+        </div>
+      }
+      @case ('caricamento') {
+        <div class="attesa">
+          <ion-spinner name="crescent"></ion-spinner>
+        </div>
+      }
+      @case ('errore') {
+        <ion-card color="danger">
+          <ion-card-content>
+            <ion-icon name="warning"></ion-icon>
+            Non è stato possibile aprire la scheda. Riprova tra poco.
+          </ion-card-content>
+        </ion-card>
+        <ion-button expand="block" (click)="entra()">Riprova</ion-button>
+      }
+      @case ('pronto') {
+        <ion-item lines="full" class="utente">
+          <ion-label>
+            <p>Entrato come</p>
+            <h3>{{ autenticazione.nome() }}</h3>
+          </ion-label>
+          <ion-button slot="end" fill="clear" (click)="esci()">
+            <ion-icon slot="start" name="log-out"></ion-icon>
+            Esci
+          </ion-button>
+        </ion-item>
+
+        @if (!autenticazione.amministratore()) {
+          <ion-card color="warning">
+            <ion-card-content>
+              <ion-icon name="warning"></ion-icon>
+              Il tuo utente non ha il ruolo <strong>{{ ruolo }}</strong>: chiedi a chi amministra
+              Keycloak di assegnartelo, poi esci e rientra.
+            </ion-card-content>
+          </ion-card>
+        } @else if (modulo(); as m) {
+          <ion-list>
+            <ion-list-header>
+              <ion-label>Campo</ion-label>
+            </ion-list-header>
+            <ion-item>
+              <ion-input label="Nome impianto *" labelPlacement="stacked" [(ngModel)]="m.nomeImpianto"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Indirizzo *" labelPlacement="stacked" [(ngModel)]="m.indirizzoImpianto"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Comune" labelPlacement="stacked" [(ngModel)]="m.localitaImpianto"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Provincia" labelPlacement="stacked" maxlength="10" [(ngModel)]="m.provinciaImpianto"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Latitudine" labelPlacement="stacked" inputmode="decimal" placeholder="es. 41,8919" [(ngModel)]="m.lat"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Longitudine" labelPlacement="stacked" inputmode="decimal" placeholder="es. 12,4863" [(ngModel)]="m.lng"></ion-input>
+            </ion-item>
+            <ion-item lines="none">
+              <ion-note class="nota">
+                Se cambi l'indirizzo lasciando le coordinate com'erano, o le svuoti, il server le
+                ricalcola da solo. Se le correggi a mano, valgono quelle che scrivi.
+              </ion-note>
+            </ion-item>
+
+            <ion-list-header>
+              <ion-label>Società</ion-label>
+            </ion-list-header>
+            <ion-item>
+              <ion-input label="Sigla" labelPlacement="stacked" placeholder="es. A.S.D." [(ngModel)]="m.siglaSocieta"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Nome società *" labelPlacement="stacked" [(ngModel)]="m.nomeSocieta"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Comitato regionale" labelPlacement="stacked" [(ngModel)]="m.comitatoRegionale"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Matricola" labelPlacement="stacked" [(ngModel)]="m.matricola"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Presidente" labelPlacement="stacked" [(ngModel)]="m.presidente"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Indirizzo sede" labelPlacement="stacked" [(ngModel)]="m.indirizzoSede"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Telefono" labelPlacement="stacked" type="tel" [(ngModel)]="m.telefono"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Fax" labelPlacement="stacked" type="tel" [(ngModel)]="m.fax"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Email" labelPlacement="stacked" type="email" [(ngModel)]="m.email"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-input label="Sito web" labelPlacement="stacked" type="url" [(ngModel)]="m.sitoWeb"></ion-input>
+            </ion-item>
+            <ion-item>
+              <ion-toggle [(ngModel)]="m.scuolaCalcio">Scuola calcio</ion-toggle>
+            </ion-item>
+            @if (m.scuolaCalcio) {
+              <ion-item>
+                <ion-input label="Prezzi scuola calcio" labelPlacement="stacked" placeholder="es. 180 € all'anno" [(ngModel)]="m.prezziScuolaCalcio"></ion-input>
+              </ion-item>
+            }
+
+            <ion-list-header>
+              <ion-label>Campionati</ion-label>
+              <ion-button (click)="aggiungiCampionato(m)">
+                <ion-icon slot="start" name="add"></ion-icon>
+                Aggiungi
+              </ion-button>
+            </ion-list-header>
+            @for (campionato of m.campionati; track $index; let i = $index) {
+              <div class="campionato">
+                <ion-item>
+                  <ion-input label="Campionato" labelPlacement="stacked" placeholder="es. Promozione" [(ngModel)]="campionato.descrizione"></ion-input>
+                  <ion-button slot="end" fill="clear" color="danger" (click)="togliCampionato(m, i)" aria-label="Togli il campionato">
+                    <ion-icon slot="icon-only" name="trash"></ion-icon>
+                  </ion-button>
+                </ion-item>
+                <div class="affiancati">
+                  <ion-item>
+                    <ion-input label="Girone" labelPlacement="stacked" [(ngModel)]="campionato.girone"></ion-input>
+                  </ion-item>
+                  <ion-item>
+                    <ion-input label="Comitato" labelPlacement="stacked" [(ngModel)]="campionato.comitato"></ion-input>
+                  </ion-item>
+                  <ion-item>
+                    <ion-select label="Tipo" labelPlacement="stacked" interface="popover" [(ngModel)]="campionato.tipo">
+                      <ion-select-option value="Agonistica">Agonistica</ion-select-option>
+                      <ion-select-option value="ScuolaCalcio">Scuola calcio</ion-select-option>
+                    </ion-select>
+                  </ion-item>
+                </div>
+              </div>
+            } @empty {
+              <ion-item lines="none">
+                <ion-note>Nessun campionato.</ion-note>
+              </ion-item>
+            }
+          </ion-list>
+
+          @if (errore(); as messaggio) {
+            <ion-card color="danger">
+              <ion-card-content>
+                <ion-icon name="warning"></ion-icon>
+                {{ messaggio }}
+              </ion-card-content>
+            </ion-card>
+          }
+
+          <ion-button expand="block" class="salva" [disabled]="salvataggio()" (click)="salva()">
+            @if (salvataggio()) {
+              <ion-spinner name="crescent"></ion-spinner>
+            } @else {
+              Salva
+            }
+          </ion-button>
+        }
+      }
+    }
+  </div>
+</ion-content>

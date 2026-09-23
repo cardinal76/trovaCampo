@@ -4,6 +4,14 @@
       <ion-back-button defaultHref="/"></ion-back-button>
     </ion-buttons>
     <ion-title>Scheda società</ion-title>
+    @if (amministratore()) {
+      <ion-buttons slot="end">
+        <ion-button [routerLink]="['/admin/societa', id]">
+          <ion-icon slot="start" name="create"></ion-icon>
+          Modifica
+        </ion-button>
+      </ion-buttons>
+    }
   </ion-toolbar>
 </ion-header>
 

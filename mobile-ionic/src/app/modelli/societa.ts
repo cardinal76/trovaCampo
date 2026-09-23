@@ -33,6 +33,9 @@ export interface Societa {
   campionati?: Campionato[];
 }
 
+/** La scheda come la manda la pagina di modifica: tutto tranne l'id. */
+export type ModificaSocieta = Omit<Societa, 'id'>;
+
 export interface NuovoCampo {
   nomeSocieta: string;
   nomeImpianto: string;

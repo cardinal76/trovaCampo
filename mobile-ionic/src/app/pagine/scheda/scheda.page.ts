@@ -1,10 +1,12 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
   IonBackButton,
+  IonButton,
   IonButtons,
   IonContent,
   IonHeader,
+  IonIcon,
   IonItem,
   IonLabel,
   IonList,
@@ -14,7 +16,10 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { create } from 'ionicons/icons';
 import { Societa, indirizzoCompleto, nomeCompleto } from '../../modelli/societa';
+import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
 import { SocietaService } from '../../servizi/societa.service';
 
 type Stato = 'caricamento' | 'completata' | 'errore';
@@ -27,10 +32,13 @@ type Stato = 'caricamento' | 'completata' | 'errore';
 @Component({
   selector: 'pagina-scheda',
   imports: [
+    RouterLink,
     IonBackButton,
+    IonButton,
     IonButtons,
     IonContent,
     IonHeader,
+    IonIcon,
     IonItem,
     IonLabel,
     IonList,
@@ -46,8 +54,11 @@ export class SchedaPage {
   private readonly rotta = inject(ActivatedRoute);
   private readonly service = inject(SocietaService);
 
+  readonly id = this.rotta.snapshot.paramMap.get('id') ?? '';
   readonly societa = signal<Societa | null>(null);
   readonly stato = signal<Stato>('caricamento');
+  /** Il pulsante "Modifica": solo se su questo browser è entrato un amministratore. */
+  readonly amministratore = signal(amministratoreRicordato());
 
   readonly indirizzoCampo = computed(() => {
     const societa = this.societa();
@@ -94,9 +105,16 @@ export class SchedaPage {
   });
 
   constructor() {
-    const id = this.rotta.snapshot.paramMap.get('id') ?? '';
+    addIcons({ create });
+  }
 
-    this.service.perId(id).subscribe({
+  /**
+   * A ogni ingresso e non solo alla creazione: tornando dalla modifica la
+   * scheda deve mostrare i dati appena salvati.
+   */
+  ionViewWillEnter(): void {
+    this.amministratore.set(amministratoreRicordato());
+    this.service.perId(this.id).subscribe({
       next: (dati) => {
         this.societa.set(dati);
         this.stato.set('completata');
