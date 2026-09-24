@@ -71,6 +71,15 @@ describe('istruzioni', () => {
   });
 
   describe('posizione', () => {
+    it('disattivata dal sito: niente impostazioni da toccare, su nessun dispositivo', () => {
+      for (const piattaforma of [ANDROID, IPHONE, COMPUTER]) {
+        const tutto = testo(piattaforma, 'vietata-dal-sito', 'p');
+        expect(tutto).toContain('disattivata dal sito');
+        expect(tutto).toContain('Non serve toccare le impostazioni');
+        expect(tutto).not.toContain('Autorizzazioni');
+      }
+    });
+
     it('bloccata su Android: icona dell indirizzo e autorizzazioni di Chrome', () => {
       const tutto = testo(ANDROID, 'bloccata', 'p');
       expect(tutto).toContain('Autorizzazioni → Posizione → Consenti');
@@ -125,6 +134,7 @@ describe('istruzioni', () => {
     expect(statoNotifiche('iphone-da-installare').testo).toBe('non disponibili qui');
     expect(statoPosizione('consentita')?.testo).toBe('consentita');
     expect(statoPosizione('bloccata')?.testo).toBe('bloccata');
+    expect(statoPosizione('vietata-dal-sito')?.testo).toBe('disattivata dal sito');
     expect(statoPosizione('sconosciuta')).toBeNull();
   });
 });

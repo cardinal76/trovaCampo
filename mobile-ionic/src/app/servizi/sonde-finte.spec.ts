@@ -67,6 +67,8 @@ export class SondeFinte implements SondeBrowser {
   pushManager = true;
   notifiche: NotificationPermission | null = 'default';
   geolocalizzazione = true;
+  /** La Permissions-Policy del server vieta la posizione. */
+  vietataDalSito = false;
   permessi: Partial<Record<'geolocation' | 'notifications', PermissionState | null>> | null = {
     geolocation: 'prompt',
     notifications: 'prompt',
@@ -81,6 +83,7 @@ export class SondeFinte implements SondeBrowser {
   conPushManager = () => this.pushManager;
   permessoNotifiche = () => this.notifiche;
   conGeolocalizzazione = () => this.geolocalizzazione;
+  posizioneVietataDalSito = () => this.vietataDalSito;
   interroga = async (nome: 'geolocation' | 'notifications') => this.permessi?.[nome] ?? null;
 
   /** Un iPhone con Safari, non dalla schermata Home: niente Notification né PushManager. */

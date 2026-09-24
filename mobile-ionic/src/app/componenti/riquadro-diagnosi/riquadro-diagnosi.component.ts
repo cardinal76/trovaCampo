@@ -4,6 +4,7 @@ import { addIcons } from 'ionicons';
 import {
   alertCircleOutline,
   closeOutline,
+  constructOutline,
   eyeOffOutline,
   locationOutline,
   lockOpenOutline,
@@ -160,6 +161,7 @@ export class RiquadroDiagnosiComponent {
     addIcons({
       alertCircleOutline,
       closeOutline,
+      constructOutline,
       eyeOffOutline,
       locationOutline,
       lockOpenOutline,

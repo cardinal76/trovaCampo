@@ -94,6 +94,37 @@ describe('DiagnosiService', () => {
       expect(servizio.posizione()).toBe('bloccata');
     });
 
+    /**
+     * Con geolocation=() nella Permissions-Policy del server Chrome dice
+     * anche "denied": senza distinguerlo, la pagina mandava l'utente a
+     * sbloccare impostazioni in cui era già tutto consentito.
+     */
+    it('vietata dalla Permissions-Policy del sito, anche se il permesso dice denied', async () => {
+      const sonde = new SondeFinte();
+      sonde.permessi = { geolocation: 'denied' };
+      sonde.vietataDalSito = true;
+      const servizio = diagnosi(sonde);
+
+      await servizio.aggiorna();
+      expect(servizio.posizione()).toBe('vietata-dal-sito');
+    });
+
+    it('vietata dal sito riconosciuta dal messaggio del browser, dove la Permissions API tace', async () => {
+      const sonde = new SondeFinte();
+      sonde.permessi = null;
+      const servizio = diagnosi(sonde);
+
+      await servizio.esitoPosizione(
+        errorePerCodice(1, 'Geolocation has been disabled in this document by permissions policy.'),
+      );
+      expect(servizio.posizione()).toBe('vietata-dal-sito');
+    });
+
+    it('un no dell utente resta un no, non un divieto del sito', () => {
+      expect(errorePerCodice(1, 'User denied Geolocation').motivo).toBe('negata');
+      expect(errorePerCodice(1, 'Feature policy: geolocation disabled').motivo).toBe('vietata');
+    });
+
     it('negata alla richiesta ma il browser la può richiedere: rifiutata', async () => {
       const servizio = diagnosi(new SondeFinte());
 

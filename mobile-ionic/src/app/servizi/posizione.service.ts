@@ -4,17 +4,37 @@ import { Posizione } from '../modelli/vicini';
 /** Perché la posizione non è arrivata, con il messaggio da mostrare. */
 export class ErrorePosizione extends Error {
   constructor(
-    readonly motivo: 'non-supportata' | 'non-sicura' | 'negata' | 'non-disponibile' | 'scaduta',
+    readonly motivo:
+      | 'non-supportata'
+      | 'non-sicura'
+      | 'negata'
+      | 'vietata'
+      | 'non-disponibile'
+      | 'scaduta',
     messaggio: string,
   ) {
     super(messaggio);
   }
 }
 
+/**
+ * Il messaggio del browser quando a negare la posizione non è l'utente ma
+ * la Permissions-Policy mandata dal server: Chrome scrive "...disabled in
+ * this document by permissions policy", i più vecchi "feature policy".
+ */
+const VIETATA_DAL_SITO = /permissions?[ -]policy|feature[ -]policy/i;
+
 /** Il messaggio per ciascun codice di GeolocationPositionError (1, 2, 3). */
-export function errorePerCodice(codice: number): ErrorePosizione {
+export function errorePerCodice(codice: number, messaggioBrowser = ''): ErrorePosizione {
   switch (codice) {
     case 1:
+      if (VIETATA_DAL_SITO.test(messaggioBrowser)) {
+        return new ErrorePosizione(
+          'vietata',
+          'La posizione è disattivata dal sito stesso, non dal tuo telefono: i permessi ' +
+            'che dai non cambiano niente finché non viene corretto.',
+        );
+      }
       return new ErrorePosizione(
         'negata',
         'Non hai dato il permesso di usare la posizione. Puoi concederlo dalle impostazioni ' +
@@ -67,7 +87,7 @@ export class PosizioneService {
     return new Promise((risolvi, rifiuta) => {
       geolocalizzazione.getCurrentPosition(
         (p) => risolvi({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        (errore) => rifiuta(errorePerCodice(errore.code)),
+        (errore) => rifiuta(errorePerCodice(errore.code, errore.message)),
         // Per scegliere il campo più vicino basta una posizione di qualche
         // minuto fa; il GPS preciso serve, ma senza aspettarlo all'infinito.
         { enableHighAccuracy: true, timeout: 15000, maximumAge: 120000 },
