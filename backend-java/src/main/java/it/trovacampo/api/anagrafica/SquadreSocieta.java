@@ -2,6 +2,7 @@ package it.trovacampo.api.anagrafica;
 
 import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.dominio.Testo;
+import it.trovacampo.api.notifiche.ChiaveSquadra;
 import it.trovacampo.api.repository.SocietaRepository;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ public class SquadreSocieta {
      * @param girone vuoto finché i gironi non escono
      * @param squadra vuota per la prima squadra, "B" per la seconda
      * @param campo dove gioca in casa, se si sa
+     * @param chiave come la riconoscono le notifiche di chi la segue: vedi {@link ChiaveSquadra}
      */
     public record Squadra(
             String campionato,
@@ -39,7 +41,8 @@ public class SquadreSocieta {
             String girone,
             String squadra,
             boolean fuoriClassifica,
-            String campo) {}
+            String campo,
+            String chiave) {}
 
     private final AnagraficaPresenze anagrafica;
     private final SocietaRepository repository;
@@ -58,7 +61,8 @@ public class SquadreSocieta {
         if (id.isEmpty()) {
             return List.of();
         }
-        AnagraficaPresenze.Scheda scheda = anagrafica.scheda(id.get());
+        long societaPresenze = id.get();
+        AnagraficaPresenze.Scheda scheda = anagrafica.scheda(societaPresenze);
         if (scheda == null || scheda.squadre() == null) {
             return List.of();
         }
@@ -81,7 +85,12 @@ public class SquadreSocieta {
                                         squadra.girone(),
                                         Objects.requireNonNullElse(squadra.squadra(), ""),
                                         squadra.fuoriClassifica(),
-                                        squadra.campoId() == null ? null : campi.get(squadra.campoId())))
+                                        squadra.campoId() == null ? null : campi.get(squadra.campoId()),
+                                        ChiaveSquadra.di(
+                                                societaPresenze,
+                                                squadra.campionato(),
+                                                squadra.ente(),
+                                                squadra.squadra())))
                 .toList();
     }
 

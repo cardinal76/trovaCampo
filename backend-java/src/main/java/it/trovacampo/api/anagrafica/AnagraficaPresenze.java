@@ -134,6 +134,9 @@ public class AnagraficaPresenze {
      * @param impiantoId il campo in presenze: lo stesso id di {@link Impianto}
      * @param stato DA_GIOCARE, GIOCATA, RINVIATA o SOSPESA
      * @param ente "Regionali" per il Comitato, il nome della delegazione per i provinciali
+     * @param casaSocietaId la società di casa in presenze, come {@link Riferimento#id()}
+     * @param casaSquadra vuota per la prima squadra, "B" per la seconda; null da un
+     *     presenze che non la manda ancora (vedi {@code ChiaveSquadra})
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Partita(
@@ -146,5 +149,26 @@ public class AnagraficaPresenze {
             String campionato,
             String ente,
             String girone,
-            int giornata) {}
+            int giornata,
+            Long casaSocietaId,
+            Long ospiteSocietaId,
+            String casaSquadra,
+            String ospiteSquadra) {
+
+        /** Senza le squadre: quello che serve a scheda e mappa. */
+        public Partita(
+                Long id,
+                OffsetDateTime dataOra,
+                String stato,
+                Long impiantoId,
+                String casa,
+                String ospite,
+                String campionato,
+                String ente,
+                String girone,
+                int giornata) {
+            this(id, dataOra, stato, impiantoId, casa, ospite, campionato, ente, girone, giornata,
+                    null, null, null, null);
+        }
+    }
 }

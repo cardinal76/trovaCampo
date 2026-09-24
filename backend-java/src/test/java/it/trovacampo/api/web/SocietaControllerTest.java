@@ -170,11 +170,12 @@ class SocietaControllerTest {
                         List.of(
                                 new SquadreSocieta.Squadra(
                                         "ECCELLENZA", "Regionali", "2026/2027", "A", "", false,
-                                        "Campo Certosa")));
+                                        "Campo Certosa", "42|eccellenza|regionali|")));
 
         mockMvc.perform(get("/api/societa/1/squadre"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].campionato").value("ECCELLENZA"))
+                .andExpect(jsonPath("$[0].chiave").value("42|eccellenza|regionali|"))
                 .andExpect(jsonPath("$[0].girone").value("A"));
     }
 

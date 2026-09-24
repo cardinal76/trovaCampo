@@ -98,8 +98,10 @@ class SquadreSocietaTest {
         assertThat(squadre.di(new Societa().setAnagraficaSocietaId(7L)))
                 .containsExactly(
                         new SquadreSocieta.Squadra(
-                                "ECCELLENZA", "Regionali", "2026/2027", "A", "", false, "DON ORIONE"),
+                                "ECCELLENZA", "Regionali", "2026/2027", "A", "", false, "DON ORIONE",
+                                "7|eccellenza|regionali|"),
                         new SquadreSocieta.Squadra(
-                                "UNDER 17 REGIONALE", "Regionali", "2026/2027", null, "B", true, null));
+                                "UNDER 17 REGIONALE", "Regionali", "2026/2027", null, "B", true, null,
+                                "7|under 17 regionale|regionali|b"));
     }
 }
