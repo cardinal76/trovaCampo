@@ -5,6 +5,22 @@
       <menu-utente></menu-utente>
     </ion-buttons>
   </ion-toolbar>
+  @if (stato() === 'pronto') {
+    <ion-toolbar>
+      <ion-select
+        class="filtro-provincia"
+        label="Provincia"
+        interface="popover"
+        justify="space-between"
+        [value]="provincia()"
+        (ionChange)="cambiaProvincia($event.detail.value)"
+      >
+        @for (opzione of opzioniProvincia(); track opzione.valore) {
+          <ion-select-option [value]="opzione.valore">{{ opzione.etichetta }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-toolbar>
+  }
 </ion-header>
 
 <ion-content [scrollY]="false">

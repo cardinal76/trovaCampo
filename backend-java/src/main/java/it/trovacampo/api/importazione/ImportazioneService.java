@@ -1,5 +1,6 @@
 package it.trovacampo.api.importazione;
 
+import it.trovacampo.api.dominio.ProvinciaDalComune;
 import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.dominio.Testo;
 import it.trovacampo.api.repository.SocietaRepository;
@@ -169,6 +170,16 @@ public class ImportazioneService {
         }
         if (societa.getProvinciaImpianto() == null) {
             societa.setProvinciaImpianto("");
+        }
+        // Presenze e i Comunicati danno il comune senza provincia: si ricava
+        // dal comune, e segue il comune se il campo cambia. Non conta come
+        // spostamento: il posto è lo stesso, cambia solo quello che ne sappiamo.
+        if (riga.provincia().isEmpty()) {
+            String dalComune = ProvinciaDalComune.sigla(societa.getLocalitaImpianto());
+            if (!dalComune.isEmpty() && !dalComune.equals(societa.getProvinciaImpianto())) {
+                societa.setProvinciaImpianto(dalComune);
+                cambiata = true;
+            }
         }
 
         if (riga.lat() != null) {

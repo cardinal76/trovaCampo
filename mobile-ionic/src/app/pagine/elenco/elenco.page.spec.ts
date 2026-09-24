@@ -4,6 +4,7 @@ import { provideIonicAngular } from '@ionic/angular/standalone';
 import { of } from 'rxjs';
 import { Societa } from '../../modelli/societa';
 import { ricordaAmministratore } from '../../servizi/amministratore-ricordato';
+import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
 import { SocietaService } from '../../servizi/societa.service';
 import { ElencoPage } from './elenco.page';
 
@@ -26,6 +27,8 @@ const CAMPI: Societa[] = [
   campo('2', 'Virtus Ostia'),
   campo('3', 'Tor di Quinto', { lat: 41.95, lng: 12.47, posizioneApprossimata: true }),
   campo('4', 'Cinecittà Bettini', { lat: 41.85, lng: 12.57 }),
+  campo('5', 'Latina Calcio', { localitaImpianto: 'Latina', provinciaImpianto: 'LT' }),
+  campo('6', 'Sconosciuta', { localitaImpianto: '', provinciaImpianto: '' }),
 ];
 
 describe('ElencoPage', () => {
@@ -57,7 +60,14 @@ describe('ElencoPage', () => {
     });
   });
 
-  afterEach(() => ricordaAmministratore(false));
+  afterEach(() => {
+    ricordaAmministratore(false);
+    localStorage.removeItem('trovacampo.provincia');
+  });
+
+  function selettoreProvincia(): HTMLElement | null {
+    return fixture.nativeElement.querySelector('ion-select.filtro-provincia');
+  }
 
   it('chi non amministra non vede l interruttore', () => {
     crea();
@@ -78,7 +88,7 @@ describe('ElencoPage', () => {
 
     pagina.cambiaSoloSenzaPosizione(true);
 
-    expect(nomi()).toEqual(['Virtus Ostia', 'Tor di Quinto']);
+    expect(nomi()).toEqual(['Virtus Ostia', 'Tor di Quinto', 'Latina Calcio', 'Sconosciuta']);
 
     pagina.cambiaSoloSenzaPosizione(false);
 
@@ -105,6 +115,61 @@ describe('ElencoPage', () => {
     fixture.detectChanges();
 
     expect(interruttore()).toBeNull();
+    expect(nomi().length).toBe(CAMPI.length);
+  });
+
+  it('il filtro per provincia lo vede anche chi non amministra, con le province dei dati', () => {
+    crea();
+
+    expect(selettoreProvincia()).not.toBeNull();
+    expect(pagina.opzioniProvincia().map((o) => o.etichetta)).toEqual([
+      'Tutte',
+      'Latina',
+      'Roma',
+      'Provincia sconosciuta',
+    ]);
+  });
+
+  it('lascia solo i campi della provincia scelta', () => {
+    crea();
+
+    pagina.cambiaProvincia('LT');
+    expect(nomi()).toEqual(['Latina Calcio']);
+
+    pagina.cambiaProvincia('sconosciuta');
+    expect(nomi()).toEqual(['Sconosciuta']);
+
+    pagina.cambiaProvincia('tutte');
+    expect(nomi().length).toBe(CAMPI.length);
+    expect(pagina.filtrato()).toBeFalse();
+  });
+
+  it('provincia, ricerca e filtro di chi amministra si sommano', () => {
+    ricordaAmministratore(true);
+    crea();
+
+    pagina.cambiaProvincia('RM');
+    expect(pagina.filtrato()).toBeTrue();
+    pagina.cambiaSoloSenzaPosizione(true);
+    expect(nomi()).toEqual(['Virtus Ostia', 'Tor di Quinto']);
+
+    pagina.cambiaFiltro('quinto');
+    expect(nomi()).toEqual(['Tor di Quinto']);
+  });
+
+  it('parte dalla provincia scelta prima, anche sulla mappa', () => {
+    TestBed.inject(ProvinciaSceltaService).scegli('LT');
+    crea();
+
+    expect(pagina.provincia()).toBe('LT');
+    expect(nomi()).toEqual(['Latina Calcio']);
+  });
+
+  it('una provincia ricordata che non ha più campi non nasconde tutto', () => {
+    TestBed.inject(ProvinciaSceltaService).scegli('VT');
+    crea();
+
+    expect(pagina.provincia()).toBe('tutte');
     expect(nomi().length).toBe(CAMPI.length);
   });
 });

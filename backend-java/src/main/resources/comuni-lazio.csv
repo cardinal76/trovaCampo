@@ -1,0 +1,381 @@
+# I comuni del Lazio con la sigla della provincia (elenco ISTAT, 378 comuni).
+# Serve a ricavare la provincia di un campo dal comune, che presenze e i
+# Comunicati Ufficiali danno senza provincia. Una riga: comune;sigla.
+Acquafondata;FR
+Acuto;FR
+Alatri;FR
+Alvito;FR
+Amaseno;FR
+Anagni;FR
+Aquino;FR
+Arce;FR
+Arnara;FR
+Arpino;FR
+Atina;FR
+Ausonia;FR
+Belmonte Castello;FR
+Boville Ernica;FR
+Broccostella;FR
+Campoli Appennino;FR
+Casalattico;FR
+Casalvieri;FR
+Cassino;FR
+Castelliri;FR
+Castelnuovo Parano;FR
+Castro dei Volsci;FR
+Castrocielo;FR
+Ceccano;FR
+Ceprano;FR
+Cervaro;FR
+Colfelice;FR
+Colle San Magno;FR
+Collepardo;FR
+Coreno Ausonio;FR
+Esperia;FR
+Falvaterra;FR
+Ferentino;FR
+Filettino;FR
+Fiuggi;FR
+Fontana Liri;FR
+Fontechiari;FR
+Frosinone;FR
+Fumone;FR
+Gallinaro;FR
+Giuliano di Roma;FR
+Guarcino;FR
+Isola del Liri;FR
+Monte San Giovanni Campano;FR
+Morolo;FR
+Paliano;FR
+Pastena;FR
+Patrica;FR
+Pescosolido;FR
+Picinisco;FR
+Pico;FR
+Piedimonte San Germano;FR
+Piglio;FR
+Pignataro Interamna;FR
+Pofi;FR
+Pontecorvo;FR
+Posta Fibreno;FR
+Ripi;FR
+Rocca d'Arce;FR
+Roccasecca;FR
+San Biagio Saracinisco;FR
+San Donato Val di Comino;FR
+San Giorgio a Liri;FR
+San Giovanni Incarico;FR
+San Vittore del Lazio;FR
+Sant'Ambrogio sul Garigliano;FR
+Sant'Andrea del Garigliano;FR
+Sant'Apollinare;FR
+Sant'Elia Fiumerapido;FR
+Santopadre;FR
+Serrone;FR
+Settefrati;FR
+Sgurgola;FR
+Sora;FR
+Strangolagalli;FR
+Supino;FR
+Terelle;FR
+Torre Cajetani;FR
+Torrice;FR
+Trevi nel Lazio;FR
+Trivigliano;FR
+Vallecorsa;FR
+Vallemaio;FR
+Vallerotonda;FR
+Veroli;FR
+Vicalvi;FR
+Vico nel Lazio;FR
+Villa Latina;FR
+Villa Santa Lucia;FR
+Villa Santo Stefano;FR
+Viticuso;FR
+Aprilia;LT
+Bassiano;LT
+Campodimele;LT
+Castelforte;LT
+Cisterna di Latina;LT
+Cori;LT
+Fondi;LT
+Formia;LT
+Gaeta;LT
+Itri;LT
+Latina;LT
+Lenola;LT
+Maenza;LT
+Minturno;LT
+Monte San Biagio;LT
+Norma;LT
+Pontinia;LT
+Ponza;LT
+Priverno;LT
+Prossedi;LT
+Rocca Massima;LT
+Roccagorga;LT
+Roccasecca dei Volsci;LT
+Sabaudia;LT
+San Felice Circeo;LT
+Santi Cosma e Damiano;LT
+Sermoneta;LT
+Sezze;LT
+Sonnino;LT
+Sperlonga;LT
+Spigno Saturnia;LT
+Terracina;LT
+Ventotene;LT
+Accumoli;RI
+Amatrice;RI
+Antrodoco;RI
+Ascrea;RI
+Belmonte in Sabina;RI
+Borbona;RI
+Borgo Velino;RI
+Borgorose;RI
+Cantalice;RI
+Cantalupo in Sabina;RI
+Casaprota;RI
+Casperia;RI
+Castel Sant'Angelo;RI
+Castel di Tora;RI
+Castelnuovo di Farfa;RI
+Cittaducale;RI
+Cittareale;RI
+Collalto Sabino;RI
+Colle di Tora;RI
+Collegiove;RI
+Collevecchio;RI
+Colli sul Velino;RI
+Concerviano;RI
+Configni;RI
+Contigliano;RI
+Cottanello;RI
+Fara in Sabina;RI
+Fiamignano;RI
+Forano;RI
+Frasso Sabino;RI
+Greccio;RI
+Labro;RI
+Leonessa;RI
+Longone Sabino;RI
+Magliano Sabina;RI
+Marcetelli;RI
+Micigliano;RI
+Mompeo;RI
+Montasola;RI
+Monte San Giovanni in Sabina;RI
+Montebuono;RI
+Monteleone Sabino;RI
+Montenero Sabino;RI
+Montopoli di Sabina;RI
+Morro Reatino;RI
+Nespolo;RI
+Orvinio;RI
+Paganico Sabino;RI
+Pescorocchiano;RI
+Petrella Salto;RI
+Poggio Bustone;RI
+Poggio Catino;RI
+Poggio Mirteto;RI
+Poggio Moiano;RI
+Poggio Nativo;RI
+Poggio San Lorenzo;RI
+Posta;RI
+Pozzaglia Sabina;RI
+Rieti;RI
+Rivodutri;RI
+Rocca Sinibalda;RI
+Roccantica;RI
+Salisano;RI
+Scandriglia;RI
+Selci;RI
+Stimigliano;RI
+Tarano;RI
+Toffia;RI
+Torri in Sabina;RI
+Torricella in Sabina;RI
+Turania;RI
+Vacone;RI
+Varco Sabino;RI
+Affile;RM
+Agosta;RM
+Albano Laziale;RM
+Allumiere;RM
+Anguillara Sabazia;RM
+Anticoli Corrado;RM
+Anzio;RM
+Arcinazzo Romano;RM
+Ardea;RM
+Ariccia;RM
+Arsoli;RM
+Artena;RM
+Bellegra;RM
+Bracciano;RM
+Camerata Nuova;RM
+Campagnano di Roma;RM
+Canale Monterano;RM
+Canterano;RM
+Capena;RM
+Capranica Prenestina;RM
+Carpineto Romano;RM
+Casape;RM
+Castel Gandolfo;RM
+Castel Madama;RM
+Castel San Pietro Romano;RM
+Castelnuovo di Porto;RM
+Cave;RM
+Cerreto Laziale;RM
+Cervara di Roma;RM
+Cerveteri;RM
+Ciampino;RM
+Ciciliano;RM
+Cineto Romano;RM
+Civitavecchia;RM
+Civitella San Paolo;RM
+Colleferro;RM
+Colonna;RM
+Fiano Romano;RM
+Filacciano;RM
+Fiumicino;RM
+Fonte Nuova;RM
+Formello;RM
+Frascati;RM
+Gallicano nel Lazio;RM
+Gavignano;RM
+Genazzano;RM
+Genzano di Roma;RM
+Gerano;RM
+Gorga;RM
+Grottaferrata;RM
+Guidonia Montecelio;RM
+Jenne;RM
+Labico;RM
+Ladispoli;RM
+Lanuvio;RM
+Lariano;RM
+Licenza;RM
+Magliano Romano;RM
+Mandela;RM
+Manziana;RM
+Marano Equo;RM
+Marcellina;RM
+Marino;RM
+Mazzano Romano;RM
+Mentana;RM
+Monte Compatri;RM
+Monte Porzio Catone;RM
+Monteflavio;RM
+Montelanico;RM
+Montelibretti;RM
+Monterotondo;RM
+Montorio Romano;RM
+Moricone;RM
+Morlupo;RM
+Nazzano;RM
+Nemi;RM
+Nerola;RM
+Nettuno;RM
+Olevano Romano;RM
+Palestrina;RM
+Palombara Sabina;RM
+Percile;RM
+Pisoniano;RM
+Poli;RM
+Pomezia;RM
+Ponzano Romano;RM
+Riano;RM
+Rignano Flaminio;RM
+Riofreddo;RM
+Rocca Canterano;RM
+Rocca Priora;RM
+Rocca Santo Stefano;RM
+Rocca di Cave;RM
+Rocca di Papa;RM
+Roccagiovine;RM
+Roiate;RM
+Roma;RM
+Roviano;RM
+Sacrofano;RM
+Sambuci;RM
+San Cesareo;RM
+San Gregorio da Sassola;RM
+San Polo dei Cavalieri;RM
+San Vito Romano;RM
+Sant'Angelo Romano;RM
+Sant'Oreste;RM
+Santa Marinella;RM
+Saracinesco;RM
+Segni;RM
+Subiaco;RM
+Tivoli;RM
+Tolfa;RM
+Torrita Tiberina;RM
+Trevignano Romano;RM
+Vallepietra;RM
+Vallinfreda;RM
+Valmontone;RM
+Velletri;RM
+Vicovaro;RM
+Vivaro Romano;RM
+Zagarolo;RM
+Acquapendente;VT
+Arlena di Castro;VT
+Bagnoregio;VT
+Barbarano Romano;VT
+Bassano Romano;VT
+Bassano in Teverina;VT
+Blera;VT
+Bolsena;VT
+Bomarzo;VT
+Calcata;VT
+Canepina;VT
+Canino;VT
+Capodimonte;VT
+Capranica;VT
+Caprarola;VT
+Carbognano;VT
+Castel Sant'Elia;VT
+Castiglione in Teverina;VT
+Celleno;VT
+Cellere;VT
+Civita Castellana;VT
+Civitella d'Agliano;VT
+Corchiano;VT
+Fabrica di Roma;VT
+Faleria;VT
+Farnese;VT
+Gallese;VT
+Gradoli;VT
+Graffignano;VT
+Grotte di Castro;VT
+Ischia di Castro;VT
+Latera;VT
+Lubriano;VT
+Marta;VT
+Montalto di Castro;VT
+Monte Romano;VT
+Montefiascone;VT
+Monterosi;VT
+Nepi;VT
+Onano;VT
+Oriolo Romano;VT
+Orte;VT
+Piansano;VT
+Proceno;VT
+Ronciglione;VT
+San Lorenzo Nuovo;VT
+Soriano nel Cimino;VT
+Sutri;VT
+Tarquinia;VT
+Tessennano;VT
+Tuscania;VT
+Valentano;VT
+Vallerano;VT
+Vasanello;VT
+Vejano;VT
+Vetralla;VT
+Vignanello;VT
+Villa San Giovanni in Tuscia;VT
+Viterbo;VT
+Vitorchiano;VT

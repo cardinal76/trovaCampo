@@ -14,6 +14,22 @@
       (ionClear)="cambiaFiltro('')"
     ></ion-searchbar>
   </ion-toolbar>
+  @if (stato() === 'pronto') {
+    <ion-toolbar>
+      <ion-select
+        class="filtro-provincia"
+        label="Provincia"
+        interface="popover"
+        justify="space-between"
+        [value]="provincia()"
+        (ionChange)="cambiaProvincia($event.detail.value)"
+      >
+        @for (opzione of opzioniProvincia(); track opzione.valore) {
+          <ion-select-option [value]="opzione.valore">{{ opzione.etichetta }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-toolbar>
+  }
   @if (amministratore()) {
     <ion-toolbar>
       <ion-toggle
@@ -70,7 +86,9 @@
             <ion-item lines="none">
               <ion-label color="medium">
                 @if (filtro()) {
-                  Nessun campo corrisponde a "{{ filtro() }}".
+                  Nessun campo corrisponde a "{{ filtro() }}"{{
+                    provincia() !== TUTTE ? ' in questa provincia' : ''
+                  }}.
                 } @else if (filtroPosizione()) {
                   Tutti i campi hanno una posizione precisa.
                 } @else {

@@ -224,6 +224,20 @@ class SocietaServiceTest {
     }
 
     @Test
+    void laProvinciaLasciataVuotaSiRicavaDalComune() {
+        when(repository.save(any())).thenAnswer(invocazione -> invocazione.getArgument(0));
+        ModificaSocietaRequest m = modulo("Via Nuova 1", null, null);
+        ModificaSocietaRequest senzaProvincia =
+                new ModificaSocietaRequest(
+                        m.siglaSocieta(), m.nomeSocieta(), m.comitatoRegionale(), m.nomeImpianto(),
+                        m.indirizzoImpianto(), "Frosinone", " ", m.lat(), m.lng(),
+                        m.matricola(), m.presidente(), m.indirizzoSede(), m.telefono(), m.fax(), m.email(),
+                        m.sitoWeb(), m.scuolaCalcio(), m.prezziScuolaCalcio(), m.campionati());
+
+        assertThat(service().crea(senzaProvincia).getProvinciaImpianto()).isEqualTo("FR");
+    }
+
+    @Test
     void latitudineSenzaLongitudineERifiutata() {
         assertThatThrownBy(() -> service().modifica("1", modulo("Via 1", 41.9, null)))
                 .isInstanceOf(DatiNonValidiException.class)
