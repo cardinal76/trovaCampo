@@ -39,6 +39,11 @@ export interface Societa {
 
   /** La stessa società nell'anagrafica di presenze: da lì arrivano squadre e campionati. */
   anagraficaSocietaId?: number;
+  /**
+   * Il campo nell'anagrafica di presenze: la chiave con cui gli si abbinano
+   * le partite in calendario. Assente per i campi da file o inseriti a mano.
+   */
+  anagraficaImpiantoId?: number;
 }
 
 /** La scheda come la manda la pagina di modifica: tutto tranne l'id. */

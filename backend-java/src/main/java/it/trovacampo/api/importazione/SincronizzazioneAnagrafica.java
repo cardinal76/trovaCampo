@@ -63,7 +63,8 @@ public class SincronizzazioneAnagrafica {
                                 "",
                                 impianto.lat(),
                                 impianto.lng(),
-                                societa.id()));
+                                societa.id(),
+                                impianto.id()));
             }
         }
 

@@ -20,6 +20,7 @@ import {
   IonSelectOption,
   IonSpinner,
   IonTitle,
+  IonToggle,
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -33,6 +34,14 @@ import {
   nomeCompleto,
   testoSicuro,
 } from '../../modelli/societa';
+import {
+  GIORNI_PARTITE_MAPPA,
+  PartitePerCampo,
+  campionatoPartita,
+  partiteDelCampo,
+  quandoPartita,
+  squadrePartita,
+} from '../../modelli/partita';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
 import { nellaProvincia, opzioniProvincia, provinciaValida } from '../../modelli/provincia';
 import { NumeroViciniService } from '../../servizi/numero-vicini.service';
@@ -79,6 +88,14 @@ const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
  * Latina vuole il campo più vicino, non quello della sua provincia. Per
  * questo scegliere una provincia chiude la ricerca dei vicini, e viceversa
  * la ricerca non cambia la provincia scelta.
+ *
+ * Le prossime partite di ogni campo arrivano a parte, con una chiamata sola
+ * per tutta la mappa: finché non ci sono, o se presenze non risponde, la
+ * mappa funziona lo stesso. Il popup di un campo mostra le prime della
+ * settimana, e "Solo campi con partite" lascia quelli dove si gioca nei
+ * prossimi giorni. Quest'ultimo vale anche per "Vicino a me", a differenza
+ * della provincia: chi lo accende cerca una partita da andare a vedere, e i
+ * campi più vicini dove non si gioca non gli servono.
  */
 @Component({
   selector: 'pagina-mappa',
@@ -94,6 +111,7 @@ const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
     IonSelectOption,
     IonSpinner,
     IonTitle,
+    IonToggle,
     IonToolbar,
   ],
   templateUrl: './mappa.page.html',
@@ -123,6 +141,19 @@ export class MappaPage implements OnDestroy {
   readonly stato = signal<'caricamento' | 'pronto' | 'errore'>('caricamento');
   readonly campi = signal<Societa[]>([]);
 
+  /** Le prime partite della settimana, per id del campo in presenze; vuoto finché non arrivano. */
+  readonly partite = signal<PartitePerCampo>({});
+  readonly giorniPartite = GIORNI_PARTITE_MAPPA;
+  /** L'interruttore si mostra solo se c'è almeno una partita: senza, spegnerebbe tutta la mappa. */
+  readonly ciSonoPartite = computed(() => Object.keys(this.partite()).length > 0);
+  readonly soloConPartite = signal(false);
+  /** Vero se il campo passa il filtro delle partite (sempre, a filtro spento). */
+  private readonly passaFiltroPartite = computed(() => {
+    const partite = this.partite();
+    const attivo = this.soloConPartite() && this.ciSonoPartite();
+    return (campo: Societa) => !attivo || partiteDelCampo(partite, campo).length > 0;
+  });
+
   /** Le province dei campi scaricati, con "Tutte" in testa. */
   readonly opzioniProvincia = computed(() => opzioniProvincia(this.campi()));
   readonly provincia = computed(() =>
@@ -134,9 +165,11 @@ export class MappaPage implements OnDestroy {
     const provincia = this.provincia();
     return this.campi().filter((campo) => nellaProvincia(campo, provincia));
   });
-  readonly geolocalizzati = computed(() => this.campiNellaProvincia().filter(haCoordinate));
+  readonly geolocalizzati = computed(() =>
+    this.campiNellaProvincia().filter(haCoordinate).filter(this.passaFiltroPartite()),
+  );
   readonly senzaPosizione = computed(
-    () => this.campiNellaProvincia().length - this.geolocalizzati().length,
+    () => this.campiNellaProvincia().filter((campo) => !haCoordinate(campo)).length,
   );
 
   readonly scelteNumeroVicini = SCELTE_NUMERO_VICINI;
@@ -149,7 +182,8 @@ export class MappaPage implements OnDestroy {
   /** Gli N campi più vicini, fra tutti quelli con una posizione e senza guardare la provincia. */
   readonly vicini = computed<CampoVicino[]>(() => {
     const posizione = this.posizione();
-    return posizione ? piuVicini(this.campi().filter(haCoordinate), posizione, this.numero()) : [];
+    const candidati = this.campi().filter(haCoordinate).filter(this.passaFiltroPartite());
+    return posizione ? piuVicini(candidati, posizione, this.numero()) : [];
   });
 
   constructor() {
@@ -186,6 +220,10 @@ export class MappaPage implements OnDestroy {
     // che ignora le province, si chiude.
     this.tornaAllaMappa();
     this.provinciaScelta.scegli(provincia);
+  }
+
+  cambiaSoloConPartite(attivo: boolean): void {
+    this.soloConPartite.set(attivo);
   }
 
   cambiaNumeroVicini(numero: number): void {
@@ -234,6 +272,12 @@ export class MappaPage implements OnDestroy {
         this.stato.set('pronto');
       },
       error: () => this.stato.set('errore'),
+    });
+    // A parte, e senza toccare lo stato della pagina: le partite sono un di
+    // più, la mappa non le aspetta.
+    this.service.partiteSuiCampi().subscribe({
+      next: (partite) => this.partite.set(partite ?? {}),
+      error: () => this.partite.set({}),
     });
   }
 
@@ -410,7 +454,9 @@ export class MappaPage implements OnDestroy {
   private conDettagli<T extends L.Layer>(livello: T, campo: SocietaGeolocalizzata): T {
     return livello
       .bindTooltip(testoSicuro(nomeCompleto(campo)))
-      .bindPopup(this.popup(campo));
+      // Una funzione e non un testo: il popup si scrive quando si apre, e
+      // così porta le partite anche se sono arrivate dopo i segnaposto.
+      .bindPopup(() => this.popup(campo));
   }
 
   private popup(campo: SocietaGeolocalizzata): string {
@@ -422,9 +468,29 @@ export class MappaPage implements OnDestroy {
       ${riga}
       ${testoSicuro(campo.nomeImpianto)}<br />
       ${testoSicuro(indirizzoCompleto(campo))}<br />
+      ${this.partiteNelPopup(campo)}
       <button type="button" class="collegamento-scheda" data-societa="${testoSicuro(campo.id)}">
         Vedi scheda società ›
       </button>
     `;
+  }
+
+  /** Le prime partite della settimana su questo campo, o niente. */
+  private partiteNelPopup(campo: Societa): string {
+    const partite = partiteDelCampo(this.partite(), campo);
+    if (partite.length === 0) {
+      return '';
+    }
+    const righe = partite
+      .map(
+        (partita) => `
+          <li>
+            <span class="quando">${testoSicuro(quandoPartita(partita))}</span>
+            ${testoSicuro(squadrePartita(partita))}
+            <small>${testoSicuro(campionatoPartita(partita))}</small>
+          </li>`,
+      )
+      .join('');
+    return `<ul class="partite-popup" aria-label="Prossime partite">${righe}</ul>`;
   }
 }

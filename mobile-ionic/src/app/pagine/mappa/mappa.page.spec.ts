@@ -1,7 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular/standalone';
-import { of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
+import { Partita, PartitePerCampo } from '../../modelli/partita';
 import { Societa } from '../../modelli/societa';
 import { NumeroViciniService } from '../../servizi/numero-vicini.service';
 import { ErrorePosizione, PosizioneService, errorePerCodice } from '../../servizi/posizione.service';
@@ -24,16 +25,30 @@ function campo(id: string, provinciaImpianto: string, valori: Partial<Societa> =
 }
 
 const CAMPI: Societa[] = [
-  campo('1', 'RM', { lat: 41.89, lng: 12.48 }),
+  campo('1', 'RM', { lat: 41.89, lng: 12.48, anagraficaImpiantoId: 190 }),
   campo('2', 'RM'),
-  campo('3', 'LT', { lat: 41.47, lng: 12.9 }),
+  campo('3', 'LT', { lat: 41.47, lng: 12.9, anagraficaImpiantoId: 191 }),
   campo('4', 'FR', { lat: 41.64, lng: 13.35 }),
 ];
+
+function partita(casa: string, dataOra = '2026-09-06T11:00:00+02:00'): Partita {
+  return {
+    dataOra,
+    casa,
+    ospite: 'OSPITE',
+    campionato: 'ECCELLENZA',
+    ente: 'Regionali',
+    girone: 'A',
+    giornata: 1,
+  };
+}
 
 describe('MappaPage', () => {
   let fixture: ComponentFixture<MappaPage>;
   let pagina: MappaPage;
   let posizione: jasmine.Spy;
+  /** Quello che risponde il backend per le partite: di default nessuna. */
+  let partiteSuiCampi: Observable<PartitePerCampo>;
 
   function crea(): void {
     fixture = TestBed.createComponent(MappaPage);
@@ -46,6 +61,7 @@ describe('MappaPage', () => {
   }
 
   beforeEach(() => {
+    partiteSuiCampi = of({});
     // Chi guarda sta a Roma: dal campo 1 poche centinaia di metri.
     posizione = jasmine.createSpy('attuale').and.resolveTo({ lat: 41.892, lng: 12.482 });
     TestBed.configureTestingModule({
@@ -53,7 +69,10 @@ describe('MappaPage', () => {
       providers: [
         provideIonicAngular(),
         provideRouter([]),
-        { provide: SocietaService, useValue: { tutti: () => of(CAMPI) } },
+        {
+          provide: SocietaService,
+          useValue: { tutti: () => of(CAMPI), partiteSuiCampi: () => partiteSuiCampi },
+        },
         { provide: PosizioneService, useValue: { attuale: posizione } },
       ],
     });
@@ -252,6 +271,72 @@ describe('MappaPage', () => {
 
       expect(pagina.erroreVicini()).toBeNull();
       expect(vicini()[0]).toBe('3');
+    });
+  });
+
+  describe('partite sui campi', () => {
+    /** Solo il campo 3, a Latina, ha partite; il campo 1 non ne ha questa settimana. */
+    beforeEach(() => {
+      partiteSuiCampi = of({ '191': [partita('LATINA'), partita('<b>X</b>')] });
+    });
+
+    function popup(id: string): string {
+      const campo = pagina['mostrati'].find((c) => c.id === id)!;
+      return pagina['popup'](campo);
+    }
+
+    it('il popup mostra le prossime partite del campo, abbinate per id', async () => {
+      crea();
+      await disegnata();
+
+      const testo = popup('3');
+      expect(testo).toContain('dom 6 set, 11:00');
+      expect(testo).toContain('LATINA – OSPITE');
+      expect(testo).toContain('ECCELLENZA · Girone A · Regionali');
+      // I nomi arrivano da fuori: nel popup non diventano HTML.
+      expect(testo).toContain('&lt;b&gt;X&lt;/b&gt;');
+      expect(popup('1')).not.toContain('partite-popup');
+    });
+
+    it('"Solo campi con partite" lascia solo quelli dove si gioca, insieme alla provincia', async () => {
+      crea();
+      await disegnata();
+      expect(fixture.nativeElement.querySelector('ion-toggle.filtro-partite')).not.toBeNull();
+
+      pagina.cambiaSoloConPartite(true);
+      await disegnata();
+
+      expect(sullaMappa()).toEqual(['3']);
+      expect(pagina['mostrati'].map((s) => s.id)).toEqual(['3']);
+      // Il conteggio dei campi senza posizione non cambia: non dipende dalle partite.
+      expect(pagina.senzaPosizione()).toBe(1);
+
+      pagina.cambiaProvincia('RM');
+      expect(sullaMappa()).toEqual([]);
+
+      pagina.cambiaSoloConPartite(false);
+      expect(sullaMappa()).toEqual(['1']);
+    });
+
+    it('vale anche per "Vicino a me": i vicini sono cercati fra i campi con partite', async () => {
+      crea();
+      pagina.cambiaSoloConPartite(true);
+      await pagina.vicinoAMe();
+      await disegnata();
+
+      expect(pagina.vicini().map((v) => v.campo.id)).toEqual(['3']);
+    });
+
+    it('senza partite, o se non arrivano, niente interruttore e la mappa resta intera', async () => {
+      partiteSuiCampi = throwError(() => new Error('502'));
+      crea();
+      await disegnata();
+
+      expect(pagina.ciSonoPartite()).toBeFalse();
+      expect(fixture.nativeElement.querySelector('ion-toggle.filtro-partite')).toBeNull();
+      pagina.cambiaSoloConPartite(true);
+      expect(sullaMappa()).toEqual(['1', '3', '4']);
+      expect(popup('3')).not.toContain('partite-popup');
     });
   });
 

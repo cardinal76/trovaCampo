@@ -56,6 +56,33 @@
 }
 
 /*
+ * Le prossime partite nel popup di un campo della mappa. Il popup vive fuori
+ * dai componenti, quindi lo stile è qui. Stretto, per non coprire mezzo
+ * schermo del telefono.
+ */
+.partite-popup {
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+  max-width: 16rem;
+
+  li {
+    padding: 0.25rem 0;
+    border-top: 1px solid var(--ion-color-light-shade, #d7d8da);
+  }
+
+  .quando {
+    display: block;
+    font-weight: 600;
+  }
+
+  small {
+    display: block;
+    color: var(--ion-color-medium, #92949c);
+  }
+}
+
+/*
  * L'app nasce per il telefono, ma la stessa build è anche un sito: sugli
  * schermi larghi il contenuto a colonna singola resta leggibile invece di
  * stirarsi per tutta la pagina.

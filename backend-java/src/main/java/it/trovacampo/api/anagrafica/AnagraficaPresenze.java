@@ -2,6 +2,8 @@ package it.trovacampo.api.anagrafica;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.Duration;
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -73,6 +75,25 @@ public class AnagraficaPresenze {
                 .body(Scheda.class);
     }
 
+    /**
+     * Le partite fra {@code dal} e {@code al} (estremi compresi, al massimo
+     * 31 giorni) su tutti i campi, ognuna con l'id del campo dove si gioca:
+     * una chiamata sola per tutta la mappa.
+     */
+    public List<Partita> partite(LocalDate dal, LocalDate al) {
+        Partita[] partite =
+                client.get()
+                        .uri(
+                                uri ->
+                                        uri.path("/api/pubblico/anagrafica/partite")
+                                                .queryParam("dal", dal)
+                                                .queryParam("al", al)
+                                                .build())
+                        .retrieve()
+                        .body(Partita[].class);
+        return partite == null ? List.of() : List.of(partite);
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Impianto(
             Long id,
@@ -106,4 +127,24 @@ public class AnagraficaPresenze {
             String squadra,
             boolean fuoriClassifica,
             Long campoId) {}
+
+    /**
+     * Una partita in calendario, sul campo di casa di chi ospita.
+     *
+     * @param impiantoId il campo in presenze: lo stesso id di {@link Impianto}
+     * @param stato DA_GIOCARE, GIOCATA, RINVIATA o SOSPESA
+     * @param ente "Regionali" per il Comitato, il nome della delegazione per i provinciali
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Partita(
+            Long id,
+            OffsetDateTime dataOra,
+            String stato,
+            Long impiantoId,
+            String casa,
+            String ospite,
+            String campionato,
+            String ente,
+            String girone,
+            int giornata) {}
 }

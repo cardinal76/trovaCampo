@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { Partita, PartitePerCampo } from '../modelli/partita';
 import { NuovoCampo, Societa } from '../modelli/societa';
 import { Squadra } from '../modelli/squadra';
 
@@ -34,6 +35,19 @@ export class SocietaService {
   /** Le squadre della società con il campionato di ognuna, dall'anagrafica di presenze. */
   squadre(id: string): Observable<Squadra[]> {
     return this.http.get<Squadra[]>(`${this.base}/${encodeURIComponent(id)}/squadre`);
+  }
+
+  /** Le prossime partite sul campo della società, dal calendario di presenze. */
+  partite(id: string): Observable<Partita[]> {
+    return this.http.get<Partita[]>(`${this.base}/${encodeURIComponent(id)}/partite`);
+  }
+
+  /**
+   * Per la mappa, con una chiamata sola: le prime partite della settimana di
+   * ogni campo, per id del campo in presenze.
+   */
+  partiteSuiCampi(): Observable<PartitePerCampo> {
+    return this.http.get<PartitePerCampo>(`${environment.apiUrl}/api/campi/partite`);
   }
 
   inserisci(campo: NuovoCampo): Observable<Societa> {

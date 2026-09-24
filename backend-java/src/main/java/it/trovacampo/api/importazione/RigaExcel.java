@@ -7,7 +7,8 @@ package it.trovacampo.api.importazione;
  *
  * <p>{@code anagraficaSocietaId} c'è solo per le righe che arrivano
  * dall'anagrafica di presenze: è la società da cui leggere squadre e
- * campionati.
+ * campionati. {@code anagraficaImpiantoId}, con lei, è il campo in presenze:
+ * la chiave per abbinargli le partite in calendario.
  */
 record RigaExcel(
         int numero,
@@ -18,7 +19,8 @@ record RigaExcel(
         String provincia,
         Double lat,
         Double lng,
-        Long anagraficaSocietaId) {
+        Long anagraficaSocietaId,
+        Long anagraficaImpiantoId) {
 
     RigaExcel(
             int numero,
@@ -29,6 +31,6 @@ record RigaExcel(
             String provincia,
             Double lat,
             Double lng) {
-        this(numero, nomeSocieta, nomeImpianto, indirizzo, localita, provincia, lat, lng, null);
+        this(numero, nomeSocieta, nomeImpianto, indirizzo, localita, provincia, lat, lng, null, null);
     }
 }
