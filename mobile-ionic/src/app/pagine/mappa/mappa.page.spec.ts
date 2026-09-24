@@ -6,6 +6,8 @@ import { Partita, PartitePerCampo } from '../../modelli/partita';
 import { Societa } from '../../modelli/societa';
 import { NumeroViciniService } from '../../servizi/numero-vicini.service';
 import { ErrorePosizione, PosizioneService, errorePerCodice } from '../../servizi/posizione.service';
+import { SONDE_BROWSER } from '../../servizi/sonde-browser';
+import { AGENTI, SondeFinte } from '../../servizi/sonde-finte.spec';
 import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
 import { SocietaService } from '../../servizi/societa.service';
 import { MappaPage } from './mappa.page';
@@ -60,7 +62,10 @@ describe('MappaPage', () => {
     return pagina.geolocalizzati().map((societa) => societa.id);
   }
 
+  let sonde: SondeFinte;
+
   beforeEach(() => {
+    sonde = SondeFinte.androidChrome();
     partiteSuiCampi = of({});
     // Chi guarda sta a Roma: dal campo 1 poche centinaia di metri.
     posizione = jasmine.createSpy('attuale').and.resolveTo({ lat: 41.892, lng: 12.482 });
@@ -74,6 +79,7 @@ describe('MappaPage', () => {
           useValue: { tutti: () => of(CAMPI), partiteSuiCampi: () => partiteSuiCampi },
         },
         { provide: PosizioneService, useValue: { attuale: posizione } },
+        { provide: SONDE_BROWSER, useValue: sonde },
       ],
     });
   });
@@ -236,30 +242,102 @@ describe('MappaPage', () => {
       expect(sullaMappa()).toEqual(['3']);
     });
 
-    for (const [codice, parola] of [
-      [1, 'permesso'],
-      [2, 'localizzazione sia attiva'],
-      [3, 'in tempo'],
+    function casoMostrato(): string | null {
+      fixture.detectChanges();
+      return (
+        fixture.nativeElement
+          .querySelector('riquadro-diagnosi.errore-vicini [data-caso]')
+          ?.getAttribute('data-caso') ?? null
+      );
+    }
+
+    for (const [codice, caso, parola] of [
+      [1, 'rifiutata', 'Non hai dato il permesso'],
+      [2, 'non-disponibile', 'accendi «Posizione»'],
+      [3, 'scaduta', 'non è arrivata in tempo'],
     ] as const) {
-      it(`con l errore ${codice} lo spiega e lascia la mappa com era`, async () => {
+      it(`con l errore ${codice} spiega come sbloccarla e lascia la mappa com era`, async () => {
         posizione.and.rejectWith(errorePerCodice(codice));
         crea();
         await vicinoAMe();
 
         expect(pagina.posizione()).toBeNull();
         expect(pagina.cercoPosizione()).toBeFalse();
+        expect(casoMostrato()).toBe(caso);
         expect(testo()).toContain(parola);
         expect(fixture.nativeElement.querySelector('.errore-vicini[role=alert]')).not.toBeNull();
       });
     }
 
-    it('senza geolocalizzazione o fuori da HTTPS mostra il messaggio del servizio', async () => {
+    it('bloccata per il sito: i passi di Chrome su Android', async () => {
+      sonde.permessi = { geolocation: 'denied' };
+      posizione.and.rejectWith(errorePerCodice(1));
+      crea();
+      await vicinoAMe();
+
+      expect(casoMostrato()).toBe('bloccata');
+      expect(testo()).toContain('Autorizzazioni → Posizione → Consenti');
+    });
+
+    it('su iPhone i passi di Safari', async () => {
+      sonde.userAgent = AGENTI.iphoneSafari;
+      sonde.permessi = null;
+      posizione.and.rejectWith(errorePerCodice(1));
+      crea();
+      await vicinoAMe();
+
+      expect(casoMostrato()).toBe('bloccata');
+      expect(testo()).toContain('Siti web di Safari');
+    });
+
+    it('nel browser di Telegram dice di aprire la pagina in Chrome', async () => {
+      sonde.userAgent = AGENTI.androidTelegram;
+      posizione.and.rejectWith(errorePerCodice(1));
+      crea();
+      await vicinoAMe();
+
+      expect(testo()).toContain('Telegram');
+      expect(testo()).toContain('Apri in Chrome');
+    });
+
+    it('fuori da HTTPS lo dice', async () => {
       posizione.and.rejectWith(new ErrorePosizione('non-sicura', 'Serve HTTPS.'));
       crea();
       await vicinoAMe();
 
       expect(pagina.erroreVicini()).toBe('Serve HTTPS.');
-      expect(testo()).toContain('Serve HTTPS.');
+      expect(casoMostrato()).toBe('non-sicura');
+      expect(testo()).toContain('HTTPS');
+    });
+
+    it('un errore che la diagnosi non sa spiegare resta un messaggio semplice', async () => {
+      sonde.permessi = { geolocation: 'granted' };
+      posizione.and.rejectWith(errorePerCodice(1));
+      crea();
+      await vicinoAMe();
+
+      // Negata ma ora consentita: niente da sbloccare, resta il messaggio.
+      expect(casoMostrato()).toBeNull();
+      expect(fixture.nativeElement.querySelector('p.errore-vicini[role=alert]')).not.toBeNull();
+    });
+
+    it('Riprova nel riquadro rifà la ricerca, Chiudi lo toglie', async () => {
+      posizione.and.rejectWith(errorePerCodice(3));
+      crea();
+      await vicinoAMe();
+
+      posizione.and.resolveTo({ lat: 41.47, lng: 12.9 });
+      fixture.nativeElement.querySelector('riquadro-diagnosi .riprova').click();
+      await new Promise((risolvi) => setTimeout(risolvi, 0));
+      fixture.detectChanges();
+      expect(casoMostrato()).toBeNull();
+      expect(vicini()[0]).toBe('3');
+
+      posizione.and.rejectWith(errorePerCodice(3));
+      await vicinoAMe();
+      fixture.nativeElement.querySelector('riquadro-diagnosi .chiudi').click();
+      fixture.detectChanges();
+      expect(casoMostrato()).toBeNull();
     });
 
     it('riprovando dopo un errore il messaggio sparisce', async () => {

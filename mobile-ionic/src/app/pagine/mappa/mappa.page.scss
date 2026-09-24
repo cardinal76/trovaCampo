@@ -57,7 +57,18 @@
   font-size: 0.9rem;
 }
 
-.errore-vicini {
+/*
+ * Il riquadro "come sbloccare la posizione": sopra la mappa, senza
+ * toglierle tutto lo spazio sul telefono; se i passi sono tanti, scorre.
+ */
+.diagnosi-vicini {
+  flex: 0 0 auto;
+  max-height: 45vh;
+  overflow-y: auto;
+  margin: 0.5rem 1rem 0;
+}
+
+p.errore-vicini {
   margin: 0.5rem 1rem 0;
   font-size: 0.9rem;
   color: var(--ion-color-danger, #c5000f);

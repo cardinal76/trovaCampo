@@ -43,6 +43,9 @@ import {
   squadrePartita,
 } from '../../modelli/partita';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
+import { RiquadroDiagnosiComponent } from '../../componenti/riquadro-diagnosi/riquadro-diagnosi.component';
+import { DiagnosiService } from '../../servizi/diagnosi.service';
+import { istruzioniPosizione } from '../../servizi/istruzioni';
 import { nellaProvincia, opzioniProvincia, provinciaValida } from '../../modelli/provincia';
 import { NumeroViciniService } from '../../servizi/numero-vicini.service';
 import { ErrorePosizione, PosizioneService } from '../../servizi/posizione.service';
@@ -102,6 +105,7 @@ const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
   imports: [
     RouterLink,
     MenuUtenteComponent,
+    RiquadroDiagnosiComponent,
     IonButton,
     IonButtons,
     IonContent,
@@ -124,6 +128,7 @@ export class MappaPage implements OnDestroy {
   private readonly provinciaScelta = inject(ProvinciaSceltaService);
   private readonly numeroVicini = inject(NumeroViciniService);
   private readonly posizioneService = inject(PosizioneService);
+  private readonly diagnosi = inject(DiagnosiService);
 
   private readonly contenitore = viewChild<ElementRef<HTMLElement>>('contenitoreMappa');
   private mappa: L.Map | null = null;
@@ -178,6 +183,16 @@ export class MappaPage implements OnDestroy {
   readonly posizione = signal<Posizione | null>(null);
   readonly cercoPosizione = signal(false);
   readonly erroreVicini = signal<string | null>(null);
+  /**
+   * Dopo un errore, cosa blocca la posizione e come sbloccarla: le stesse
+   * istruzioni della pagina Notifiche. Null se la diagnosi non sa dire di
+   * più del messaggio d'errore, che allora resta da solo.
+   */
+  readonly riquadroVicini = computed(() =>
+    this.erroreVicini() === null
+      ? null
+      : istruzioniPosizione(this.diagnosi.posizione(), this.diagnosi.piattaforma),
+  );
 
   /** Gli N campi più vicini, fra tutti quelli con una posizione e senza guardare la provincia. */
   readonly vicini = computed<CampoVicino[]>(() => {
@@ -239,7 +254,11 @@ export class MappaPage implements OnDestroy {
     this.erroreVicini.set(null);
     try {
       this.posizione.set(await this.posizioneService.attuale());
+      await this.diagnosi.esitoPosizione(null);
     } catch (errore) {
+      // Prima la diagnosi, poi il messaggio: così il riquadro compare già
+      // con il caso giusto (bloccata o solo rifiutata), senza cambiare sotto gli occhi.
+      await this.diagnosi.esitoPosizione(errore);
       this.erroreVicini.set(
         errore instanceof ErrorePosizione
           ? errore.message

@@ -1,4 +1,4 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import {
   IonButton,
@@ -22,9 +22,16 @@ import {
   notificationsOffOutline,
   notificationsOutline,
   peopleOutline,
-  shareOutline,
 } from 'ionicons/icons';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
+import { RiquadroDiagnosiComponent } from '../../componenti/riquadro-diagnosi/riquadro-diagnosi.component';
+import { DiagnosiService } from '../../servizi/diagnosi.service';
+import {
+  istruzioniNotifiche,
+  istruzioniPosizione,
+  statoNotifiche,
+  statoPosizione,
+} from '../../servizi/istruzioni';
 import { NotificheService, RAGGI_KM } from '../../servizi/notifiche.service';
 
 /**
@@ -59,6 +66,7 @@ export function quandoSalvata(iso: string, adesso: Date = new Date()): string {
   imports: [
     RouterLink,
     MenuUtenteComponent,
+    RiquadroDiagnosiComponent,
     IonButton,
     IonButtons,
     IonContent,
@@ -77,6 +85,7 @@ export function quandoSalvata(iso: string, adesso: Date = new Date()): string {
 })
 export class NotifichePage {
   readonly notifiche = inject(NotificheService);
+  private readonly diagnosi = inject(DiagnosiService);
 
   readonly raggi = RAGGI_KM;
   readonly preferenze = this.notifiche.preferenze;
@@ -85,12 +94,32 @@ export class NotifichePage {
   readonly errore = this.notifiche.errore;
   readonly occupato = this.notifiche.occupato;
 
-  /** Gli interruttori si toccano solo dove le notifiche possono arrivare. */
+  /**
+   * Gli interruttori si toccano solo dove le notifiche possono arrivare, o
+   * almeno essere chieste: con le notifiche bloccate l'interruttore delle
+   * vicine resta toccabile, perché chiede comunque la posizione e il
+   * riquadro dice come sbloccare il resto.
+   */
   readonly utilizzabile = computed(() => this.supporto() === 'supportato');
-  /** Bloccate dal browser: un avviso "acceso" qui non arriverebbe. */
-  readonly bloccate = computed(
-    () => this.utilizzabile() && this.notifiche.permesso() === 'denied',
+
+  /** La riga in cima: cosa c'è e cosa manca, a colpo d'occhio. */
+  readonly statoNotifiche = computed(() => statoNotifiche(this.diagnosi.notifiche()));
+  readonly statoPosizione = computed(() => statoPosizione(this.diagnosi.posizione()));
+
+  readonly riquadroNotifiche = computed(() =>
+    istruzioniNotifiche(this.diagnosi.notifiche(), this.diagnosi.piattaforma),
   );
+  readonly riquadroPosizione = computed(() =>
+    istruzioniPosizione(this.diagnosi.posizione(), this.diagnosi.piattaforma),
+  );
+
+  /**
+   * L'ultimo avviso che si è provato ad accendere: il riquadro delle
+   * notifiche compare lì sotto, vicino al dito, e "Riprova" rifà proprio
+   * quell'accensione. Prima di ogni tentativo il riquadro sta in cima.
+   */
+  readonly tentativo = signal<'squadre' | 'vicino' | null>(null);
+  readonly doveNotifiche = computed(() => this.tentativo() ?? 'cima');
 
   readonly posizioneSalvata = computed(() => {
     const posizione = this.preferenze().posizione;
@@ -105,18 +134,21 @@ export class NotifichePage {
       notificationsOffOutline,
       notificationsOutline,
       peopleOutline,
-      shareOutline,
     });
   }
 
-  /** A ogni ingresso: il permesso si può cambiare dalle impostazioni, a pagina chiusa. */
+  /** A ogni ingresso: i permessi si possono cambiare dalle impostazioni, a pagina chiusa. */
   ionViewWillEnter(): void {
     this.notifiche.rileggiPermesso();
+    void this.diagnosi.aggiornaPosizione();
   }
 
   async cambiaSquadre(evento: CustomEvent<{ checked: boolean }>): Promise<void> {
     // Preso prima dell'attesa: dopo, l'evento non è più quello in corso.
     const interruttore = evento.target as HTMLIonToggleElement | null;
+    if (evento.detail.checked) {
+      this.tentativo.set('squadre');
+    }
     await this.notifiche.impostaAvvisoSquadre(evento.detail.checked);
     riallinea(interruttore, this.preferenze().avvisoSquadre);
   }
@@ -124,8 +156,42 @@ export class NotifichePage {
   async cambiaVicino(evento: CustomEvent<{ checked: boolean }>): Promise<void> {
     // Preso prima dell'attesa: dopo, l'evento non è più quello in corso.
     const interruttore = evento.target as HTMLIonToggleElement | null;
+    if (evento.detail.checked) {
+      this.tentativo.set('vicino');
+    }
     await this.notifiche.impostaAvvisoVicino(evento.detail.checked);
     riallinea(interruttore, this.preferenze().avvisoVicino);
+  }
+
+  /**
+   * "Riprova" sulle notifiche: rifà l'accensione che non era riuscita (la
+   * richiesta parte dentro il tocco su Riprova, come vuole Safari), o, se
+   * non ce n'era una, richiede il permesso dove si può e rilegge lo stato.
+   */
+  async riprovaNotifiche(): Promise<void> {
+    const preferenze = this.preferenze();
+    if (this.tentativo() === 'vicino' && !preferenze.avvisoVicino) {
+      await this.notifiche.impostaAvvisoVicino(true);
+    } else if (this.tentativo() === 'squadre' && !preferenze.avvisoSquadre) {
+      await this.notifiche.impostaAvvisoSquadre(true);
+    } else {
+      await this.notifiche.riprovaPermesso();
+    }
+    await this.diagnosi.aggiornaPosizione();
+  }
+
+  /**
+   * "Riprova" sulla posizione: se si stava accendendo l'avviso delle
+   * vicine lo si riaccende (notifiche e posizione, nello stesso ordine),
+   * altrimenti si rilegge solo la posizione. In tutti e due i casi il
+   * browser, se può, la richiede.
+   */
+  async riprovaPosizione(): Promise<void> {
+    if (this.tentativo() === 'vicino' && !this.preferenze().avvisoVicino && this.utilizzabile()) {
+      await this.notifiche.impostaAvvisoVicino(true);
+    } else {
+      await this.notifiche.aggiornaPosizione();
+    }
   }
 
   async cambiaRaggio(valore: unknown): Promise<void> {

@@ -4,8 +4,11 @@ import { TestBed } from '@angular/core/testing';
 import { environment } from '../../environments/environment';
 import { AmbientePush } from './ambiente-push';
 import { AmbientePushFinto, ISCRIZIONE_FINTA, attendi } from './ambiente-push-finto.spec';
+import { DiagnosiService } from './diagnosi.service';
 import { NotificheService } from './notifiche.service';
-import { ErrorePosizione, PosizioneService } from './posizione.service';
+import { ErrorePosizione, PosizioneService, errorePerCodice } from './posizione.service';
+import { SONDE_BROWSER } from './sonde-browser';
+import { SondeFinte } from './sonde-finte.spec';
 import { SquadraSeguita } from './squadre-seguite.service';
 
 const API = `${environment.apiUrl}/api/notifiche`;
@@ -34,6 +37,7 @@ describe('NotificheService', () => {
         provideHttpClientTesting(),
         { provide: AmbientePush, useValue: ambiente },
         { provide: PosizioneService, useValue: gps },
+        { provide: SONDE_BROWSER, useValue: new SondeFinte() },
       ],
     });
     http = TestBed.inject(HttpTestingController);
@@ -90,22 +94,90 @@ describe('NotificheService', () => {
     expect(JSON.parse(localStorage.getItem('trovacampo.notifiche')!).avvisoSquadre).toBeTrue();
   });
 
-  it('con il permesso negato non accende niente e lo dice', async () => {
+  function diagnosi(): DiagnosiService {
+    return TestBed.inject(DiagnosiService);
+  }
+
+  it('con il permesso negato non accende niente, e la diagnosi dice bloccate', async () => {
     ambiente.risposta = 'denied';
     const notifiche = servizio();
 
     expect(await notifiche.impostaAvvisoSquadre(true)).toBe('permesso-negato');
     expect(notifiche.preferenze().avvisoSquadre).toBeFalse();
     expect(notifiche.permesso()).toBe('denied');
-    expect(notifiche.errore()).toContain('bloccate');
+    expect(diagnosi().notifiche()).toBe('bloccate');
+    // Il riquadro della pagina lo spiega: niente messaggio doppio.
+    expect(notifiche.errore()).toBeNull();
   });
 
-  it('con il permesso già negato non lo richiede nemmeno', async () => {
-    ambiente.permessoAttuale = 'denied';
+  it('se la richiesta viene chiusa senza scegliere lo dice, senza parlare di blocco', async () => {
+    ambiente.risposta = 'default';
+    const notifiche = servizio();
 
-    expect(await servizio().impostaAvvisoVicino(true)).toBe('permesso-negato');
-    expect(ambiente.chiediPermesso).not.toHaveBeenCalled();
-    expect(gps.attuale).not.toHaveBeenCalled();
+    expect(await notifiche.impostaAvvisoSquadre(true)).toBe('permesso-negato');
+    expect(notifiche.errore()).toContain('chiuso la richiesta');
+    expect(diagnosi().notifiche()).toBe('da-consentire');
+  });
+
+  describe('ordine delle richieste accendendo le vicine', () => {
+    it('chiede le notifiche subito, dentro il tocco, e la posizione dopo', async () => {
+      const ordine: string[] = [];
+      ambiente.chiediPermesso.and.callFake(async () => {
+        ordine.push('notifiche');
+        ambiente.permessoAttuale = 'granted';
+        return 'granted' as NotificationPermission;
+      });
+      gps.attuale.and.callFake(async () => {
+        ordine.push('posizione');
+        return { lat: 41.9, lng: 12.5 };
+      });
+
+      const esito = servizio().impostaAvvisoVicino(true);
+      // Nessun await prima di requestPermission: è già partita, in modo sincrono.
+      expect(ambiente.chiediPermesso).toHaveBeenCalled();
+      expect(gps.attuale).not.toHaveBeenCalled();
+
+      const put = await iscrizioneMandata();
+      put.flush(null);
+      expect(await esito).toBe('fatto');
+      expect(ordine).toEqual(['notifiche', 'posizione']);
+    });
+
+    it('con le notifiche già bloccate chiede comunque la posizione e la salva, a interruttore spento', async () => {
+      ambiente.permessoAttuale = 'denied';
+      const notifiche = servizio();
+
+      expect(await notifiche.impostaAvvisoVicino(true)).toBe('permesso-negato');
+      expect(ambiente.chiediPermesso).not.toHaveBeenCalled();
+      expect(gps.attuale).toHaveBeenCalled();
+      expect(notifiche.preferenze().avvisoVicino).toBeFalse();
+      expect(notifiche.preferenze().posizione?.lat).toBe(41.9);
+      expect(diagnosi().notifiche()).toBe('bloccate');
+      expect(diagnosi().posizione()).toBe('consentita');
+      // Niente al server: lo controlla http.verify().
+    });
+
+    it('su iPhone fuori dalla Home non chiede le notifiche ma la posizione sì', async () => {
+      ambiente.supportoAttuale = 'iphone-da-installare';
+      const notifiche = servizio();
+
+      expect(await notifiche.impostaAvvisoVicino(true)).toBe('permesso-negato');
+      expect(ambiente.chiediPermesso).not.toHaveBeenCalled();
+      expect(gps.attuale).toHaveBeenCalled();
+      expect(notifiche.preferenze().posizione).not.toBeNull();
+      expect(notifiche.preferenze().avvisoVicino).toBeFalse();
+    });
+
+    it('negate le notifiche alla richiesta, chiede lo stesso la posizione', async () => {
+      ambiente.risposta = 'denied';
+      gps.attuale.and.rejectWith(errorePerCodice(1));
+      const notifiche = servizio();
+
+      expect(await notifiche.impostaAvvisoVicino(true)).toBe('permesso-negato');
+      expect(gps.attuale).toHaveBeenCalled();
+      expect(diagnosi().notifiche()).toBe('bloccate');
+      expect(diagnosi().posizione()).toBe('rifiutata');
+    });
   });
 
   it('accendendo le vicine legge la posizione e la manda con il raggio', async () => {
@@ -123,14 +195,50 @@ describe('NotificheService', () => {
     expect(notifiche.preferenze().posizione?.il).toBeTruthy();
   });
 
-  it('con la posizione negata l avviso delle vicine resta spento', async () => {
+  it('con la posizione negata l avviso delle vicine resta spento, e la diagnosi sa perché', async () => {
     ambiente.permessoAttuale = 'granted';
     gps.attuale.and.rejectWith(new ErrorePosizione('negata', 'Non hai dato il permesso.'));
     const notifiche = servizio();
 
     expect(await notifiche.impostaAvvisoVicino(true)).toBe('posizione-negata');
     expect(notifiche.preferenze().avvisoVicino).toBeFalse();
-    expect(notifiche.errore()).toBe('Non hai dato il permesso.');
+    expect(diagnosi().posizione()).toBe('rifiutata');
+    expect(notifiche.errore()).toBeNull();
+  });
+
+  it('con la localizzazione spenta la diagnosi dice posizione non disponibile', async () => {
+    ambiente.permessoAttuale = 'granted';
+    gps.attuale.and.rejectWith(errorePerCodice(2));
+
+    expect(await servizio().impostaAvvisoVicino(true)).toBe('posizione-negata');
+    expect(diagnosi().posizione()).toBe('non-disponibile');
+  });
+
+  it('aggiornando la posizione con l avviso spento la tiene solo sul telefono', async () => {
+    const notifiche = servizio();
+
+    expect(await notifiche.aggiornaPosizione()).toBe('fatto');
+    expect(notifiche.preferenze().posizione?.lat).toBe(41.9);
+    // Nessuna chiamata: lo controlla http.verify().
+  });
+
+  it('riprovaPermesso chiede il permesso se il browser può ancora chiederlo', async () => {
+    const notifiche = servizio();
+
+    expect(await notifiche.riprovaPermesso()).toBe('fatto');
+    expect(ambiente.chiediPermesso).toHaveBeenCalled();
+    expect(diagnosi().notifiche()).toBe('consentite');
+  });
+
+  it('riprovaPermesso con le notifiche bloccate rilegge soltanto', async () => {
+    ambiente.permessoAttuale = 'denied';
+    const notifiche = servizio();
+    expect(await notifiche.riprovaPermesso()).toBe('permesso-negato');
+
+    ambiente.permessoAttuale = 'granted';
+    expect(await notifiche.riprovaPermesso()).toBe('fatto');
+    expect(ambiente.chiediPermesso).not.toHaveBeenCalled();
+    expect(diagnosi().notifiche()).toBe('consentite');
   });
 
   it('se il server non risponde l interruttore torna spento', async () => {
@@ -155,7 +263,8 @@ describe('NotificheService', () => {
 
     expect(await esito).toBe('errore');
     expect(notifiche.preferenze().avvisoSquadre).toBeFalse();
-    expect(notifiche.errore()).toContain('navigazione privata');
+    expect(notifiche.errore()).toBeNull();
+    expect(diagnosi().notifiche()).toBe('non-supportate');
   });
 
   it('cambiando il raggio aggiorna l iscrizione', async () => {
