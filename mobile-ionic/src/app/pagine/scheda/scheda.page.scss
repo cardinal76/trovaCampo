@@ -16,8 +16,210 @@
   font-size: 0.875rem;
 }
 
-/* Giorno e ora in evidenza: è la prima cosa che cerca chi va al campo. */
-.partita .quando {
+/*
+ * Partite, anagrafica e campionati: tre sezioni che si piegano, ognuna in
+ * una scheda con gli angoli arrotondati, come blocchi separati e non come
+ * un'unica lista lunga.
+ */
+.sezioni {
+  display: block;
+  padding: 0.25rem 1rem 1.5rem;
+
+  ion-accordion {
+    margin-bottom: 0.75rem;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--ion-item-background, var(--ion-background-color, #fff));
+    box-shadow:
+      0 1px 2px rgb(0 0 0 / 6%),
+      0 2px 8px rgb(0 0 0 / 6%);
+  }
+}
+
+.testa-sezione {
+  --padding-start: 0.9rem;
+  --min-height: 3.25rem;
   font-weight: 600;
-  color: var(--ion-color-primary, #3880ff);
+
+  ion-icon[slot='start'] {
+    margin-inline-end: 0.75rem;
+    color: var(--ion-color-primary, #3880ff);
+  }
+}
+
+.conteggio {
+  --background: var(--ion-color-primary, #3880ff);
+  --color: var(--ion-color-primary-contrast, #fff);
+  --padding-start: 0.5rem;
+  --padding-end: 0.5rem;
+  margin-inline-end: 0.25rem;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.corpo-sezione {
+  padding: 0 0 0.5rem;
+}
+
+.attesa {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.vuoto {
+  margin: 0;
+  padding: 0.75rem 1rem 1rem;
+  color: var(--ion-color-medium, #666);
+  font-size: 0.9rem;
+}
+
+/* Le partite: una riga per partita, con il giorno in un riquadro da calendario. */
+.partite {
+  margin: 0;
+  padding: 0 0.75rem;
+  list-style: none;
+}
+
+.partita {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  padding: 0.8rem 0.25rem;
+
+  & + & {
+    border-top: 1px solid var(--ion-color-light-shade, #e6e6e6);
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.calendario {
+  display: flex;
+  flex: 0 0 3.25rem;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.25);
+  border-radius: 10px;
+  background: var(--ion-item-background, #fff);
+  line-height: 1.1;
+  text-align: center;
+
+  .giorno {
+    align-self: stretch;
+    padding: 0.15rem 0;
+    background: var(--ion-color-primary, #3880ff);
+    color: var(--ion-color-primary-contrast, #fff);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .numero {
+    padding-top: 0.2rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+  }
+
+  .mese {
+    padding-bottom: 0.25rem;
+    color: var(--ion-color-medium, #666);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+  }
+}
+
+.dettagli {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.quando {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.6rem;
+  align-items: center;
+  color: var(--ion-color-medium, #666);
+  font-size: 0.85rem;
+
+  .ora {
+    display: inline-flex;
+    gap: 0.25rem;
+    align-items: center;
+    color: var(--ion-color-primary, #3880ff);
+    font-weight: 700;
+  }
+
+  /* Oggi e Domani saltano all'occhio: sono le partite a cui si può ancora andare. */
+  .vicino {
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    background: var(--ion-color-success, #2dd36f);
+    color: var(--ion-color-success-contrast, #fff);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+}
+
+.squadre {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.45rem;
+  align-items: baseline;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+
+  .contro {
+    color: var(--ion-color-medium, #666);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+}
+
+.campionato {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  align-items: center;
+  color: var(--ion-color-medium, #666);
+  font-size: 0.78rem;
+
+  span + span::before {
+    content: '·';
+    margin-inline-end: 0.3rem;
+  }
+
+  .nome-campionato {
+    padding: 0.1rem 0.45rem;
+    border-radius: 6px;
+    background: rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.1);
+    color: var(--ion-color-primary-shade, #3171e0);
+    font-weight: 600;
+
+    & + span::before {
+      content: none;
+    }
+  }
+}
+
+/* Per chi legge con lo screen reader: la data per intero, invece dei pezzi del riquadro. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

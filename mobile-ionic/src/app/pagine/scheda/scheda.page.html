@@ -54,178 +54,212 @@
         <p class="posizione-assente">Posizione del campo non ancora disponibile.</p>
       }
 
-      @if (societa()!.anagraficaImpiantoId) {
-        <ion-list-header>
-          <ion-label>Prossime partite su questo campo</ion-label>
-        </ion-list-header>
-        @switch (statoPartite()) {
-          @case ('caricamento') {
-            <ion-item lines="none">
-              <ion-spinner name="crescent"></ion-spinner>
-            </ion-item>
-          }
-          @case ('errore') {
-            <ion-item lines="none">
-              <ion-label class="ion-text-wrap">
-                <p>Le partite non sono disponibili in questo momento: riprova tra poco.</p>
-              </ion-label>
-            </ion-item>
-          }
-          @default {
-            @for (partita of partite(); track $index) {
-              <ion-item class="partita">
-                <ion-label class="ion-text-wrap">
-                  <p class="quando">{{ quandoPartita(partita) }}</p>
-                  <h3>{{ squadrePartita(partita) }}</h3>
-                  <p>{{ campionatoPartita(partita) }}</p>
-                </ion-label>
-              </ion-item>
-            } @empty {
-              <ion-item lines="none">
-                <ion-label class="ion-text-wrap">
-                  <p>Nessuna partita in programma qui nei prossimi {{ giorniPartite }} giorni.</p>
-                </ion-label>
-              </ion-item>
-            }
-          }
-        }
-      }
-
-      <ion-list-header>
-        <ion-label>Anagrafica società</ion-label>
-      </ion-list-header>
-
-      @if (haAnagrafica()) {
-        @if (societa()!.matricola) {
-          <ion-item>
-            <ion-label>Matricola</ion-label>
-            <ion-note slot="end">{{ societa()!.matricola }}</ion-note>
-          </ion-item>
-        }
-        @if (societa()!.comitatoRegionale) {
-          <ion-item>
-            <ion-label>Comitato regionale</ion-label>
-            <ion-note slot="end">{{ societa()!.comitatoRegionale }}</ion-note>
-          </ion-item>
-        }
-        @if (societa()!.presidente) {
-          <ion-item>
-            <ion-label>Presidente</ion-label>
-            <ion-note slot="end">{{ societa()!.presidente }}</ion-note>
-          </ion-item>
-        }
-        @if (societa()!.indirizzoSede) {
-          <ion-item>
-            <ion-label>Indirizzo sede</ion-label>
-            <ion-note slot="end">{{ societa()!.indirizzoSede }}</ion-note>
-          </ion-item>
-        }
-        @if (societa()!.telefono) {
-          <ion-item>
-            <ion-label>Telefono</ion-label>
-            <ion-note slot="end">{{ societa()!.telefono }}</ion-note>
-          </ion-item>
-        }
-        @if (societa()!.fax) {
-          <ion-item>
-            <ion-label>Fax</ion-label>
-            <ion-note slot="end">{{ societa()!.fax }}</ion-note>
-          </ion-item>
-        }
-        @if (societa()!.email) {
-          <ion-item>
-            <ion-label>Email</ion-label>
-            <ion-note slot="end">{{ societa()!.email }}</ion-note>
-          </ion-item>
-        }
-        @if (societa()!.sitoWeb) {
-          <ion-item>
-            <ion-label>Sito web</ion-label>
-            <ion-note slot="end">{{ societa()!.sitoWeb }}</ion-note>
-          </ion-item>
-        }
-        @if (prezziScuolaCalcio()) {
-          <ion-item>
-            <ion-label>Scuola calcio</ion-label>
-            <ion-note slot="end">{{ prezziScuolaCalcio() }}</ion-note>
-          </ion-item>
-        }
-      } @else {
-        <ion-item lines="none">
-          <ion-label class="ion-text-wrap">
-            <p>{{ testoSenzaAnagrafica() }}</p>
-          </ion-label>
-        </ion-item>
-      }
-
-      <ion-list-header>
-        <ion-label>Campionati</ion-label>
-      </ion-list-header>
-      @switch (statoSquadre()) {
-        @case ('caricamento') {
-          <ion-item lines="none">
-            <ion-spinner name="crescent"></ion-spinner>
-          </ion-item>
-        }
-        @case ('errore') {
-          <ion-item lines="none">
-            <ion-label class="ion-text-wrap">
-              <p>I campionati non sono disponibili in questo momento: riprova tra poco.</p>
-            </ion-label>
-          </ion-item>
-        }
-        @default {
-          @for (squadra of squadre(); track $index) {
-            <ion-item>
-              <ion-label class="ion-text-wrap">
-                <h3>{{ squadra.campionato }}</h3>
-                <p>{{ dettaglioSquadra(squadra) }}</p>
-                @if (squadra.campo && squadra.campo !== societa()!.nomeImpianto) {
-                  <p>Gioca in casa a {{ squadra.campo }}</p>
-                }
-              </ion-label>
-              <ion-note slot="end">{{ squadra.stagione }}</ion-note>
-            </ion-item>
-          } @empty {
-            @if (campionati().length === 0) {
-              <ion-item lines="none">
-                <ion-label class="ion-text-wrap">
-                  <p>Nessun campionato nei comunicati letti finora.</p>
-                </ion-label>
-              </ion-item>
-            }
-          }
-        }
-      }
-
-      @if (agonistica().length > 0) {
-        <ion-list-header>
-          <ion-label>Campionati agonistica</ion-label>
-        </ion-list-header>
-        @for (campionato of agonistica(); track $index) {
-          <ion-item>
-            <ion-label>
-              <h3>{{ campionato.descrizione }}</h3>
-              <p>Girone {{ campionato.girone }} · Comitato {{ campionato.comitato }}</p>
-            </ion-label>
-          </ion-item>
-        }
-      }
-
-      @if (scuolaCalcio().length > 0) {
-        <ion-list-header>
-          <ion-label>Campionati scuola calcio</ion-label>
-        </ion-list-header>
-        @for (campionato of scuolaCalcio(); track $index) {
-          <ion-item>
-            <ion-label>
-              <h3>{{ campionato.descrizione }}</h3>
-              <p>Girone {{ campionato.girone }} · Comitato {{ campionato.comitato }}</p>
-            </ion-label>
-          </ion-item>
-        }
-      }
-
     </ion-list>
+
+    <!--
+      Partite, anagrafica e campionati si piegano: sul telefono, tutti aperti,
+      sono qualche schermata di scorrimento fra il campo e quello che si
+      cerca. Aperta in partenza la sezione più utile a chi va al campo.
+    -->
+    <ion-accordion-group class="sezioni contenuto-largo" [multiple]="true" [value]="sezioniAperte()">
+      @if (societa()!.anagraficaImpiantoId) {
+        <ion-accordion value="partite">
+          <ion-item slot="header" class="testa-sezione">
+            <ion-icon slot="start" name="calendar-outline" aria-hidden="true"></ion-icon>
+            <ion-label>Prossime partite su questo campo</ion-label>
+            @if (statoPartite() === 'completata' && partite().length > 0) {
+              <ion-badge slot="end" class="conteggio">{{ partite().length }}</ion-badge>
+            }
+          </ion-item>
+          <div slot="content" class="corpo-sezione">
+            @switch (statoPartite()) {
+              @case ('caricamento') {
+                <div class="attesa"><ion-spinner name="crescent"></ion-spinner></div>
+              }
+              @case ('errore') {
+                <p class="vuoto">Le partite non sono disponibili in questo momento: riprova tra poco.</p>
+              }
+              @default {
+                <ol class="partite">
+                  @for (partita of partite(); track $index) {
+                    @let data = dataPartita(partita);
+                    <li class="partita">
+                      <div class="calendario" aria-hidden="true">
+                        <span class="giorno">{{ data.giorno }}</span>
+                        <span class="numero">{{ data.numero }}</span>
+                        <span class="mese">{{ data.mese }}</span>
+                      </div>
+                      <div class="dettagli">
+                        <p class="quando">
+                          @if (data.vicino) {
+                            <span class="vicino">{{ data.vicino }}</span>
+                          }
+                          <span class="visually-hidden">{{ quandoPartita(partita) }}</span>
+                          <span class="ora" aria-hidden="true">
+                            <ion-icon name="time-outline"></ion-icon>{{ data.ora }}
+                          </span>
+                          @if (partita.giornata) {
+                            <span class="giornata">{{ partita.giornata }}ª giornata</span>
+                          }
+                        </p>
+                        <p class="squadre">
+                          <span class="casa">{{ partita.casa }}</span>
+                          <span class="contro">vs</span>
+                          <span class="ospite">{{ partita.ospite }}</span>
+                        </p>
+                        <p class="campionato">
+                          <span class="nome-campionato">{{ partita.campionato }}</span>
+                          @if (partita.girone) {
+                            <span>Girone {{ partita.girone }}</span>
+                          }
+                          @if (partita.ente) {
+                            <span>{{ partita.ente }}</span>
+                          }
+                        </p>
+                      </div>
+                    </li>
+                  } @empty {
+                    <p class="vuoto">Nessuna partita in programma qui nei prossimi {{ giorniPartite }} giorni.</p>
+                  }
+                </ol>
+              }
+            }
+          </div>
+        </ion-accordion>
+      }
+
+      <ion-accordion value="anagrafica">
+        <ion-item slot="header" class="testa-sezione">
+          <ion-icon slot="start" name="people-outline" aria-hidden="true"></ion-icon>
+          <ion-label>Anagrafica società</ion-label>
+        </ion-item>
+        <ion-list slot="content" class="corpo-sezione" lines="inset">
+          @if (haAnagrafica()) {
+            @if (societa()!.matricola) {
+              <ion-item>
+                <ion-label>Matricola</ion-label>
+                <ion-note slot="end">{{ societa()!.matricola }}</ion-note>
+              </ion-item>
+            }
+            @if (societa()!.comitatoRegionale) {
+              <ion-item>
+                <ion-label>Comitato regionale</ion-label>
+                <ion-note slot="end">{{ societa()!.comitatoRegionale }}</ion-note>
+              </ion-item>
+            }
+            @if (societa()!.presidente) {
+              <ion-item>
+                <ion-label>Presidente</ion-label>
+                <ion-note slot="end">{{ societa()!.presidente }}</ion-note>
+              </ion-item>
+            }
+            @if (societa()!.indirizzoSede) {
+              <ion-item>
+                <ion-label>Indirizzo sede</ion-label>
+                <ion-note slot="end">{{ societa()!.indirizzoSede }}</ion-note>
+              </ion-item>
+            }
+            @if (societa()!.telefono) {
+              <ion-item>
+                <ion-label>Telefono</ion-label>
+                <ion-note slot="end">{{ societa()!.telefono }}</ion-note>
+              </ion-item>
+            }
+            @if (societa()!.fax) {
+              <ion-item>
+                <ion-label>Fax</ion-label>
+                <ion-note slot="end">{{ societa()!.fax }}</ion-note>
+              </ion-item>
+            }
+            @if (societa()!.email) {
+              <ion-item>
+                <ion-label>Email</ion-label>
+                <ion-note slot="end">{{ societa()!.email }}</ion-note>
+              </ion-item>
+            }
+            @if (societa()!.sitoWeb) {
+              <ion-item>
+                <ion-label>Sito web</ion-label>
+                <ion-note slot="end">{{ societa()!.sitoWeb }}</ion-note>
+              </ion-item>
+            }
+            @if (prezziScuolaCalcio()) {
+              <ion-item>
+                <ion-label>Scuola calcio</ion-label>
+                <ion-note slot="end">{{ prezziScuolaCalcio() }}</ion-note>
+              </ion-item>
+            }
+          } @else {
+            <p class="vuoto">{{ testoSenzaAnagrafica() }}</p>
+          }
+        </ion-list>
+      </ion-accordion>
+
+      <ion-accordion value="campionati">
+        <ion-item slot="header" class="testa-sezione">
+          <ion-icon slot="start" name="trophy-outline" aria-hidden="true"></ion-icon>
+          <ion-label>Campionati</ion-label>
+          @if (numeroCampionati() > 0) {
+            <ion-badge slot="end" class="conteggio">{{ numeroCampionati() }}</ion-badge>
+          }
+        </ion-item>
+        <ion-list slot="content" class="corpo-sezione" lines="inset">
+          @switch (statoSquadre()) {
+            @case ('caricamento') {
+              <div class="attesa"><ion-spinner name="crescent"></ion-spinner></div>
+            }
+            @case ('errore') {
+              <p class="vuoto">I campionati non sono disponibili in questo momento: riprova tra poco.</p>
+            }
+            @default {
+              @for (squadra of squadre(); track $index) {
+                <ion-item>
+                  <ion-label class="ion-text-wrap">
+                    <h3>{{ squadra.campionato }}</h3>
+                    <p>{{ dettaglioSquadra(squadra) }}</p>
+                    @if (squadra.campo && squadra.campo !== societa()!.nomeImpianto) {
+                      <p>Gioca in casa a {{ squadra.campo }}</p>
+                    }
+                  </ion-label>
+                  <ion-note slot="end">{{ squadra.stagione }}</ion-note>
+                </ion-item>
+              } @empty {
+                @if (campionati().length === 0) {
+                  <p class="vuoto">Nessun campionato nei comunicati letti finora.</p>
+                }
+              }
+            }
+          }
+
+          @if (agonistica().length > 0) {
+            <ion-list-header>
+              <ion-label>Agonistica</ion-label>
+            </ion-list-header>
+            @for (campionato of agonistica(); track $index) {
+              <ion-item>
+                <ion-label>
+                  <h3>{{ campionato.descrizione }}</h3>
+                  <p>Girone {{ campionato.girone }} · Comitato {{ campionato.comitato }}</p>
+                </ion-label>
+              </ion-item>
+            }
+          }
+
+          @if (scuolaCalcio().length > 0) {
+            <ion-list-header>
+              <ion-label>Scuola calcio</ion-label>
+            </ion-list-header>
+            @for (campionato of scuolaCalcio(); track $index) {
+              <ion-item>
+                <ion-label>
+                  <h3>{{ campionato.descrizione }}</h3>
+                  <p>Girone {{ campionato.girone }} · Comitato {{ campionato.comitato }}</p>
+                </ion-label>
+              </ion-item>
+            }
+          }
+        </ion-list>
+      </ion-accordion>
+    </ion-accordion-group>
   }
 </ion-content>
