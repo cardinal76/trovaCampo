@@ -1,0 +1,193 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Notifiche</ion-title>
+    <ion-buttons slot="end">
+      <menu-utente></menu-utente>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="pagina contenuto-largo">
+    <p class="introduzione">
+      Un avviso sul telefono prima delle partite. Senza registrazione: valgono per questo browser,
+      e restano spenti finché non li accendi qui.
+    </p>
+
+    <!-- Prima di tutto, perché qui le notifiche non possono arrivare. -->
+    @switch (supporto()) {
+      @case ('iphone-da-installare') {
+        <div class="avviso" data-stato="iphone">
+          <ion-icon name="share-outline" aria-hidden="true"></ion-icon>
+          <div>
+            <p><strong>Su iPhone e iPad le notifiche arrivano solo all’app sulla schermata Home.</strong></p>
+            <p>
+              In Safari tocca <strong>Condividi</strong>, poi <strong>Aggiungi alla schermata Home</strong>,
+              e apri TrovaCampo da lì. Serve iOS 16.4 o successivo.
+            </p>
+          </div>
+        </div>
+      }
+      @case ('app-nativa') {
+        <div class="avviso" data-stato="app">
+          <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
+          <p>
+            Nell’app le notifiche non ci sono ancora: apri trovacampo.footballer.it dal browser del
+            telefono e accendile da lì.
+          </p>
+        </div>
+      }
+      @case ('non-sicuro') {
+        <div class="avviso" data-stato="non-sicuro">
+          <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
+          <p>Il browser permette le notifiche solo alle pagine aperte in HTTPS.</p>
+        </div>
+      }
+      @case ('non-supportato') {
+        <div class="avviso" data-stato="non-supportato">
+          <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
+          <p>
+            Questo browser non riceve notifiche push. Prova con Chrome, Firefox, Edge o Safari
+            aggiornati (su iPhone, dall’app aggiunta alla schermata Home).
+          </p>
+        </div>
+      }
+    }
+
+    @if (bloccate()) {
+      <div class="avviso" data-stato="bloccate">
+        <ion-icon name="notifications-off-outline" aria-hidden="true"></ion-icon>
+        <p>
+          <strong>Le notifiche sono bloccate per questo sito.</strong> Riattivale dalle impostazioni
+          del browser (il lucchetto accanto all’indirizzo) o del telefono, poi torna qui.
+        </p>
+      </div>
+    }
+
+    @if (errore(); as messaggio) {
+      <div class="avviso errore" role="alert">
+        <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
+        <p>{{ messaggio }}</p>
+      </div>
+    }
+
+    <section class="sezione" aria-labelledby="titolo-squadre">
+      <div class="testa-sezione">
+        <ion-icon name="people-outline" aria-hidden="true"></ion-icon>
+        <h2 id="titolo-squadre">Squadre che segui</h2>
+      </div>
+      <div class="interruttore">
+        <ion-toggle
+          justify="space-between"
+          data-avviso="squadre"
+          [checked]="preferenze().avvisoSquadre"
+          [disabled]="!utilizzabile() || occupato()"
+          (ionChange)="cambiaSquadre($event)"
+        >
+          <span class="etichetta">Un’ora prima delle loro partite</span>
+          <span class="spiegazione">In casa e fuori, con campo e orario</span>
+        </ion-toggle>
+      </div>
+
+      <ul class="seguite">
+        @for (squadra of seguite(); track squadra.chiave) {
+          <li class="seguita">
+            <a class="nome" [routerLink]="['/societa', squadra.societaId]">
+              <strong>{{ squadra.societa }}</strong>
+              <span>{{ squadra.campionato }}</span>
+              @if (squadra.dettaglio) {
+                <small>{{ squadra.dettaglio }}</small>
+              }
+            </a>
+            <ion-button
+              fill="clear"
+              size="small"
+              class="smetti"
+              [attr.aria-label]="'Smetti di seguire ' + squadra.societa + ', ' + squadra.campionato"
+              (click)="smetti(squadra.chiave)"
+            >
+              <ion-icon slot="start" name="notifications-off-outline"></ion-icon>
+              Smetti
+            </ion-button>
+          </li>
+        } @empty {
+          <li class="vuoto">
+            Non segui ancora nessuna squadra. Apri la scheda di una società e tocca la campanella
+            <ion-icon name="notifications-outline" aria-label="campanella"></ion-icon> accanto a una
+            squadra, nella sezione Campionati.
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="sezione" aria-labelledby="titolo-vicine">
+      <div class="testa-sezione">
+        <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+        <h2 id="titolo-vicine">Partite vicino a te</h2>
+      </div>
+      <div class="interruttore">
+        <ion-toggle
+          justify="space-between"
+          data-avviso="vicino"
+          [checked]="preferenze().avvisoVicino"
+          [disabled]="!utilizzabile() || occupato()"
+          (ionChange)="cambiaVicino($event)"
+        >
+          <span class="etichetta">Mezz’ora prima delle partite vicine</span>
+          <span class="spiegazione">Su qualunque campo entro il raggio che scegli</span>
+        </ion-toggle>
+      </div>
+
+      <div class="raggio">
+        <ion-label id="etichetta-raggio">Entro</ion-label>
+        <ion-segment
+          aria-labelledby="etichetta-raggio"
+          [value]="preferenze().raggioKm"
+          [disabled]="!utilizzabile() || occupato()"
+          (ionChange)="cambiaRaggio($event.detail.value)"
+        >
+          @for (raggio of raggi; track raggio) {
+            <ion-segment-button [value]="raggio">
+              <ion-label>{{ raggio }} km</ion-label>
+            </ion-segment-button>
+          }
+        </ion-segment>
+      </div>
+
+      <div class="posizione">
+        <p class="stato-posizione">
+          @if (posizioneSalvata(); as quando) {
+            Posizione salvata {{ quando }}.
+          } @else {
+            Nessuna posizione salvata: la chiediamo quando accendi l’avviso.
+          }
+        </p>
+        @if (preferenze().avvisoVicino) {
+          <ion-button
+            fill="outline"
+            size="small"
+            class="aggiorna-posizione"
+            [disabled]="occupato()"
+            (click)="aggiornaPosizione()"
+          >
+            <ion-icon slot="start" name="locate-outline"></ion-icon>
+            Aggiorna posizione
+          </ion-button>
+        }
+        @if (occupato()) {
+          <ion-spinner name="crescent" aria-label="Attendere"></ion-spinner>
+        }
+      </div>
+      <p class="nota">
+        Un sito non può seguire la tua posizione in sottofondo: TrovaCampo la aggiorna ogni volta che
+        lo apri, se gli hai già dato il permesso. Se ti sposti senza aprirlo, gli avvisi restano per
+        l’ultima posizione salvata.
+      </p>
+    </section>
+
+    <p class="nota piede">
+      Gli orari vengono dai programmi gare dei Comunicati Ufficiali: una partita spostata all’ultimo
+      momento può arrivare con l’orario vecchio.
+    </p>
+  </div>
+</ion-content>

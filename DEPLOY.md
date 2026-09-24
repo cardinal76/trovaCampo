@@ -165,6 +165,78 @@ condivisa (`ANAGRAFICA_URL=http://presenze-backend:8080` in
 Perché ci sia qualcosa da leggere, in presenze va accesa la lettura
 automatica dei comunicati (da `/campionato`, vedi il suo DEPLOY.md).
 
+## Le notifiche push
+
+Dalla scheda **Notifiche** (quarta icona in basso) chi usa il sito accende,
+senza login, due avvisi, spenti di partenza:
+
+- **un'ora prima** delle partite delle squadre che segue (la campanella
+  accanto a ogni squadra, nella sezione Campionati della scheda di una
+  società);
+- **mezz'ora prima** delle partite sui campi entro 5, 10 o 20 km dalla
+  posizione salvata.
+
+Come funziona, in breve:
+
+- **Le chiavi VAPID** (la firma delle notifiche) il backend le crea da solo
+  la prima volta che servono e le tiene in Mongo, collezione
+  `configurazione`, documento `vapid`: non c'è niente da generare né da
+  mettere in `.env.prod`, e il backup di Mongo le comprende. La privata non
+  finisce nei log (c'è solo la pubblica, alla creazione). **Non vanno
+  cancellate**: con chiavi nuove i browser già iscritti smettono di ricevere
+  notifiche finché non riaprono il sito. Chi volesse fissarle a mano può
+  usare `VAPID_PUBBLICA` e `VAPID_PRIVATA` (base64url, il formato di tutte le
+  librerie Web Push), che vincono su Mongo.
+- **Le iscrizioni** stanno in `iscrizioni_notifiche`: endpoint del servizio
+  push, chiavi del browser, squadre seguite, e la posizione (arrotondata a
+  un centinaio di metri) solo per chi ha acceso le partite vicine. Si
+  rinfrescano a ogni apertura del sito e scadono da sole dopo un anno senza
+  aperture (indice TTL); un 404/410 del servizio push le cancella subito.
+- **Il giro** parte ogni cinque minuti (ora di Roma) e legge le partite dalla
+  stessa cache di scheda e mappa: nessuna chiamata in più a presenze. Le
+  notifiche mandate stanno in `notifiche_inviate` per due giorni, così
+  nessuna parte due volte, nemmeno dopo un riavvio. Si spegne con
+  `NOTIFICHE_ATTIVE=false` nell'ambiente del backend (le iscrizioni si
+  raccolgono lo stesso).
+- **La squadra seguita** si riconosce da società di presenze, campionato,
+  ente e lettera della squadra (vuota per la prima, "B" per la seconda),
+  non dall'id del girone che cambia ogni stagione. La lettera nelle partite
+  arriva da presenze: si rilascia **prima presenze** (PR sull'anagrafica
+  pubblica), poi TrovaCampo. Con un presenze vecchio si avvisa per qualunque
+  squadra di quella società in quel campionato.
+- **Il backend esce su Internet** verso i servizi push (Google, Mozilla,
+  Apple, Microsoft), sulla 443: il container lo fa già, la rete `interna`
+  non è isolata. Gli endpoint accettati sono solo di quei servizi
+  (`trovacampo.notifiche.servizi-push` in `application.yml`).
+
+Il sito è installabile (`manifest.webmanifest`), e il service worker
+(`public/sw.js`) serve solo alle notifiche: niente cache, quindi non trattiene
+versioni vecchie dopo un rilascio. `nginx.conf` del frontend lo serve con
+`Cache-Control: no-cache` (senza, finirebbe nella regola dei `.js` con un anno
+di cache) e dà al manifest il tipo `application/manifest+json`. Caddy li passa
+così come sono.
+
+I limiti, da sapere:
+
+- su **iPhone e iPad** le notifiche arrivano solo al sito aggiunto alla
+  schermata Home (Condividi → Aggiungi alla schermata Home), con iOS 16.4 o
+  successivo; la pagina Notifiche lo spiega;
+- un sito **non legge la posizione in sottofondo**: si aggiorna quando lo si
+  apre, se il permesso c'è già;
+- in **navigazione privata** Chrome non iscrive alle notifiche;
+- l'**app Capacitor** non ha le push del web: la pagina rimanda al sito;
+- gli orari sono quelli dei **programmi gare** letti da presenze: una partita
+  spostata all'ultimo momento può arrivare con l'orario vecchio.
+
+Per controllare dal server quante iscrizioni ci sono:
+
+```bash
+docker exec trovacampo-mongo sh -c 'mongosh --quiet -u "$MONGO_INITDB_ROOT_USERNAME" -p "$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin trovacampo --eval "db.iscrizioni_notifiche.countDocuments()"'
+```
+
+e nei log del backend una riga `Notifiche: N mandate, …` a ogni giro che ha
+mandato qualcosa.
+
 ## Importare i campi
 
 Società, impianti e indirizzi si caricano dalla pagina

@@ -1,9 +1,15 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { provideIonicAngular } from '@ionic/angular/standalone';
+import { ToastController, provideIonicAngular } from '@ionic/angular/standalone';
 import { of } from 'rxjs';
 import { Partita } from '../../modelli/partita';
 import { Societa } from '../../modelli/societa';
+import { Squadra } from '../../modelli/squadra';
+import { AmbientePush } from '../../servizi/ambiente-push';
+import { AmbientePushFinto, attendi } from '../../servizi/ambiente-push-finto.spec';
+import { NotificheService } from '../../servizi/notifiche.service';
 import { SocietaService } from '../../servizi/societa.service';
 import { SchedaPage } from './scheda.page';
 
@@ -36,7 +42,12 @@ const PARTITA: Partita = {
 describe('SchedaPage', () => {
   let fixture: ComponentFixture<SchedaPage>;
 
-  function apri(societa: Societa, partite: Partita[] = [PARTITA]): HTMLElement {
+  let messaggi: string[];
+
+  afterEach(() => localStorage.removeItem('trovacampo.squadreSeguite'));
+
+  function apri(societa: Societa, partite: Partita[] = [PARTITA], squadre: Squadra[] = []): HTMLElement {
+    messaggi = [];
     TestBed.configureTestingModule({
       imports: [SchedaPage],
       providers: [
@@ -50,8 +61,20 @@ describe('SchedaPage', () => {
           provide: SocietaService,
           useValue: {
             perId: () => of(societa),
-            squadre: () => of([]),
+            squadre: () => of(squadre),
             partite: () => of(partite),
+          },
+        },
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AmbientePush, useValue: new AmbientePushFinto() },
+        {
+          provide: ToastController,
+          useValue: {
+            create: async ({ message }: { message: string }) => {
+              messaggi.push(message);
+              return { present: async () => undefined };
+            },
           },
         },
       ],
@@ -100,5 +123,57 @@ describe('SchedaPage', () => {
 
     expect(sezioni(pagina)).toEqual(['anagrafica', 'campionati']);
     expect(fixture.componentInstance.sezioniAperte()).toEqual(['campionati']);
+  });
+  describe('la campanella delle squadre', () => {
+    const PRIMA: Squadra = {
+      campionato: 'ECCELLENZA',
+      ente: 'Regionali',
+      stagione: '2026/2027',
+      girone: 'A',
+      squadra: '',
+      fuoriClassifica: false,
+      chiave: '7|eccellenza|regionali|',
+    };
+    const SENZA_CHIAVE: Squadra = { ...PRIMA, campionato: 'UNDER 17', chiave: undefined };
+
+    function campanelle(pagina: HTMLElement): HTMLElement[] {
+      return Array.from(pagina.querySelectorAll('ion-accordion[value=campionati] ion-button.segui'));
+    }
+
+    it('c è su ogni squadra che il backend sa riconoscere', () => {
+      const pagina = apri(SOCIETA, [], [PRIMA, SENZA_CHIAVE]);
+
+      expect(campanelle(pagina).length).toBe(1);
+      expect(campanelle(pagina)[0].getAttribute('aria-label')).toBe('Segui ECCELLENZA');
+      expect(campanelle(pagina)[0].getAttribute('aria-pressed')).toBe('false');
+    });
+
+    it('segue la squadra, e toccata di nuovo smette', async () => {
+      const pagina = apri(SOCIETA, [], [PRIMA]);
+      const notifiche = TestBed.inject(NotificheService);
+
+      campanelle(pagina)[0].click();
+      await attendi();
+      fixture.detectChanges();
+
+      expect(notifiche.segue('7|eccellenza|regionali|')).toBeTrue();
+      expect(notifiche.seguite()[0]).toEqual({
+        chiave: '7|eccellenza|regionali|',
+        societa: 'BOREALE',
+        societaId: '1',
+        campionato: 'ECCELLENZA',
+        dettaglio: 'Girone A · Regionali',
+      });
+      expect(campanelle(pagina)[0].getAttribute('aria-pressed')).toBe('true');
+      expect(campanelle(pagina)[0].classList).toContain('attiva');
+      // Con l'avviso spento lo dice, con il rimando alla pagina Notifiche.
+      expect(messaggi[0]).toContain('accendi le notifiche');
+
+      campanelle(pagina)[0].click();
+      await attendi();
+      fixture.detectChanges();
+      expect(notifiche.segue('7|eccellenza|regionali|')).toBeFalse();
+      expect(campanelle(pagina)[0].getAttribute('aria-pressed')).toBe('false');
+    });
   });
 });

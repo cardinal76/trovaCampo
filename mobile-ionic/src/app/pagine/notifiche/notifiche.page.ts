@@ -1,0 +1,153 @@
+import { Component, computed, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import {
+  IonButton,
+  IonButtons,
+  IonContent,
+  IonHeader,
+  IonIcon,
+  IonLabel,
+  IonSegment,
+  IonSegmentButton,
+  IonSpinner,
+  IonTitle,
+  IonToggle,
+  IonToolbar,
+} from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import {
+  alertCircleOutline,
+  locateOutline,
+  locationOutline,
+  notificationsOffOutline,
+  notificationsOutline,
+  peopleOutline,
+  shareOutline,
+} from 'ionicons/icons';
+import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
+import { NotificheService, RAGGI_KM } from '../../servizi/notifiche.service';
+
+/**
+ * "oggi alle 14:32", "ieri alle 9:05", "il 21 settembre alle 18:00": quando
+ * è stata salvata la posizione delle partite vicine.
+ */
+export function quandoSalvata(iso: string, adesso: Date = new Date()): string {
+  const data = new Date(iso);
+  if (Number.isNaN(data.getTime())) {
+    return '';
+  }
+  const ora = data.toLocaleTimeString('it-IT', { hour: 'numeric', minute: '2-digit' });
+  const giorno = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const giorni = Math.round((giorno(adesso) - giorno(data)) / 86_400_000);
+  if (giorni === 0) {
+    return `oggi alle ${ora}`;
+  }
+  if (giorni === 1) {
+    return `ieri alle ${ora}`;
+  }
+  const quando = data.toLocaleDateString('it-IT', { day: 'numeric', month: 'long' });
+  return `il ${quando} alle ${ora}`;
+}
+
+/**
+ * Le notifiche push: un'ora prima delle partite delle squadre seguite,
+ * mezz'ora prima di quelle vicine. Senza login, legate a questo browser;
+ * tutte e due spente finché non le si accende da qui.
+ */
+@Component({
+  selector: 'pagina-notifiche',
+  imports: [
+    RouterLink,
+    MenuUtenteComponent,
+    IonButton,
+    IonButtons,
+    IonContent,
+    IonHeader,
+    IonIcon,
+    IonLabel,
+    IonSegment,
+    IonSegmentButton,
+    IonSpinner,
+    IonTitle,
+    IonToggle,
+    IonToolbar,
+  ],
+  templateUrl: './notifiche.page.html',
+  styleUrl: './notifiche.page.scss',
+})
+export class NotifichePage {
+  readonly notifiche = inject(NotificheService);
+
+  readonly raggi = RAGGI_KM;
+  readonly preferenze = this.notifiche.preferenze;
+  readonly seguite = this.notifiche.seguite;
+  readonly supporto = this.notifiche.supporto;
+  readonly errore = this.notifiche.errore;
+  readonly occupato = this.notifiche.occupato;
+
+  /** Gli interruttori si toccano solo dove le notifiche possono arrivare. */
+  readonly utilizzabile = computed(() => this.supporto() === 'supportato');
+  /** Bloccate dal browser: un avviso "acceso" qui non arriverebbe. */
+  readonly bloccate = computed(
+    () => this.utilizzabile() && this.notifiche.permesso() === 'denied',
+  );
+
+  readonly posizioneSalvata = computed(() => {
+    const posizione = this.preferenze().posizione;
+    return posizione ? quandoSalvata(posizione.il) : null;
+  });
+
+  constructor() {
+    addIcons({
+      alertCircleOutline,
+      locateOutline,
+      locationOutline,
+      notificationsOffOutline,
+      notificationsOutline,
+      peopleOutline,
+      shareOutline,
+    });
+  }
+
+  /** A ogni ingresso: il permesso si può cambiare dalle impostazioni, a pagina chiusa. */
+  ionViewWillEnter(): void {
+    this.notifiche.rileggiPermesso();
+  }
+
+  async cambiaSquadre(evento: CustomEvent<{ checked: boolean }>): Promise<void> {
+    // Preso prima dell'attesa: dopo, l'evento non è più quello in corso.
+    const interruttore = evento.target as HTMLIonToggleElement | null;
+    await this.notifiche.impostaAvvisoSquadre(evento.detail.checked);
+    riallinea(interruttore, this.preferenze().avvisoSquadre);
+  }
+
+  async cambiaVicino(evento: CustomEvent<{ checked: boolean }>): Promise<void> {
+    // Preso prima dell'attesa: dopo, l'evento non è più quello in corso.
+    const interruttore = evento.target as HTMLIonToggleElement | null;
+    await this.notifiche.impostaAvvisoVicino(evento.detail.checked);
+    riallinea(interruttore, this.preferenze().avvisoVicino);
+  }
+
+  async cambiaRaggio(valore: unknown): Promise<void> {
+    await this.notifiche.impostaRaggio(Number(valore));
+  }
+
+  async aggiornaPosizione(): Promise<void> {
+    await this.notifiche.aggiornaPosizione();
+  }
+
+  async smetti(chiave: string): Promise<void> {
+    await this.notifiche.smettiDiSeguire(chiave);
+  }
+}
+
+/**
+ * Se l'accensione non è riuscita (permesso negato, server giù) l'interruttore
+ * torna com'era: il binding [checked] non se ne accorge da solo, perché il
+ * valore nel segnale non è mai cambiato.
+ */
+function riallinea(interruttore: HTMLIonToggleElement | null, acceso: boolean): void {
+  if (interruttore && interruttore.checked !== acceso) {
+    interruttore.checked = acceso;
+  }
+}

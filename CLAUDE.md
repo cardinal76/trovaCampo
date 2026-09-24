@@ -9,7 +9,9 @@ Società, campi e squadre con i loro campionati arrivano anche
 dall'anagrafica di presenze (Comunicati Ufficiali del Lazio), letta dalla
 sua API pubblica `/api/pubblico/anagrafica/`: i campi si sincronizzano in
 Mongo, le squadre si chiedono a presenze all'apertura della scheda.
-Rilascio e importazione dei campi sono spiegati in DEPLOY.md.
+Le notifiche push (anonime, dalla pagina `/notifiche`: squadre seguite e
+partite vicine) sono spiegate in DEPLOY.md, con rilascio e importazione dei
+campi.
 
 ## Macchine e tunnel
 
