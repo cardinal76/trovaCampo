@@ -27,11 +27,12 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { searchOutline } from 'ionicons/icons';
+import { globeOutline, searchOutline } from 'ionicons/icons';
 import * as L from 'leaflet';
 import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap } from 'rxjs';
 import { Societa, haCoordinate, indirizzoCompleto, nomeCompleto } from '../../modelli/societa';
 import { ZOOM_ICONE, iconaCampo } from '../../mappa/icona-campo';
+import { SITO_FOOTBALLER } from '../../footballer';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
 import { SocietaService } from '../../servizi/societa.service';
 
@@ -92,9 +93,10 @@ export class CercaPage implements OnDestroy {
 
   readonly nomeCompleto = nomeCompleto;
   readonly indirizzoCompleto = indirizzoCompleto;
+  readonly sitoFootballer = SITO_FOOTBALLER;
 
   constructor() {
-    addIcons({ searchOutline });
+    addIcons({ globeOutline, searchOutline });
 
     toObservable(this.testo)
       .pipe(
