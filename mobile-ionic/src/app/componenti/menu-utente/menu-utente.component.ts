@@ -10,7 +10,8 @@ import {
   NavController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { add, cloudUpload, logIn, logOut, personCircle } from 'ionicons/icons';
+import { add, cloudUpload, globe, logIn, logOut, personCircle } from 'ionicons/icons';
+import { SITO_FOOTBALLER } from '../../footballer';
 import { amministratoreRicordato, nomeRicordato } from '../../servizi/amministratore-ricordato';
 
 let prossimo = 0;
@@ -18,7 +19,7 @@ let prossimo = 0;
 /**
  * Icona utente in alto a destra: apre un menu con "Accedi" oppure, per chi è
  * entrato con il ruolo trovacampo-admin, con le funzioni di amministrazione e
- * "Esci".
+ * "Esci". In fondo, per tutti, "Torna a footballer.it".
  *
  * Non carica keycloak-js: chi è entrato lo sa da {@link amministratoreRicordato},
  * riletto ogni volta che il menu si apre. Il login vero lo fanno /accedi e le
@@ -52,16 +53,25 @@ let prossimo = 0;
                 <ion-icon slot="start" name="cloud-upload"></ion-icon>
                 <ion-label>Importa campi</ion-label>
               </ion-item>
-              <ion-item button [detail]="false" lines="none" (click)="vai('/accedi?esci=1')">
+              <ion-item button [detail]="false" (click)="vai('/accedi?esci=1')">
                 <ion-icon slot="start" name="log-out" color="danger"></ion-icon>
                 <ion-label color="danger">Esci</ion-label>
               </ion-item>
             } @else {
-              <ion-item button [detail]="false" lines="none" (click)="vai('/accedi')">
+              <ion-item button [detail]="false" (click)="vai('/accedi')">
                 <ion-icon slot="start" name="log-in"></ion-icon>
                 <ion-label>Accedi</ion-label>
               </ion-item>
             }
+            <!-- Il sito della casa, per chiunque, entrato o no. Un link vero e
+                 non una navigazione del router: si esce dall'app. Nella stessa
+                 scheda, perché è un "tornare" e non un "aprire accanto": sul
+                 telefono una scheda nuova lascerebbe dietro una TrovaCampo
+                 che nessuno chiude. -->
+            <ion-item class="footballer" [href]="sitoFootballer" [detail]="false" lines="none">
+              <ion-icon slot="start" name="globe" aria-hidden="true"></ion-icon>
+              <ion-label>Torna a footballer.it</ion-label>
+            </ion-item>
           </ion-list>
         </ion-content>
       </ng-template>
@@ -76,9 +86,10 @@ export class MenuUtenteComponent {
   readonly id = `menu-utente-${prossimo++}`;
   readonly amministratore = signal(amministratoreRicordato());
   readonly nome = signal(nomeRicordato());
+  readonly sitoFootballer = SITO_FOOTBALLER;
 
   constructor() {
-    addIcons({ add, cloudUpload, logIn, logOut, personCircle });
+    addIcons({ add, cloudUpload, globe, logIn, logOut, personCircle });
   }
 
   rileggi(): void {
