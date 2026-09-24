@@ -15,3 +15,9 @@
   color: var(--ion-color-medium, #666);
   font-size: 0.875rem;
 }
+
+/* Giorno e ora in evidenza: è la prima cosa che cerca chi va al campo. */
+.partita .quando {
+  font-weight: 600;
+  color: var(--ion-color-primary, #3880ff);
+}

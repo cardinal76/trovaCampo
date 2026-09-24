@@ -36,6 +36,13 @@ import {
   indirizzoCompleto,
   nomeCompleto,
 } from '../../modelli/societa';
+import {
+  GIORNI_PARTITE_SCHEDA,
+  Partita,
+  campionatoPartita,
+  quandoPartita,
+  squadrePartita,
+} from '../../modelli/partita';
 import { Squadra, dettaglioSquadra } from '../../modelli/squadra';
 import { iconaCampo } from '../../mappa/icona-campo';
 import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
@@ -96,6 +103,16 @@ export class SchedaPage implements OnDestroy {
   readonly squadre = signal<Squadra[]>([]);
   readonly statoSquadre = signal<Stato>('caricamento');
   readonly dettaglioSquadra = dettaglioSquadra;
+  /**
+   * Le prossime partite su questo campo, dal calendario di presenze: anche
+   * loro a parte, e solo per un campo che viene da lì.
+   */
+  readonly partite = signal<Partita[]>([]);
+  readonly statoPartite = signal<Stato>('caricamento');
+  readonly giorniPartite = GIORNI_PARTITE_SCHEDA;
+  readonly quandoPartita = quandoPartita;
+  readonly squadrePartita = squadrePartita;
+  readonly campionatoPartita = campionatoPartita;
   /** Il pulsante "Modifica": solo se su questo browser è entrato un amministratore. */
   readonly amministratore = signal(amministratoreRicordato());
 
@@ -210,6 +227,7 @@ export class SchedaPage implements OnDestroy {
         this.societa.set(dati);
         this.stato.set('completata');
         this.caricaSquadre(dati);
+        this.caricaPartite(dati);
       },
       error: () => this.stato.set('errore'),
     });
@@ -270,6 +288,28 @@ export class SchedaPage implements OnDestroy {
         this.statoSquadre.set('completata');
       },
       error: () => this.statoSquadre.set('errore'),
+    });
+  }
+
+  /**
+   * Le partite si abbinano al campo per l'id dell'impianto in presenze: un
+   * campo che non ce l'ha (da un file, o inserito a mano) non le chiede.
+   * Se presenze non risponde il backend manda un elenco vuoto, e la scheda
+   * resta com'è.
+   */
+  private caricaPartite(societa: Societa): void {
+    this.partite.set([]);
+    if (!societa.anagraficaImpiantoId) {
+      this.statoPartite.set('completata');
+      return;
+    }
+    this.statoPartite.set('caricamento');
+    this.service.partite(societa.id).subscribe({
+      next: (partite) => {
+        this.partite.set(partite);
+        this.statoPartite.set('completata');
+      },
+      error: () => this.statoPartite.set('errore'),
     });
   }
 }

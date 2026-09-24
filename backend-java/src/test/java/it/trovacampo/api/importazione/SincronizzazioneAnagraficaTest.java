@@ -71,6 +71,8 @@ class SincronizzazioneAnagraficaTest {
                         vecchia -> {
                             assertThat(vecchia.getId()).isEqualTo("m1");
                             assertThat(vecchia.getAnagraficaSocietaId()).isEqualTo(7L);
+                            // L'id del campo in presenze: la chiave delle partite.
+                            assertThat(vecchia.getAnagraficaImpiantoId()).isEqualTo(190L);
                             // Presenze non ha coordinate e il campo non si è spostato: restano.
                             assertThat(vecchia.getLat()).isEqualTo(41.9);
                             // Presenze dà solo il comune: la provincia si ricava da lì.
@@ -79,6 +81,7 @@ class SincronizzazioneAnagraficaTest {
                         nuova -> {
                             assertThat(nuova.getNomeSocieta()).isEqualTo("LODIGIANI");
                             assertThat(nuova.getAnagraficaSocietaId()).isEqualTo(8L);
+                            assertThat(nuova.getAnagraficaImpiantoId()).isEqualTo(190L);
                             assertThat(nuova.getLocalitaImpianto()).isEqualTo("ROMA");
                             assertThat(nuova.getProvinciaImpianto()).isEqualTo("RM");
                             assertThat(nuova.getLat()).isNull();

@@ -42,6 +42,18 @@ describe('SocietaService', () => {
     http.expectOne(`${environment.apiUrl}/api/campi`).flush([]);
   });
 
+  it('richiede le partite sul campo della società', () => {
+    service.partite('a/b').subscribe();
+
+    http.expectOne(`${base}/a%2Fb/partite`).flush([]);
+  });
+
+  it('richiede le partite di tutti i campi con una chiamata sola', () => {
+    service.partiteSuiCampi().subscribe();
+
+    http.expectOne(`${environment.apiUrl}/api/campi/partite`).flush({});
+  });
+
   it('richiede la scheda della società per id', () => {
     service.perId('1').subscribe();
 

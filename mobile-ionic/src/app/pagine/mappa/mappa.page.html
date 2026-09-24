@@ -74,6 +74,17 @@
             }
           </ion-select>
         </div>
+        @if (ciSonoPartite()) {
+          <ion-toggle
+            class="filtro-partite"
+            justify="start"
+            labelPlacement="end"
+            [checked]="soloConPartite()"
+            (ionChange)="cambiaSoloConPartite($event.detail.checked)"
+          >
+            Solo campi con partite nei prossimi {{ giorniPartite }} giorni
+          </ion-toggle>
+        }
         @if (erroreVicini(); as errore) {
           <p class="errore-vicini" role="alert">{{ errore }}</p>
         }
@@ -81,6 +92,12 @@
           @if (posizione()) {
             {{ vicini().length === 1 ? 'Il campo più vicino' : 'I ' + vicini().length + ' campi più vicini' }}
             a te, fra quelli di tutte le province
+            @if (soloConPartite() && ciSonoPartite()) {
+              con partite in programma
+            }
+          } @else if (soloConPartite() && ciSonoPartite()) {
+            {{ geolocalizzati().length === 1 ? '1 campo' : geolocalizzati().length + ' campi' }}
+            con partite nei prossimi {{ giorniPartite }} giorni
           } @else {
             {{ geolocalizzati().length === 1 ? '1 campo' : geolocalizzati().length + ' campi' }}
             sulla mappa

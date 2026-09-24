@@ -163,6 +163,11 @@ public class ImportazioneService {
             societa.setAnagraficaSocietaId(riga.anagraficaSocietaId());
             cambiata = true;
         }
+        if (riga.anagraficaImpiantoId() != null
+                && !riga.anagraficaImpiantoId().equals(societa.getAnagraficaImpiantoId())) {
+            societa.setAnagraficaImpiantoId(riga.anagraficaImpiantoId());
+            cambiata = true;
+        }
         // Una società nuova senza località resta con "" come quelle inserite
         // dall'app, non con null.
         if (societa.getLocalitaImpianto() == null) {

@@ -61,6 +61,16 @@ public class Societa {
     private Long anagraficaSocietaId;
 
     /**
+     * Il campo nell'anagrafica di presenze (l'id del suo impianto), messo
+     * dalla sincronizzazione: è la chiave con cui le partite in calendario si
+     * abbinano a questo campo. Si abbina per id e non per nome perché il
+     * nome di un campo cambia grafia da un comunicato all'altro. Vuoto per i
+     * campi inseriti a mano o importati da un file: quelli partite non ne
+     * mostrano.
+     */
+    private Long anagraficaImpiantoId;
+
+    /**
      * Copia normalizzata (minuscolo, senza accenti) dei campi ricercabili:
      * permette una ricerca insensibile ad accenti e maiuscole con una sola
      * espressione regolare. Non fa parte della risposta dell'API.
@@ -266,6 +276,15 @@ public class Societa {
 
     public Societa setAnagraficaSocietaId(Long anagraficaSocietaId) {
         this.anagraficaSocietaId = anagraficaSocietaId;
+        return this;
+    }
+
+    public Long getAnagraficaImpiantoId() {
+        return anagraficaImpiantoId;
+    }
+
+    public Societa setAnagraficaImpiantoId(Long anagraficaImpiantoId) {
+        this.anagraficaImpiantoId = anagraficaImpiantoId;
         return this;
     }
 

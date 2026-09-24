@@ -149,6 +149,18 @@ condivisa (`ANAGRAFICA_URL=http://presenze-backend:8080` in
   nome, o una sola che risponde a quel nome, il legame si salva e resta. Se
   presenze non risponde, la scheda si vede lo stesso, con un avviso al posto
   dei campionati.
+- **Le prossime partite** su ogni campo arrivano dal calendario di presenze
+  (`GET /api/pubblico/anagrafica/partite`): il backend chiede due settimane
+  con una chiamata sola e le tiene cinque minuti, poi scheda
+  (`GET /api/societa/{id}/partite`, due settimane, al massimo 30) e mappa
+  (`GET /api/campi/partite`, una settimana, le prime 3 per campo) le leggono
+  da lì. Una partita si abbina al campo per l'id dell'impianto in presenze
+  (`anagraficaImpiantoId`, messo dalla sincronizzazione), mai per nome; il
+  campo è quello di casa di chi ospita. I campi arrivati da un file o
+  inseriti a mano l'id non ce l'hanno, e partite non ne mostrano finché la
+  sincronizzazione non li riconosce (stessa società, stesso campo). Se
+  presenze non risponde, scheda e mappa si vedono lo stesso, senza partite.
+  Serve presenze con l'endpoint delle partite: si rilascia prima presenze.
 
 Perché ci sia qualcosa da leggere, in presenze va accesa la lettura
 automatica dei comunicati (da `/campionato`, vedi il suo DEPLOY.md).

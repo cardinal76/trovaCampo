@@ -4,6 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import java.time.LocalDate;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
@@ -85,5 +88,36 @@ class AnagraficaPresenzeTest {
 
         assertThat(anagrafica.cerca("A.S.D. Boreale"))
                 .containsExactly(new AnagraficaPresenze.Riferimento(7L, "BOREALE"));
+    }
+
+    @Test
+    void leggeLePartiteDiUnIntervalloConIlCampo() {
+        server.expect(
+                        requestTo(
+                                "http://presenze-backend:8080/api/pubblico/anagrafica/partite?dal=2026-09-05&al=2026-09-18"))
+                .andRespond(
+                        withSuccess(
+                                """
+                                [{"id":9,"dataOra":"2026-09-06T11:00:00+02:00","stato":"DA_GIOCARE",
+                                  "impiantoId":190,"casa":"BOREALE","ospite":"VIGOR PERCONTI",
+                                  "casaSocietaId":7,"ospiteSocietaId":8,"campionatoId":3,
+                                  "campionato":"ECCELLENZA","ente":"Regionali","gironeId":11,
+                                  "girone":"A","giornata":1,"ritorno":false}]
+                                """,
+                                MediaType.APPLICATION_JSON));
+
+        assertThat(anagrafica.partite(LocalDate.of(2026, 9, 5), LocalDate.of(2026, 9, 18)))
+                .singleElement()
+                .satisfies(
+                        partita -> {
+                            assertThat(partita.impiantoId()).isEqualTo(190L);
+                            assertThat(partita.dataOra().toInstant())
+                                    .isEqualTo(
+                                            OffsetDateTime.of(2026, 9, 6, 9, 0, 0, 0, ZoneOffset.UTC)
+                                                    .toInstant());
+                            assertThat(partita.casa()).isEqualTo("BOREALE");
+                            assertThat(partita.girone()).isEqualTo("A");
+                        });
+        server.verify();
     }
 }

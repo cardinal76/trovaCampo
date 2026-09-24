@@ -54,6 +54,43 @@
         <p class="posizione-assente">Posizione del campo non ancora disponibile.</p>
       }
 
+      @if (societa()!.anagraficaImpiantoId) {
+        <ion-list-header>
+          <ion-label>Prossime partite su questo campo</ion-label>
+        </ion-list-header>
+        @switch (statoPartite()) {
+          @case ('caricamento') {
+            <ion-item lines="none">
+              <ion-spinner name="crescent"></ion-spinner>
+            </ion-item>
+          }
+          @case ('errore') {
+            <ion-item lines="none">
+              <ion-label class="ion-text-wrap">
+                <p>Le partite non sono disponibili in questo momento: riprova tra poco.</p>
+              </ion-label>
+            </ion-item>
+          }
+          @default {
+            @for (partita of partite(); track $index) {
+              <ion-item class="partita">
+                <ion-label class="ion-text-wrap">
+                  <p class="quando">{{ quandoPartita(partita) }}</p>
+                  <h3>{{ squadrePartita(partita) }}</h3>
+                  <p>{{ campionatoPartita(partita) }}</p>
+                </ion-label>
+              </ion-item>
+            } @empty {
+              <ion-item lines="none">
+                <ion-label class="ion-text-wrap">
+                  <p>Nessuna partita in programma qui nei prossimi {{ giorniPartite }} giorni.</p>
+                </ion-label>
+              </ion-item>
+            }
+          }
+        }
+      }
+
       <ion-list-header>
         <ion-label>Anagrafica società</ion-label>
       </ion-list-header>
