@@ -214,6 +214,23 @@ export function istruzioniPosizione(
         passi: ['Apri https://trovacampo.footballer.it (con https://) e riprova.'],
         riprova: false,
       };
+    case 'vietata-dal-sito':
+      // Non c'è niente da sbloccare sul telefono: mandare l'utente nelle
+      // impostazioni vorrebbe dire fargli cercare un problema che non ha.
+      return {
+        caso,
+        icona: 'construct-outline',
+        titolo: 'La posizione è disattivata dal sito',
+        spiegazione:
+          'Non dipende dal tuo telefono né dal browser: è il sito che per ora impedisce di ' +
+          'usarla, e i permessi che dai non cambiano niente.',
+        passi: [
+          'Non serve toccare le impostazioni del telefono o del browser.',
+          'Segnalalo a chi gestisce TrovaCampo; quando è corretto, ricarica la pagina e tocca Riprova.',
+          'Intanto puoi cercare i campi per nome o scegliere la provincia.',
+        ],
+        riprova: true,
+      };
     case 'non-supportata':
       return {
         caso,
@@ -380,6 +397,8 @@ export function statoPosizione(caso: CasoPosizione): { testo: string; tono: Tono
       return { testo: 'non consentita', tono: 'attenzione' };
     case 'bloccata':
       return { testo: 'bloccata', tono: 'male' };
+    case 'vietata-dal-sito':
+      return { testo: 'disattivata dal sito', tono: 'male' };
     case 'non-disponibile':
     case 'scaduta':
       return { testo: 'non trovata', tono: 'attenzione' };

@@ -23,6 +23,14 @@ export interface SondeBrowser {
   permessoNotifiche(): NotificationPermission | null;
   conGeolocalizzazione(): boolean;
   /**
+   * La Permissions-Policy del server vieta la posizione a questa pagina: il
+   * browser allora la nega senza chiedere, qualunque permesso abbia dato
+   * l'utente. Lo dicono solo i browser basati su Chromium
+   * (document.permissionsPolicy, prima featurePolicy); gli altri false, e
+   * lì lo rivela il messaggio dell'errore (vedi errorePerCodice).
+   */
+  posizioneVietataDalSito(): boolean;
+  /**
    * navigator.permissions.query, o null quando non si può sapere: l'API
    * manca (Safari prima della 16) o rifiuta il nome (Safari con
    * "notifications", Firefox in certi casi).
@@ -49,6 +57,19 @@ export function sondeReali(): SondeBrowser {
     conPushManager: () => conFinestra && 'PushManager' in window,
     permessoNotifiche: () => (typeof Notification === 'undefined' ? null : Notification.permission),
     conGeolocalizzazione: () => conFinestra && !!navigator.geolocation,
+    posizioneVietataDalSito: () => {
+      if (typeof document === 'undefined') {
+        return false;
+      }
+      type Politica = { allowsFeature?: (nome: string) => boolean };
+      const documento = document as { permissionsPolicy?: Politica; featurePolicy?: Politica };
+      const politica = documento.permissionsPolicy ?? documento.featurePolicy;
+      try {
+        return politica?.allowsFeature?.('geolocation') === false;
+      } catch {
+        return false;
+      }
+    },
     interroga: async (nome) => {
       try {
         if (!conFinestra || !navigator.permissions?.query) {

@@ -31,6 +31,8 @@ export type CasoNotifiche =
  * - `rifiutata`: l'ultima richiesta è finita in un no (o è stata chiusa), ma
  *   il browser la può rifare;
  * - `bloccata`: negata per il sito, il browser non la chiede più;
+ * - `vietata-dal-sito`: la vieta la Permissions-Policy mandata dal server;
+ *   il browser la nega senza chiedere e i permessi dell'utente non contano;
  * - `non-disponibile`: permesso dato, ma il telefono non sa dove si trova
  *   (localizzazione spenta, nessun segnale);
  * - `scaduta`: la posizione non è arrivata in tempo;
@@ -42,6 +44,7 @@ export type CasoPosizione =
   | 'da-consentire'
   | 'rifiutata'
   | 'bloccata'
+  | 'vietata-dal-sito'
   | 'non-disponibile'
   | 'scaduta'
   | 'non-supportata'
@@ -86,9 +89,16 @@ export function casoPosizione(
   conGeolocalizzazione: boolean,
   stato: PermissionState | null,
   ultima: UltimaLettura,
+  vietataDalSito = false,
 ): CasoPosizione {
   if (!sicura || ultima === 'non-sicura') {
     return 'non-sicura';
+  }
+  // Prima di tutto il resto: con la posizione vietata dal server Chrome dice
+  // anche "denied", e senza questo controllo sembrerebbe un blocco del
+  // browser, da sbloccare in impostazioni dove invece è tutto a posto.
+  if (vietataDalSito || ultima === 'vietata') {
+    return 'vietata-dal-sito';
   }
   if (!conGeolocalizzazione || ultima === 'non-supportata') {
     return 'non-supportata';
@@ -146,6 +156,7 @@ export class DiagnosiService {
       this.sonde.conGeolocalizzazione(),
       this.statoPosizione(),
       this.ultimaLettura(),
+      this.sonde.posizioneVietataDalSito(),
     ),
   );
 
