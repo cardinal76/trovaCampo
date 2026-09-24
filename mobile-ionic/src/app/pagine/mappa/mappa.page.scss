@@ -24,3 +24,81 @@
   padding: 0 1.5rem;
   text-align: center;
 }
+
+/* Come nell'elenco: nella barra, con lo stesso rientro ai lati della ricerca. */
+.filtro-provincia {
+  width: 100%;
+  padding: 0 1rem;
+}
+
+/* "Vicino a me" e quanti campi: su una riga anche sul telefono. */
+.vicini-comandi {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem 0;
+}
+
+.numero-vicini {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 12rem;
+  font-size: 0.9rem;
+}
+
+.vicino-a-me ion-spinner {
+  width: 1rem;
+  height: 1rem;
+}
+
+.errore-vicini {
+  margin: 0.5rem 1rem 0;
+  font-size: 0.9rem;
+  color: var(--ion-color-danger, #c5000f);
+}
+
+/* Sotto la mappa, senza toglierle tutto lo spazio: scorre se i campi sono tanti. */
+.elenco-vicini {
+  flex: 0 0 auto;
+  max-height: 40%;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.25rem 1rem 0.5rem 2.25rem;
+
+  li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--ion-color-light-shade, #d7d8da);
+  }
+
+  a {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .nome {
+    display: block;
+    font-weight: 600;
+    color: var(--ion-color-primary, #3880ff);
+  }
+
+  .impianto {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--ion-color-medium, #92949c);
+  }
+
+  .distanza {
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .nessuno {
+    color: var(--ion-color-medium, #92949c);
+  }
+}

@@ -1,6 +1,7 @@
 package it.trovacampo.api.service;
 
 import it.trovacampo.api.dominio.Campionato;
+import it.trovacampo.api.dominio.ProvinciaDalComune;
 import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.dominio.Testo;
 import it.trovacampo.api.dominio.TipoCampionato;
@@ -129,10 +130,18 @@ public class SocietaService {
         } else if (richiesta.lat() == null || spostata) {
             societa.setLat(null).setLng(null);
         }
+        if (provincia.isEmpty()) {
+            // Lasciata vuota nel modulo: la si ricava dal comune, come per i
+            // campi che arrivano da presenze, così il campo non sparisce dai
+            // filtri per provincia. Dopo il confronto con la vecchia: non è
+            // uno spostamento.
+            provincia = ProvinciaDalComune.sigla(localita);
+        }
         if (coordinateCorrette || societa.getLat() == null) {
             // Un indirizzo nuovo, o un segnaposto messo a mano,
-            // chiudono la partita con i tentativi andati male.
-            societa.setGeocodificaFallitaVersione(null);
+            // chiudono la partita con i tentativi andati male. Il segnaposto
+            // messo a mano è anche la correzione di uno approssimato.
+            societa.setGeocodificaFallitaVersione(null).setPosizioneApprossimata(null);
         }
 
         boolean scuolaCalcio = Boolean.TRUE.equals(richiesta.scuolaCalcio());

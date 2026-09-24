@@ -22,13 +22,16 @@ public interface SocietaRepository extends MongoRepository<Societa, String> {
      * Tutti i campi, per l'elenco e la mappa completi. Solo i campi che
      * servono a quelle due pagine: con qualche migliaio di società l'anagrafica
      * e i campionati moltiplicherebbero il peso della risposta per niente.
+     * {@code posizioneApprossimata} serve al filtro dell'elenco per chi
+     * amministra, e c'è solo sulle poche società che ce l'hanno vera.
      */
     @Query(
             value = "{}",
             fields =
                     "{ 'siglaSocieta': 1, 'nomeSocieta': 1, 'nomeImpianto': 1,"
                             + " 'indirizzoImpianto': 1, 'localitaImpianto': 1,"
-                            + " 'provinciaImpianto': 1, 'lat': 1, 'lng': 1 }",
+                            + " 'provinciaImpianto': 1, 'lat': 1, 'lng': 1,"
+                            + " 'posizioneApprossimata': 1 }",
             sort = "{ 'nomeSocieta': 1, 'nomeImpianto': 1 }")
     List<Societa> tuttiICampi();
 

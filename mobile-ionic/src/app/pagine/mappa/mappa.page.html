@@ -5,6 +5,22 @@
       <menu-utente></menu-utente>
     </ion-buttons>
   </ion-toolbar>
+  @if (stato() === 'pronto') {
+    <ion-toolbar>
+      <ion-select
+        class="filtro-provincia"
+        label="Provincia"
+        interface="popover"
+        justify="space-between"
+        [value]="provincia()"
+        (ionChange)="cambiaProvincia($event.detail.value)"
+      >
+        @for (opzione of opzioniProvincia(); track opzione.valore) {
+          <ion-select-option [value]="opzione.valore">{{ opzione.etichetta }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-toolbar>
+  }
 </ion-header>
 
 <ion-content [scrollY]="false">
@@ -22,14 +38,73 @@
     }
     @case ('pronto') {
       <div class="pagina">
+        <div class="vicini-comandi">
+          @if (posizione()) {
+            <ion-button size="small" fill="outline" (click)="tornaAllaMappa()">
+              <ion-icon slot="start" name="close"></ion-icon>
+              Tutti i campi
+            </ion-button>
+          } @else {
+            <ion-button
+              size="small"
+              class="vicino-a-me"
+              [disabled]="cercoPosizione()"
+              (click)="vicinoAMe()"
+            >
+              @if (cercoPosizione()) {
+                <ion-spinner slot="start" name="crescent"></ion-spinner>
+                Cerco dove sei…
+              } @else {
+                <ion-icon slot="start" name="locate"></ion-icon>
+                Vicino a me
+              }
+            </ion-button>
+          }
+          <ion-select
+            class="numero-vicini"
+            aria-label="Quanti campi vicini"
+            interface="popover"
+            [value]="numero()"
+            (ionChange)="cambiaNumeroVicini($event.detail.value)"
+          >
+            @for (scelta of scelteNumeroVicini; track scelta) {
+              <ion-select-option [value]="scelta">
+                {{ scelta === 1 ? 'il più vicino' : 'i ' + scelta + ' più vicini' }}
+              </ion-select-option>
+            }
+          </ion-select>
+        </div>
+        @if (erroreVicini(); as errore) {
+          <p class="errore-vicini" role="alert">{{ errore }}</p>
+        }
         <div class="riepilogo">
-          {{ geolocalizzati().length === 1 ? '1 campo' : geolocalizzati().length + ' campi' }}
-          sulla mappa
-          @if (senzaPosizione() > 0) {
-            · <a routerLink="/campi">{{ senzaPosizione() }} ancora senza posizione</a>
+          @if (posizione()) {
+            {{ vicini().length === 1 ? 'Il campo più vicino' : 'I ' + vicini().length + ' campi più vicini' }}
+            a te, fra quelli di tutte le province
+          } @else {
+            {{ geolocalizzati().length === 1 ? '1 campo' : geolocalizzati().length + ' campi' }}
+            sulla mappa
+            @if (senzaPosizione() > 0) {
+              · <a routerLink="/campi">{{ senzaPosizione() }} ancora senza posizione</a>
+            }
           }
         </div>
         <div #contenitoreMappa class="mappa"></div>
+        @if (posizione()) {
+          <ol class="elenco-vicini">
+            @for (vicino of vicini(); track vicino.campo.id) {
+              <li>
+                <a [routerLink]="['/societa', vicino.campo.id]">
+                  <span class="nome">{{ nomeCompleto(vicino.campo) }}</span>
+                  <span class="impianto">{{ vicino.campo.nomeImpianto }}</span>
+                </a>
+                <span class="distanza">{{ testoDistanza(vicino.distanzaKm) }}</span>
+              </li>
+            } @empty {
+              <li class="nessuno">Nessun campo con una posizione sulla mappa.</li>
+            }
+          </ol>
+        }
       </div>
     }
   }

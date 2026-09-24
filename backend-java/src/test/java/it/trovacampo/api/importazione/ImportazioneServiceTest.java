@@ -112,6 +112,17 @@ class ImportazioneServiceTest {
     }
 
     @Test
+    void leCoordinateDelFileSostituisconoUnSegnapostoApprossimato() {
+        when(repository.findAll()).thenReturn(List.of(certosa().setPosizioneApprossimata(true)));
+
+        service.importa(
+                flusso(INTESTAZIONE, riga("Certosa Calcio", "Campo Certosa", "Via della Certosa 12", "Roma", "RM", 41.9, 12.5)),
+                false);
+
+        assertThat(salvate().getFirst().getPosizioneApprossimata()).isNull();
+    }
+
+    @Test
     void unIndirizzoNuovoRidaUnaPossibilitaAllaGeocodifica() {
         Societa fallita = certosa().setLat(null).setLng(null).setGeocodificaFallitaVersione(1);
         when(repository.findAll()).thenReturn(List.of(fallita));
@@ -121,6 +132,39 @@ class ImportazioneServiceTest {
                 false);
 
         assertThat(salvate().getFirst().getGeocodificaFallitaVersione()).isNull();
+    }
+
+    @Test
+    void senzaProvinciaNelFileLaRicavaDalComune() {
+        when(repository.findAll()).thenReturn(List.of());
+
+        service.importa(
+                flusso(
+                        INTESTAZIONE,
+                        riga("Latina Calcio", "Francioni", "Via Botticelli 1", "LATINA", ""),
+                        riga("Ignota", "Campo Ignoto", "Via Ignota 1", "Tor di Quinto", ""),
+                        riga("Pescara", "Adriatico", "Via Pepe 1", "Pescara", "PE")),
+                false);
+
+        assertThat(salvate())
+                .extracting(Societa::getProvinciaImpianto)
+                .containsExactly("LT", "", "PE");
+    }
+
+    @Test
+    void laProvinciaRicavataNonSpostaIlSegnaposto() {
+        Societa esistente = certosa().setProvinciaImpianto("");
+        when(repository.findAll()).thenReturn(List.of(esistente));
+
+        EsitoImportazione esito =
+                service.importa(
+                        flusso(INTESTAZIONE, riga("Certosa Calcio", "Campo Certosa", "Via della Certosa 12", "Roma", "")),
+                        false);
+
+        assertThat(esito.aggiornate()).isEqualTo(1);
+        Societa aggiornata = salvate().getFirst();
+        assertThat(aggiornata.getProvinciaImpianto()).isEqualTo("RM");
+        assertThat(aggiornata.getLat()).isEqualTo(41.8919);
     }
 
     @Test

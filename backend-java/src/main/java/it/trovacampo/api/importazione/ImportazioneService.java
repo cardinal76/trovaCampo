@@ -1,5 +1,6 @@
 package it.trovacampo.api.importazione;
 
+import it.trovacampo.api.dominio.ProvinciaDalComune;
 import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.dominio.Testo;
 import it.trovacampo.api.repository.SocietaRepository;
@@ -170,16 +171,32 @@ public class ImportazioneService {
         if (societa.getProvinciaImpianto() == null) {
             societa.setProvinciaImpianto("");
         }
+        // Presenze e i Comunicati danno il comune senza provincia: si ricava
+        // dal comune, e segue il comune se il campo cambia. Non conta come
+        // spostamento: il posto è lo stesso, cambia solo quello che ne sappiamo.
+        if (riga.provincia().isEmpty()) {
+            String dalComune = ProvinciaDalComune.sigla(societa.getLocalitaImpianto());
+            if (!dalComune.isEmpty() && !dalComune.equals(societa.getProvinciaImpianto())) {
+                societa.setProvinciaImpianto(dalComune);
+                cambiata = true;
+            }
+        }
 
         if (riga.lat() != null) {
             if (!Objects.equals(riga.lat(), societa.getLat())
                     || !Objects.equals(riga.lng(), societa.getLng())) {
-                societa.setLat(riga.lat()).setLng(riga.lng()).setGeocodificaFallitaVersione(null);
+                societa.setLat(riga.lat())
+                        .setLng(riga.lng())
+                        .setPosizioneApprossimata(null)
+                        .setGeocodificaFallitaVersione(null);
                 cambiata = true;
             }
         } else if (spostata) {
             // Anche un tentativo fallito sull'indirizzo vecchio non conta più.
-            societa.setLat(null).setLng(null).setGeocodificaFallitaVersione(null);
+            societa.setLat(null)
+                    .setLng(null)
+                    .setPosizioneApprossimata(null)
+                    .setGeocodificaFallitaVersione(null);
         }
 
         return cambiata;

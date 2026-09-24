@@ -14,6 +14,33 @@
       (ionClear)="cambiaFiltro('')"
     ></ion-searchbar>
   </ion-toolbar>
+  @if (stato() === 'pronto') {
+    <ion-toolbar>
+      <ion-select
+        class="filtro-provincia"
+        label="Provincia"
+        interface="popover"
+        justify="space-between"
+        [value]="provincia()"
+        (ionChange)="cambiaProvincia($event.detail.value)"
+      >
+        @for (opzione of opzioniProvincia(); track opzione.valore) {
+          <ion-select-option [value]="opzione.valore">{{ opzione.etichetta }}</ion-select-option>
+        }
+      </ion-select>
+    </ion-toolbar>
+  }
+  @if (amministratore()) {
+    <ion-toolbar>
+      <ion-toggle
+        class="filtro-posizione"
+        justify="space-between"
+        [checked]="soloSenzaPosizione()"
+        (ionChange)="cambiaSoloSenzaPosizione($event.detail.checked)"
+        >Solo senza posizione precisa</ion-toggle
+      >
+    </ion-toolbar>
+  }
 </ion-header>
 
 <ion-content>
@@ -34,7 +61,7 @@
         <ion-list>
           <ion-list-header>
             <ion-label>
-              @if (filtro()) {
+              @if (filtrato()) {
                 {{ filtrati().length }} di {{ campi().length }} campi
               } @else {
                 {{ campi().length === 1 ? '1 campo' : campi().length + ' campi' }}
@@ -49,13 +76,25 @@
                 <p>{{ campo.nomeImpianto }}</p>
                 <p>{{ indirizzoCompleto(campo) }}</p>
               </ion-label>
-              @if (campo.lat === undefined || campo.lng === undefined) {
+              @if (!haCoordinate(campo)) {
                 <ion-note slot="end">senza posizione</ion-note>
+              } @else if (amministratore() && campo.posizioneApprossimata) {
+                <ion-note slot="end">posizione approssimata</ion-note>
               }
             </ion-item>
           } @empty {
             <ion-item lines="none">
-              <ion-label color="medium">Nessun campo corrisponde a "{{ filtro() }}".</ion-label>
+              <ion-label color="medium">
+                @if (filtro()) {
+                  Nessun campo corrisponde a "{{ filtro() }}"{{
+                    provincia() !== TUTTE ? ' in questa provincia' : ''
+                  }}.
+                } @else if (filtroPosizione()) {
+                  Tutti i campi hanno una posizione precisa.
+                } @else {
+                  Nessun campo.
+                }
+              </ion-label>
             </ion-item>
           }
         </ion-list>

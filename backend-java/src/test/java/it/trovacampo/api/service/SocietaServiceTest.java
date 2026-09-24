@@ -183,6 +183,29 @@ class SocietaServiceTest {
     }
 
     @Test
+    void ilSegnapostoCorrettoAManoNonEPiuApprossimato() {
+        when(repository.findById("1")).thenReturn(Optional.of(salvata().setPosizioneApprossimata(true)));
+        when(repository.save(any())).thenAnswer(invocazione -> invocazione.getArgument(0));
+
+        Societa modificata =
+                service().modifica("1", modulo("Via della Certosa 12", 41.9, 12.5)).orElseThrow();
+
+        assertThat(modificata.getPosizioneApprossimata()).isNull();
+    }
+
+    @Test
+    void lasciandoIlSegnapostoComEraRestaApprossimato() {
+        when(repository.findById("1")).thenReturn(Optional.of(salvata().setPosizioneApprossimata(true)));
+        when(repository.save(any())).thenAnswer(invocazione -> invocazione.getArgument(0));
+
+        Societa modificata =
+                service().modifica("1", modulo("Via della Certosa 12", 41.89, 12.48)).orElseThrow();
+
+        // Cambiare il telefono non rende preciso il segnaposto: resta nel filtro.
+        assertThat(modificata.getPosizioneApprossimata()).isTrue();
+    }
+
+    @Test
     void coordinateSvuotateSiRicalcolano() {
         assertThat(modifica(modulo("Via della Certosa 12", null, null)).getLat()).isNull();
     }
@@ -198,6 +221,20 @@ class SocietaServiceTest {
                         m.sitoWeb(), false, "180 euro", m.campionati());
 
         assertThat(modifica(senza).getPrezziScuolaCalcio()).isNull();
+    }
+
+    @Test
+    void laProvinciaLasciataVuotaSiRicavaDalComune() {
+        when(repository.save(any())).thenAnswer(invocazione -> invocazione.getArgument(0));
+        ModificaSocietaRequest m = modulo("Via Nuova 1", null, null);
+        ModificaSocietaRequest senzaProvincia =
+                new ModificaSocietaRequest(
+                        m.siglaSocieta(), m.nomeSocieta(), m.comitatoRegionale(), m.nomeImpianto(),
+                        m.indirizzoImpianto(), "Frosinone", " ", m.lat(), m.lng(),
+                        m.matricola(), m.presidente(), m.indirizzoSede(), m.telefono(), m.fax(), m.email(),
+                        m.sitoWeb(), m.scuolaCalcio(), m.prezziScuolaCalcio(), m.campionati());
+
+        assertThat(service().crea(senzaProvincia).getProvinciaImpianto()).isEqualTo("FR");
     }
 
     @Test

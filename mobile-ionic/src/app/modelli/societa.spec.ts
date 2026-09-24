@@ -1,4 +1,10 @@
-import { Societa, haCoordinate, indirizzoCompleto, nomeCompleto } from './societa';
+import {
+  Societa,
+  haCoordinate,
+  indirizzoCompleto,
+  nomeCompleto,
+  senzaPosizionePrecisa,
+} from './societa';
 
 function societa(valori: Partial<Societa> = {}): Societa {
   return {
@@ -37,5 +43,14 @@ describe('modelli/societa', () => {
     expect(haCoordinate(societa({ lat: 41.8919, lng: 12.4863 }))).toBeTrue();
     expect(haCoordinate(societa())).toBeFalse();
     expect(haCoordinate(societa({ lat: 41.8919 }))).toBeFalse();
+  });
+
+  it('senza coordinate o con il segnaposto approssimato la posizione non è precisa', () => {
+    expect(senzaPosizionePrecisa(societa())).toBeTrue();
+    expect(senzaPosizionePrecisa(societa({ lat: 41.8919 }))).toBeTrue();
+    expect(
+      senzaPosizionePrecisa(societa({ lat: 41.8919, lng: 12.4863, posizioneApprossimata: true })),
+    ).toBeTrue();
+    expect(senzaPosizionePrecisa(societa({ lat: 41.8919, lng: 12.4863 }))).toBeFalse();
   });
 });

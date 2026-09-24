@@ -71,6 +71,28 @@ class GeocodificaAutomaticaTest {
                 .containsExactly(
                         "VIA DELLA CAMILLUCCIA 120, ROMA, Italia", "VIA DELLA CAMILLUCCIA, ROMA, Italia");
         assertThat(societa.getLat()).isEqualTo(41.93);
+        // Senza civico il segnaposto sta sulla via: chi amministra lo ritrova col filtro.
+        assertThat(societa.getPosizioneApprossimata()).isTrue();
+    }
+
+    @Test
+    void trovatoAlPrimoTentativoIlSegnapostoNonEApprossimato() {
+        // Anche se prima lo era: l'indirizzo è cambiato e ora si trova col civico.
+        Societa societa = campo("VIA DELLA CAMILLUCCIA 120", "ROMA").setPosizioneApprossimata(true);
+
+        con(indirizzo -> Optional.of(new Geocoding.Coordinate(41.93, 12.44))).geocodifica(societa);
+
+        assertThat(societa.getPosizioneApprossimata()).isNull();
+    }
+
+    @Test
+    void unIndirizzoNonTrovatoNonESegnatoApprossimato() {
+        Societa societa = campo("VIA INESISTENTE 1", "ROMA");
+
+        con(indirizzo -> Optional.empty()).geocodifica(societa);
+
+        // Manca del tutto: per il filtro basta l'assenza delle coordinate.
+        assertThat(societa.getPosizioneApprossimata()).isNull();
     }
 
     @Test

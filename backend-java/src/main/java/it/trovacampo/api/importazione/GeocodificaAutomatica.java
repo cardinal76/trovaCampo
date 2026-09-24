@@ -33,7 +33,9 @@ import org.springframework.stereotype.Component;
  * LIBERTA' 27". Nominatim cerca tutte le parole, e basta un "SNC" (senza
  * numero civico) perché non trovi niente. Per questo l'indirizzo si ripulisce
  * prima, e se non basta si riprova senza il civico: meglio il segnaposto
- * sulla via giusta che nessun segnaposto.
+ * sulla via giusta che nessun segnaposto. Un segnaposto trovato così resta
+ * segnato come {@linkplain Societa#getPosizioneApprossimata() approssimato},
+ * perché chi amministra possa ritrovarlo e correggerlo.
  *
  * <p>Un indirizzo non riconosciuto viene segnato con la versione di questa
  * ricerca e non viene ritentato, altrimenti la coda resterebbe per sempre
@@ -100,20 +102,28 @@ public class GeocodificaAutomatica {
     void geocodifica(Societa societa) {
         Optional<Geocoding.Coordinate> trovate = Optional.empty();
         List<String> tentativi = tentativi(societa);
+        int tentativo = 0;
 
-        for (int i = 0; i < tentativi.size() && trovate.isEmpty(); i++) {
-            if (i > 0) {
+        for (; tentativo < tentativi.size(); tentativo++) {
+            if (tentativo > 0) {
                 // Anche il secondo tentativo è una richiesta a Nominatim, e
                 // conta per il limite di una al secondo.
                 aspetta();
             }
-            trovate = geocoding.geocodifica(tentativi.get(i));
+            trovate = geocoding.geocodifica(tentativi.get(tentativo));
+            if (trovate.isPresent()) {
+                break;
+            }
         }
 
+        // Trovato solo al secondo tentativo vuol dire senza il civico: il
+        // segnaposto sta sulla via, non per forza davanti al campo.
+        Boolean approssimata = tentativo > 0 ? Boolean.TRUE : null;
         trovate.ifPresentOrElse(
                 coordinate ->
                         societa.setLat(coordinate.lat())
                                 .setLng(coordinate.lng())
+                                .setPosizioneApprossimata(approssimata)
                                 .setGeocodificaFallitaVersione(null),
                 () -> {
                     log.info("Indirizzo non riconosciuto: {}", tentativi);

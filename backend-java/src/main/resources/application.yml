@@ -38,6 +38,9 @@ trovacampo:
   geocodifica:
     # Dà le coordinate, una al secondo, alle societa' che non le hanno.
     automatica: true
+  province:
+    # All'avvio ricava dal comune la provincia dei campi che ne sono senza.
+    completamento: true
   # L'anagrafica di presenze (società, squadre, campionati e campi dai
   # Comunicati Ufficiali): in sviluppo il backend di presenze sulla 8080, in
   # produzione lo stesso dalla rete Docker condivisa.
