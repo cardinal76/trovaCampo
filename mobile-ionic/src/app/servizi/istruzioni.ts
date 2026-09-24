@@ -187,7 +187,7 @@ function passiNotificheBloccate(piattaforma: Piattaforma): string[] {
       return [
         'Fai clic sull’icona a sinistra dell’indirizzo (il lucchetto o le levette).',
         'Notifiche → Consenti (o «Reimposta autorizzazioni»).',
-        'Ricarica la pagina e tocca Riprova.',
+        'Torna qui e tocca Riprova (se non basta, ricarica la pagina).',
       ];
   }
 }
@@ -300,7 +300,7 @@ function passiPosizioneBloccata(piattaforma: Piattaforma): string[] {
         `Impostazioni del telefono → App → ${browser} → Autorizzazioni → Posizione → ` +
           '«Consenti solo mentre l’app è in uso».',
         'Accendi la localizzazione: tendina in alto → Posizione.',
-        'Torna qui, ricarica la pagina e tocca Riprova.',
+        'Torna qui e tocca Riprova (se non basta, ricarica la pagina).',
       ];
     case 'ios':
       return piattaforma.browser === 'safari' || piattaforma.browser === 'altro'
@@ -309,12 +309,12 @@ function passiPosizioneBloccata(piattaforma: Piattaforma): string[] {
               'Safari» → «Mentre usi l’app».',
             'Impostazioni → App → Safari → Posizione → «Chiedi» (o «Consenti»). ' +
               'Su iOS più vecchi è Impostazioni → Safari → Posizione.',
-            'Torna qui, ricarica la pagina e tocca Riprova.',
+            'Torna qui e tocca Riprova (se non basta, ricarica la pagina).',
           ]
         : [
             `Impostazioni → Privacy e sicurezza → Localizzazione → ${browser} → «Mentre usi l’app».`,
             `In ${browser}: tocca l’icona accanto all’indirizzo e consenti la posizione al sito.`,
-            'Torna qui, ricarica la pagina e tocca Riprova.',
+            'Torna qui e tocca Riprova (se non basta, ricarica la pagina).',
           ];
     default:
       return [
@@ -322,7 +322,7 @@ function passiPosizioneBloccata(piattaforma: Piattaforma): string[] {
           '(o «Reimposta autorizzazioni»).',
         `Sul Mac: Impostazioni di Sistema → Privacy e sicurezza → Localizzazione → ${browser} ` +
           'attivo. Su Windows: Impostazioni → Privacy e sicurezza → Posizione attiva.',
-        'Ricarica la pagina e tocca Riprova.',
+        'Torna qui e tocca Riprova (se non basta, ricarica la pagina).',
       ];
   }
 }

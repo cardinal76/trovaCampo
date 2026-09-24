@@ -65,7 +65,7 @@ describe('istruzioni', () => {
       expect(testo(ANDROID, 'bloccate', 'n')).toContain('App → Chrome → Notifiche');
       expect(testo(SAMSUNG, 'bloccate', 'n')).toContain('App → Samsung Internet');
       expect(testo(IPHONE_HOME, 'bloccate', 'n')).toContain('Impostazioni → Notifiche → TrovaCampo');
-      expect(testo(COMPUTER, 'bloccate', 'n')).toContain('Ricarica la pagina');
+      expect(testo(COMPUTER, 'bloccate', 'n')).toContain('ricarica la pagina');
       expect(istruzioniNotifiche('bloccate', ANDROID)!.riprova).toBeTrue();
     });
   });
