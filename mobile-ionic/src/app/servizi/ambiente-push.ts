@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { SONDE_BROWSER, SondeBrowser, riconosciPiattaforma } from './sonde-browser';
 
 /**
  * Cosa sa fare questo browser con le notifiche push:
@@ -7,6 +8,8 @@ import { Injectable } from '@angular/core';
  * - `iphone-da-installare`: iPhone o iPad nel browser. Safari dà le notifiche
  *   solo al sito aggiunto alla schermata Home (iOS 16.4 e successivi) e
  *   aperto da lì;
+ * - `browser-in-app`: il browser interno di un'app (WhatsApp, Telegram,
+ *   Facebook...), dove le push non arrivano: va aperto in Chrome o Safari;
  * - `app-nativa`: l'app Capacitor, dove le push del web non ci sono;
  * - `non-sicuro`: pagina non in HTTPS, dove il browser non le permette;
  * - `non-supportato`: un browser che non le ha (o un iPhone con iOS vecchio).
@@ -14,6 +17,7 @@ import { Injectable } from '@angular/core';
 export type SupportoPush =
   | 'supportato'
   | 'iphone-da-installare'
+  | 'browser-in-app'
   | 'app-nativa'
   | 'non-sicuro'
   | 'non-supportato';
@@ -34,29 +38,14 @@ export interface IscrizionePush {
  */
 @Injectable({ providedIn: 'root' })
 export class AmbientePush {
+  private readonly sonde = inject(SONDE_BROWSER);
+
   supporto(): SupportoPush {
-    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
-      return 'non-supportato';
-    }
-    const capacitor = (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-    if (capacitor?.isNativePlatform?.()) {
-      return 'app-nativa';
-    }
-    if (window.isSecureContext === false) {
-      return 'non-sicuro';
-    }
-    const conPush = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
-    // Su iPhone il PushManager compare solo nel sito aperto dalla Home: nel
-    // Safari normale manca anche con iOS recente, e la cosa da dire è
-    // "aggiungilo alla Home", non "il tuo browser non va".
-    if (eIos() && !installato()) {
-      return 'iphone-da-installare';
-    }
-    return conPush ? 'supportato' : 'non-supportato';
+    return supportoPush(this.sonde);
   }
 
   permesso(): NotificationPermission {
-    return typeof Notification === 'undefined' ? 'denied' : Notification.permission;
+    return this.sonde.permessoNotifiche() ?? 'denied';
   }
 
   /** Va chiamato dentro il tocco dell'utente: Safari rifiuta la richiesta altrimenti. */
@@ -113,27 +102,34 @@ export class AmbientePush {
    * dell'app si aggiorna solo così, mai con una richiesta a sorpresa.
    */
   async permessoPosizione(): Promise<PermessoPosizione> {
-    try {
-      const stato = await navigator.permissions.query({ name: 'geolocation' });
-      return stato.state;
-    } catch {
-      // Safari vecchi non hanno navigator.permissions.
-      return 'sconosciuto';
-    }
+    // Safari vecchi non hanno navigator.permissions: null, cioè non si sa.
+    return (await this.sonde.interroga('geolocation')) ?? 'sconosciuto';
   }
 }
 
-function eIos(): boolean {
-  const agente = navigator.userAgent;
-  // Gli iPad recenti si presentano come un Mac: li tradisce il touch.
-  return /iPad|iPhone|iPod/.test(agente) || (/Macintosh/.test(agente) && navigator.maxTouchPoints > 1);
-}
-
-function installato(): boolean {
-  return (
-    window.matchMedia?.('(display-mode: standalone)').matches === true ||
-    (navigator as { standalone?: boolean }).standalone === true
-  );
+/** Cosa sa fare con le push il browser descritto dalle sonde. */
+export function supportoPush(sonde: SondeBrowser): SupportoPush {
+  if (sonde.nativa()) {
+    return 'app-nativa';
+  }
+  if (!sonde.sicura()) {
+    return 'non-sicuro';
+  }
+  const conPush =
+    sonde.conServiceWorker() && sonde.conPushManager() && sonde.permessoNotifiche() !== null;
+  const piattaforma = riconosciPiattaforma(sonde.agente(), sonde.puntiTocco(), sonde.installata());
+  // Prima il browser interno: su iPhone "aggiungi alla Home" non si può
+  // fare da WhatsApp, bisogna prima aprire il sito in Safari.
+  if (piattaforma.appInterna && (piattaforma.sistema === 'ios' || !conPush)) {
+    return 'browser-in-app';
+  }
+  // Su iPhone il PushManager compare solo nel sito aperto dalla Home: nel
+  // Safari normale manca anche con iOS recente, e la cosa da dire è
+  // "aggiungilo alla Home", non "il tuo browser non va".
+  if (piattaforma.sistema === 'ios' && !piattaforma.installata) {
+    return 'iphone-da-installare';
+  }
+  return conPush ? 'supportato' : 'non-supportato';
 }
 
 function comeJson(iscrizione: PushSubscription): IscrizionePush {

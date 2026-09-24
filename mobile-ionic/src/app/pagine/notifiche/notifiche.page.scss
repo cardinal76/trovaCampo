@@ -192,3 +192,46 @@
     margin: 0.25rem;
   }
 }
+
+/* La riga "Notifiche: consentite · Posizione: bloccata", con un pallino colorato. */
+.stato-permessi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin: 0 0.25rem 0.9rem;
+  font-size: 0.85rem;
+
+  .voce {
+    display: inline-flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  .pallino {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--ion-color-medium, #92949c);
+  }
+
+  [data-tono='bene'] .pallino {
+    background: var(--ion-color-success, #2dd36f);
+  }
+
+  [data-tono='attenzione'] .pallino {
+    background: var(--ion-color-warning, #ffc409);
+  }
+
+  [data-tono='male'] .pallino {
+    background: var(--ion-color-danger, #c5000f);
+  }
+}
+
+.diagnosi {
+  margin-bottom: 0.75rem;
+
+  /* Dentro una sezione, sotto l'interruttore che l'ha fatto comparire. */
+  &.in-sezione {
+    margin: 0 0.9rem 0.6rem;
+  }
+}

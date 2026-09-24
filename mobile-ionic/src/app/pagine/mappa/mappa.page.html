@@ -85,7 +85,17 @@
             Solo campi con partite nei prossimi {{ giorniPartite }} giorni
           </ion-toggle>
         }
-        @if (erroreVicini(); as errore) {
+        @if (riquadroVicini(); as istruzioni) {
+          <riquadro-diagnosi
+            class="errore-vicini diagnosi-vicini"
+            role="alert"
+            [istruzioni]="istruzioni"
+            [occupato]="cercoPosizione()"
+            [chiudibile]="true"
+            (riprova)="vicinoAMe()"
+            (chiudi)="erroreVicini.set(null)"
+          ></riquadro-diagnosi>
+        } @else if (erroreVicini(); as errore) {
           <p class="errore-vicini" role="alert">{{ errore }}</p>
         }
         <div class="riepilogo">

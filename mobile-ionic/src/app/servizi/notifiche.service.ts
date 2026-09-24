@@ -3,7 +3,8 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { AmbientePush, SupportoPush } from './ambiente-push';
-import { ErrorePosizione, PosizioneService } from './posizione.service';
+import { DiagnosiService } from './diagnosi.service';
+import { PosizioneService } from './posizione.service';
 import { SquadraSeguita, SquadreSeguiteService } from './squadre-seguite.service';
 
 const CHIAVE = 'trovacampo.notifiche';
@@ -64,6 +65,7 @@ export class NotificheService {
   private readonly ambiente = inject(AmbientePush);
   private readonly gps = inject(PosizioneService);
   private readonly squadre = inject(SquadreSeguiteService);
+  private readonly diagnosi = inject(DiagnosiService);
   private readonly base = `${environment.apiUrl}/api/notifiche`;
 
   readonly supporto = signal<SupportoPush>(this.ambiente.supporto());
@@ -128,17 +130,38 @@ export class NotificheService {
     });
   }
 
-  /** Accendendo si legge la posizione: il browser la chiede qui, dentro il tocco. */
+  /**
+   * Accendendo servono due permessi, notifiche e posizione, e si chiedono
+   * sempre tutti e due, in quest'ordine:
+   *
+   * 1. le notifiche per prime, perché Safari (e Firefox) accettano
+   *    Notification.requestPermission solo dentro il tocco dell'utente, e
+   *    il tocco "scade" dopo un'attesa: dopo la richiesta della posizione,
+   *    che aspetta la risposta di chi usa il telefono, sarebbe persa.
+   *    Fino a requestPermission qui non c'è nessun await, così la richiesta
+   *    parte ancora dentro il tocco sull'interruttore;
+   * 2. la posizione dopo, anche se le notifiche sono negate o qui non ci
+   *    sono (iPhone fuori dalla Home, browser di WhatsApp...):
+   *    getCurrentPosition non ha bisogno del tocco, quindi la richiesta
+   *    compare comunque. Così chi accende vede almeno quella, la posizione
+   *    resta salvata sul telefono, e il riquadro della pagina dice cosa
+   *    manca ancora. L'avviso però resta spento finché le notifiche non
+   *    vanno: acceso, prometterebbe avvisi che non arrivano.
+   */
   async impostaAvvisoVicino(acceso: boolean): Promise<Esito> {
     return this.cambia(async () => {
       if (!acceso) {
         // Spento, la posizione non serve più: si dimentica anche qui, non solo sul server.
         return this.salvaESincronizza({ ...this.preferenze(), avvisoVicino: false, posizione: null });
       }
-      if (!(await this.assicuraPermesso())) {
+      const notificheOk = await this.assicuraPermesso();
+      const posizione = await this.leggiPosizione();
+      if (!notificheOk) {
+        if (posizione) {
+          this.salva({ ...this.preferenze(), posizione });
+        }
         return 'permesso-negato';
       }
-      const posizione = await this.leggiPosizione();
       if (!posizione) {
         return 'posizione-negata';
       }
@@ -151,19 +174,39 @@ export class NotificheService {
     return this.cambia(() => this.salvaESincronizza({ ...this.preferenze(), raggioKm: valido }));
   }
 
+  /**
+   * Rilegge la posizione. Con l'avviso spento resta solo sul telefono: al
+   * server non serve, e su un browser senza push non ci sarebbe nemmeno
+   * un'iscrizione da aggiornare.
+   */
   async aggiornaPosizione(): Promise<Esito> {
     return this.cambia(async () => {
       const posizione = await this.leggiPosizione();
       if (!posizione) {
         return 'posizione-negata';
       }
+      if (!this.preferenze().avvisoVicino) {
+        this.salva({ ...this.preferenze(), posizione });
+        return 'fatto';
+      }
       return this.salvaESincronizza({ ...this.preferenze(), posizione });
     });
   }
 
+  /**
+   * "Riprova" sulle notifiche, quando non c'era un avviso da accendere:
+   * se il browser può ancora chiedere, chiede (dentro il tocco su Riprova),
+   * altrimenti rilegge soltanto come stanno le cose.
+   */
+  async riprovaPermesso(): Promise<Esito> {
+    return this.cambia(async () => ((await this.assicuraPermesso()) ? 'fatto' : 'permesso-negato'));
+  }
+
   /** Il permesso si cambia anche dalle impostazioni del browser, a pagina chiusa. */
   rileggiPermesso(): void {
+    this.supporto.set(this.ambiente.supporto());
     this.permesso.set(this.ambiente.permesso());
+    this.diagnosi.aggiornaNotifiche();
   }
 
   segue(chiave: string): boolean {
@@ -215,30 +258,38 @@ export class NotificheService {
     }
   }
 
+  /**
+   * Il permesso delle notifiche, chiesto solo dove può servire: su un
+   * browser senza push (iPhone fuori dalla Home, browser di un'app) non si
+   * chiede niente, e il motivo lo mostra il riquadro della pagina. Nessun
+   * await prima di requestPermission: deve partire dentro il tocco.
+   */
   private async assicuraPermesso(): Promise<boolean> {
+    this.supporto.set(this.ambiente.supporto());
     let permesso = this.ambiente.permesso();
-    if (permesso === 'default') {
+    if (this.supporto() === 'supportato' && permesso === 'default') {
       permesso = await this.ambiente.chiediPermesso();
+      if (permesso === 'default') {
+        // Chrome chiude la richiesta senza risposta se la si ignora o la si
+        // chiude con la X: non è un blocco, basta riprovare.
+        this.errore.set(
+          'Hai chiuso la richiesta senza scegliere: riprova e tocca «Consenti».',
+        );
+      }
     }
     this.permesso.set(permesso);
-    if (permesso !== 'granted') {
-      this.errore.set(
-        'Le notifiche sono bloccate per questo sito. Riattivale dalle impostazioni del browser ' +
-          '(il lucchetto accanto all’indirizzo) o del telefono, poi riprova.',
-      );
-      return false;
-    }
-    return true;
+    this.diagnosi.aggiornaNotifiche();
+    return this.supporto() === 'supportato' && permesso === 'granted';
   }
 
+  /** L'esito va anche alla diagnosi, che mostra cosa blocca e come sbloccarlo. */
   private async leggiPosizione(): Promise<PosizioneSalvata | null> {
     try {
       const { lat, lng } = await this.gps.attuale();
+      await this.diagnosi.esitoPosizione(null);
       return { lat, lng, il: new Date().toISOString() };
     } catch (errore) {
-      this.errore.set(
-        errore instanceof ErrorePosizione ? errore.message : 'La posizione non è disponibile.',
-      );
+      await this.diagnosi.esitoPosizione(errore);
       return null;
     }
   }
@@ -267,12 +318,13 @@ export class NotificheService {
       return 'fatto';
     } catch (errore) {
       this.salva(prima);
-      this.errore.set(
-        errore instanceof ErroreIscrizione
-          ? 'Questo browser non è riuscito a iscriversi alle notifiche. In navigazione privata ' +
-              'non funzionano; altrimenti riprova tra poco.'
-          : 'Il server delle notifiche non risponde: riprova tra poco.',
-      );
+      if (errore instanceof ErroreIscrizione) {
+        // Non è colpa del server: il riquadro "qui non funzionano" spiega
+        // navigazione privata e dintorni.
+        this.diagnosi.segnalaIscrizioneFallita();
+      } else {
+        this.errore.set('Il server delle notifiche non risponde: riprova tra poco.');
+      }
       return 'errore';
     }
   }
@@ -288,6 +340,7 @@ export class NotificheService {
     const iscrizione = await this.ambiente.iscrivi(chiave).catch((errore: unknown) => {
       throw new ErroreIscrizione(String(errore));
     });
+    this.diagnosi.segnalaIscrizioneRiuscita();
     const preferenze = this.preferenze();
     await firstValueFrom(
       this.http.put(`${this.base}/iscrizione`, {

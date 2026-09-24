@@ -14,54 +14,31 @@
       e restano spenti finché non li accendi qui.
     </p>
 
-    <!-- Prima di tutto, perché qui le notifiche non possono arrivare. -->
-    @switch (supporto()) {
-      @case ('iphone-da-installare') {
-        <div class="avviso" data-stato="iphone">
-          <ion-icon name="share-outline" aria-hidden="true"></ion-icon>
-          <div>
-            <p><strong>Su iPhone e iPad le notifiche arrivano solo all’app sulla schermata Home.</strong></p>
-            <p>
-              In Safari tocca <strong>Condividi</strong>, poi <strong>Aggiungi alla schermata Home</strong>,
-              e apri TrovaCampo da lì. Serve iOS 16.4 o successivo.
-            </p>
-          </div>
-        </div>
+    <!-- Cosa c'è e cosa manca, prima di tutto il resto. -->
+    <p class="stato-permessi" aria-live="polite">
+      <span class="voce" data-permesso="notifiche" [attr.data-tono]="statoNotifiche().tono">
+        <span class="pallino" aria-hidden="true"></span>
+        Notifiche: <strong>{{ statoNotifiche().testo }}</strong>
+      </span>
+      @if (statoPosizione(); as posizione) {
+        <span class="voce" data-permesso="posizione" [attr.data-tono]="posizione.tono">
+          <span class="pallino" aria-hidden="true"></span>
+          Posizione: <strong>{{ posizione.testo }}</strong>
+        </span>
       }
-      @case ('app-nativa') {
-        <div class="avviso" data-stato="app">
-          <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
-          <p>
-            Nell’app le notifiche non ci sono ancora: apri trovacampo.footballer.it dal browser del
-            telefono e accendile da lì.
-          </p>
-        </div>
-      }
-      @case ('non-sicuro') {
-        <div class="avviso" data-stato="non-sicuro">
-          <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
-          <p>Il browser permette le notifiche solo alle pagine aperte in HTTPS.</p>
-        </div>
-      }
-      @case ('non-supportato') {
-        <div class="avviso" data-stato="non-supportato">
-          <ion-icon name="alert-circle-outline" aria-hidden="true"></ion-icon>
-          <p>
-            Questo browser non riceve notifiche push. Prova con Chrome, Firefox, Edge o Safari
-            aggiornati (su iPhone, dall’app aggiunta alla schermata Home).
-          </p>
-        </div>
-      }
-    }
+    </p>
 
-    @if (bloccate()) {
-      <div class="avviso" data-stato="bloccate">
-        <ion-icon name="notifications-off-outline" aria-hidden="true"></ion-icon>
-        <p>
-          <strong>Le notifiche sono bloccate per questo sito.</strong> Riattivale dalle impostazioni
-          del browser (il lucchetto accanto all’indirizzo) o del telefono, poi torna qui.
-        </p>
-      </div>
+    <!-- Perché qui le notifiche non arrivano, finché non si è toccato un interruttore. -->
+    @if (doveNotifiche() === 'cima') {
+      @if (riquadroNotifiche(); as istruzioni) {
+        <riquadro-diagnosi
+          class="diagnosi"
+          data-riquadro="notifiche"
+          [istruzioni]="istruzioni"
+          [occupato]="occupato()"
+          (riprova)="riprovaNotifiche()"
+        ></riquadro-diagnosi>
+      }
     }
 
     @if (errore(); as messaggio) {
@@ -88,6 +65,17 @@
           <span class="spiegazione">In casa e fuori, con campo e orario</span>
         </ion-toggle>
       </div>
+      @if (doveNotifiche() === 'squadre') {
+        @if (riquadroNotifiche(); as istruzioni) {
+          <riquadro-diagnosi
+            class="diagnosi in-sezione"
+            data-riquadro="notifiche"
+            [istruzioni]="istruzioni"
+            [occupato]="occupato()"
+            (riprova)="riprovaNotifiche()"
+          ></riquadro-diagnosi>
+        }
+      }
 
       <ul class="seguite">
         @for (squadra of seguite(); track squadra.chiave) {
@@ -137,6 +125,26 @@
           <span class="spiegazione">Su qualunque campo entro il raggio che scegli</span>
         </ion-toggle>
       </div>
+      @if (doveNotifiche() === 'vicino') {
+        @if (riquadroNotifiche(); as istruzioni) {
+          <riquadro-diagnosi
+            class="diagnosi in-sezione"
+            data-riquadro="notifiche"
+            [istruzioni]="istruzioni"
+            [occupato]="occupato()"
+            (riprova)="riprovaNotifiche()"
+          ></riquadro-diagnosi>
+        }
+      }
+      @if (riquadroPosizione(); as istruzioni) {
+        <riquadro-diagnosi
+          class="diagnosi in-sezione"
+          data-riquadro="posizione"
+          [istruzioni]="istruzioni"
+          [occupato]="occupato()"
+          (riprova)="riprovaPosizione()"
+        ></riquadro-diagnosi>
+      }
 
       <div class="raggio">
         <ion-label id="etichetta-raggio">Entro</ion-label>
@@ -162,18 +170,17 @@
             Nessuna posizione salvata: la chiediamo quando accendi l’avviso.
           }
         </p>
-        @if (preferenze().avvisoVicino) {
-          <ion-button
-            fill="outline"
-            size="small"
-            class="aggiorna-posizione"
-            [disabled]="occupato()"
-            (click)="aggiornaPosizione()"
-          >
-            <ion-icon slot="start" name="locate-outline"></ion-icon>
-            Aggiorna posizione
-          </ion-button>
-        }
+        <!-- Sempre toccabile: anche dove le notifiche non vanno si può dare la posizione. -->
+        <ion-button
+          fill="outline"
+          size="small"
+          class="aggiorna-posizione"
+          [disabled]="occupato()"
+          (click)="aggiornaPosizione()"
+        >
+          <ion-icon slot="start" name="locate-outline"></ion-icon>
+          {{ posizioneSalvata() ? 'Aggiorna posizione' : 'Usa la mia posizione' }}
+        </ion-button>
         @if (occupato()) {
           <ion-spinner name="crescent" aria-label="Attendere"></ion-spinner>
         }
