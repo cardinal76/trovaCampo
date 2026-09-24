@@ -57,6 +57,65 @@ export function campionatoPartita(partita: Partita): string {
     .join(' · ');
 }
 
+/**
+ * La data di una partita smontata per la scheda: il giorno grande in un
+ * riquadro a sinistra, come un calendario da muro, e accanto l'ora.
+ *
+ * Oggi e domani si dicono per nome: "dom 27 set" costringe a pensare a che
+ * giorno è, "Domani" no. Anche qui l'ora italiana, per lo stesso motivo di
+ * {@link quandoPartita}.
+ */
+export interface DataPartita {
+  /** "dom" */
+  giorno: string;
+  /** "27" */
+  numero: string;
+  /** "set" */
+  mese: string;
+  /** "11:00" */
+  ora: string;
+  /** "Oggi", "Domani", o null per gli altri giorni. */
+  vicino: 'Oggi' | 'Domani' | null;
+}
+
+const PARTI_GIORNO = new Intl.DateTimeFormat('it-IT', {
+  weekday: 'short',
+  day: 'numeric',
+  month: 'short',
+  timeZone: 'Europe/Rome',
+});
+/** "2026-09-27": per confrontare i giorni nel calendario di Roma. */
+const GIORNO_ISO = new Intl.DateTimeFormat('en-CA', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  timeZone: 'Europe/Rome',
+});
+
+export function dataPartita(partita: Partita, adesso: Date = new Date()): DataPartita {
+  const data = new Date(partita.dataOra);
+  const parti = PARTI_GIORNO.formatToParts(data);
+  const parte = (tipo: Intl.DateTimeFormatPartTypes) =>
+    (parti.find((p) => p.type === tipo)?.value ?? '').replace('.', '');
+
+  const giornoPartita = GIORNO_ISO.format(data);
+  const domani = new Date(adesso.getTime() + 24 * 60 * 60 * 1000);
+  const vicino =
+    giornoPartita === GIORNO_ISO.format(adesso)
+      ? 'Oggi'
+      : giornoPartita === GIORNO_ISO.format(domani)
+        ? 'Domani'
+        : null;
+
+  return {
+    giorno: parte('weekday'),
+    numero: parte('day'),
+    mese: parte('month'),
+    ora: ORA.format(data),
+    vicino,
+  };
+}
+
 /** Le partite di un campo, o nessuna se il campo non viene dall'anagrafica di presenze. */
 export function partiteDelCampo(
   partite: PartitePerCampo,

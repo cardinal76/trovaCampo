@@ -11,7 +11,10 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import {
+  IonAccordion,
+  IonAccordionGroup,
   IonBackButton,
+  IonBadge,
   IonButton,
   IonButtons,
   IonContent,
@@ -27,7 +30,7 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { create } from 'ionicons/icons';
+import { calendarOutline, create, peopleOutline, timeOutline, trophyOutline } from 'ionicons/icons';
 import * as L from 'leaflet';
 import {
   Societa,
@@ -40,6 +43,7 @@ import {
   GIORNI_PARTITE_SCHEDA,
   Partita,
   campionatoPartita,
+  dataPartita,
   quandoPartita,
   squadrePartita,
 } from '../../modelli/partita';
@@ -69,7 +73,10 @@ const ZOOM_SCHEDA = 16;
   selector: 'pagina-scheda',
   imports: [
     RouterLink,
+    IonAccordion,
+    IonAccordionGroup,
     IonBackButton,
+    IonBadge,
     IonButton,
     IonButtons,
     IonContent,
@@ -113,6 +120,7 @@ export class SchedaPage implements OnDestroy {
   readonly quandoPartita = quandoPartita;
   readonly squadrePartita = squadrePartita;
   readonly campionatoPartita = campionatoPartita;
+  readonly dataPartita = (partita: Partita) => dataPartita(partita);
   /** Il pulsante "Modifica": solo se su questo browser è entrato un amministratore. */
   readonly amministratore = signal(amministratoreRicordato());
 
@@ -167,6 +175,21 @@ export class SchedaPage implements OnDestroy {
     this.campionati().filter((c) => c.tipo === 'ScuolaCalcio'),
   );
 
+  /** Il numero sull'intestazione piegata dei campionati: si legge senza aprirla. */
+  readonly numeroCampionati = computed(
+    () => this.squadre().length + this.agonistica().length + this.scuolaCalcio().length,
+  );
+
+  /**
+   * Le sezioni aperte all'arrivo: le partite, se il campo ne può avere,
+   * perché è quello che cerca chi sta andando al campo; altrimenti i
+   * campionati. L'anagrafica resta chiusa: serve di rado, e i contatti sono
+   * spesso vuoti.
+   */
+  readonly sezioniAperte = computed(() =>
+    this.societa()?.anagraficaImpiantoId ? ['partite'] : ['campionati'],
+  );
+
   readonly prezziScuolaCalcio = computed(() => {
     const societa = this.societa();
 
@@ -182,7 +205,7 @@ export class SchedaPage implements OnDestroy {
   });
 
   constructor() {
-    addIcons({ create });
+    addIcons({ calendarOutline, create, peopleOutline, timeOutline, trophyOutline });
 
     // La mappa nasce quando il suo contenitore compare (cioè a dati caricati e
     // solo se il campo ha una posizione) e si riallinea se i dati cambiano,
