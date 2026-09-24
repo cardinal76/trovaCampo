@@ -9,7 +9,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
   IonAccordion,
   IonAccordionGroup,
@@ -28,9 +28,18 @@ import {
   IonSpinner,
   IonTitle,
   IonToolbar,
+  ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { calendarOutline, create, peopleOutline, timeOutline, trophyOutline } from 'ionicons/icons';
+import {
+  calendarOutline,
+  create,
+  notifications,
+  notificationsOutline,
+  peopleOutline,
+  timeOutline,
+  trophyOutline,
+} from 'ionicons/icons';
 import * as L from 'leaflet';
 import {
   Societa,
@@ -50,6 +59,7 @@ import {
 import { Squadra, dettaglioSquadra } from '../../modelli/squadra';
 import { iconaCampo } from '../../mappa/icona-campo';
 import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
+import { NotificheService } from '../../servizi/notifiche.service';
 import { SocietaService } from '../../servizi/societa.service';
 
 type Stato = 'caricamento' | 'completata' | 'errore';
@@ -98,6 +108,9 @@ export class SchedaPage implements OnDestroy {
   private readonly rotta = inject(ActivatedRoute);
   private readonly service = inject(SocietaService);
   private readonly zona = inject(NgZone);
+  private readonly notifiche = inject(NotificheService);
+  private readonly avvisi = inject(ToastController);
+  private readonly router = inject(Router);
 
   private readonly contenitoreMappa = viewChild<ElementRef<HTMLDivElement>>('contenitoreMappa');
   private mappa: L.Map | null = null;
@@ -205,7 +218,15 @@ export class SchedaPage implements OnDestroy {
   });
 
   constructor() {
-    addIcons({ calendarOutline, create, peopleOutline, timeOutline, trophyOutline });
+    addIcons({
+      calendarOutline,
+      create,
+      notifications,
+      notificationsOutline,
+      peopleOutline,
+      timeOutline,
+      trophyOutline,
+    });
 
     // La mappa nasce quando il suo contenitore compare (cioè a dati caricati e
     // solo se il campo ha una posizione) e si riallinea se i dati cambiano,
@@ -222,6 +243,56 @@ export class SchedaPage implements OnDestroy {
         this.rimuoviMappa();
       }
     });
+  }
+
+  /** Le squadre seguite, lette dal segnale: la campanella cambia appena le si tocca. */
+  readonly chiaviSeguite = computed(() => new Set(this.notifiche.seguite().map((s) => s.chiave)));
+
+  seguita(squadra: Squadra): boolean {
+    return !!squadra.chiave && this.chiaviSeguite().has(squadra.chiave);
+  }
+
+  /**
+   * La campanella accanto a una squadra: la segue o smette di seguirla. Chi
+   * la segue per la prima volta con l'avviso spento lo scopre subito, con un
+   * rimando alla pagina Notifiche.
+   */
+  async seguiOSmetti(squadra: Squadra): Promise<void> {
+    const societa = this.societa();
+    if (!squadra.chiave || !societa) {
+      return;
+    }
+    if (this.seguita(squadra)) {
+      await this.notifiche.smettiDiSeguire(squadra.chiave);
+      await this.avvisa(`Non segui più ${squadra.campionato}.`);
+      return;
+    }
+    const esito = await this.notifiche.segui({
+      chiave: squadra.chiave,
+      societa: nomeCompleto(societa),
+      societaId: societa.id,
+      campionato: squadra.campionato,
+      dettaglio: dettaglioSquadra(squadra),
+    });
+    if (esito === 'troppe') {
+      await this.avvisa('Segui già 30 squadre: smetti di seguirne una dalla pagina Notifiche.', true);
+    } else if (this.notifiche.preferenze().avvisoSquadre) {
+      await this.avvisa(`Segui ${squadra.campionato}: avviso un’ora prima di ogni partita.`);
+    } else {
+      await this.avvisa(`Segui ${squadra.campionato}. Per gli avvisi accendi le notifiche.`, true);
+    }
+  }
+
+  private async avvisa(messaggio: string, conRimando = false): Promise<void> {
+    const avviso = await this.avvisi.create({
+      message: messaggio,
+      duration: conRimando ? 5000 : 2500,
+      position: 'bottom',
+      buttons: conRimando
+        ? [{ text: 'Notifiche', handler: () => void this.router.navigateByUrl('/notifiche') }]
+        : [],
+    });
+    await avviso.present();
   }
 
   ngOnDestroy(): void {

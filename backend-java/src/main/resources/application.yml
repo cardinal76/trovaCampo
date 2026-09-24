@@ -50,6 +50,22 @@ trovacampo:
     # sviluppo; in produzione la accende docker-compose.prod.yml.
     sincronizzazione: ${ANAGRAFICA_SINCRONIZZAZIONE:false}
 
+  # Notifiche push (Web Push) per chi segue una squadra o vuole le partite
+  # vicine. Le chiavi VAPID, se VAPID_PUBBLICA e VAPID_PRIVATA non ci sono,
+  # il backend le crea da solo e le tiene in Mongo (vedi DepositoChiaviVapid).
+  notifiche:
+    # Il giro ogni cinque minuti che manda gli avvisi.
+    attive: ${NOTIFICHE_ATTIVE:true}
+    # Il "sub" della firma VAPID: chi avvisare se le notifiche danno noia.
+    contatto: https://trovacampo.footballer.it
+    vapid:
+      pubblica: ${VAPID_PUBBLICA:}
+      privata: ${VAPID_PRIVATA:}
+    # Gli unici host a cui il backend manda notifiche (e sottodomini): gli
+    # endpoint arrivano da chiunque, e non devono poter puntare altrove.
+    # Una riga sola, separata da virgole: @Value non legge le liste YAML.
+    servizi-push: fcm.googleapis.com,android.googleapis.com,push.services.mozilla.com,push.apple.com,notify.windows.com
+
 # Solo /actuator/health, che e' quello che guarda l'healthcheck del container
 # in produzione. Comprende il controllo su MongoDB: un backend acceso ma senza
 # database risulta DOWN, invece di rispondere 500 a ogni ricerca.

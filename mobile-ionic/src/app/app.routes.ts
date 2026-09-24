@@ -22,6 +22,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pagine/mappa/mappa.page').then((m) => m.MappaPage),
   },
   {
+    // Gli avvisi push: squadre seguite e partite vicine.
+    path: 'notifiche',
+    loadComponent: () => import('./pagine/notifiche/notifiche.page').then((m) => m.NotifichePage),
+  },
+  {
     path: 'aggiungi',
     loadComponent: () => import('./pagine/aggiungi/aggiungi.page').then((m) => m.AggiungiPage),
   },

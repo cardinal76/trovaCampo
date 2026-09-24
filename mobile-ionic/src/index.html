@@ -14,6 +14,12 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="icona-192.png">
+  <!-- Installabile sulla schermata Home: su iPhone è l'unico modo di ricevere
+       le notifiche (iOS 16.4 e successivi). Il service worker (sw.js) lo
+       registra l'app, vedi servizi/notifiche.service.ts. -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="TrovaCampo">
 </head>
 <body>
   <app-root></app-root>

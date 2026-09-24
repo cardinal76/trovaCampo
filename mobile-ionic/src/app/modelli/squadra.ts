@@ -15,6 +15,12 @@ export interface Squadra {
   fuoriClassifica: boolean;
   /** Il campo dove gioca in casa, se un programma gare l'ha detto. */
   campo?: string;
+  /**
+   * Come la riconoscono le notifiche di chi la segue (ChiaveSquadra nel
+   * backend): società di presenze, campionato, ente e lettera. Manca da un
+   * backend vecchio, e allora la squadra non si può seguire.
+   */
+  chiave?: string;
 }
 
 /** "Girone A · Regionali · squadra B, fuori classifica" */

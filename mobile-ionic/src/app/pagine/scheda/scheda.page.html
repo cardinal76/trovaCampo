@@ -222,6 +222,21 @@
                     }
                   </ion-label>
                   <ion-note slot="end">{{ squadra.stagione }}</ion-note>
+                  <!-- Segui la squadra, non il campionato: la chiave è per squadra (ChiaveSquadra). -->
+                  @if (squadra.chiave) {
+                    @let segui = seguita(squadra);
+                    <ion-button
+                      slot="end"
+                      fill="clear"
+                      class="segui"
+                      [class.attiva]="segui"
+                      [attr.aria-pressed]="segui"
+                      [attr.aria-label]="(segui ? 'Smetti di seguire ' : 'Segui ') + squadra.campionato"
+                      (click)="seguiOSmetti(squadra)"
+                    >
+                      <ion-icon slot="icon-only" [name]="segui ? 'notifications' : 'notifications-outline'"></ion-icon>
+                    </ion-button>
+                  }
                 </ion-item>
               } @empty {
                 @if (campionati().length === 0) {

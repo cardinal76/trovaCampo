@@ -1,0 +1,194 @@
+/*
+ * Come le sezioni della scheda: blocchi con gli angoli arrotondati e
+ * un'ombra leggera, ognuno con la sua icona in testa.
+ */
+.pagina {
+  padding: 0.75rem 1rem 1.5rem;
+}
+
+.introduzione {
+  margin: 0.25rem 0.25rem 1rem;
+  color: var(--ion-color-medium, #666);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.avviso {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  background: rgba(var(--ion-color-warning-rgb, 255, 196, 9), 0.14);
+  font-size: 0.9rem;
+  line-height: 1.4;
+
+  ion-icon {
+    flex: 0 0 auto;
+    margin-top: 0.1rem;
+    color: var(--ion-color-warning-shade, #e0ac08);
+    font-size: 1.35rem;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  p + p {
+    margin-top: 0.35rem;
+  }
+
+  &.errore {
+    background: rgba(var(--ion-color-danger-rgb, 197, 0, 15), 0.1);
+
+    ion-icon {
+      color: var(--ion-color-danger, #c5000f);
+    }
+  }
+}
+
+.sezione {
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--ion-item-background, var(--ion-background-color, #fff));
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 6%),
+    0 2px 8px rgb(0 0 0 / 6%);
+}
+
+.testa-sezione {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  min-height: 3.25rem;
+  padding: 0 0.9rem;
+
+  ion-icon {
+    color: var(--ion-color-primary, #3880ff);
+    font-size: 1.3rem;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+}
+
+.interruttore {
+  padding: 0.6rem 0.9rem;
+  border-top: 1px solid var(--ion-color-light-shade, #e6e6e6);
+
+  ion-toggle {
+    width: 100%;
+  }
+
+  .etichetta,
+  .spiegazione {
+    display: block;
+    white-space: normal;
+  }
+
+  .etichetta {
+    font-weight: 600;
+  }
+
+  .spiegazione {
+    margin-top: 0.15rem;
+    color: var(--ion-color-medium, #666);
+    font-size: 0.8rem;
+  }
+}
+
+.seguite {
+  margin: 0;
+  padding: 0 0.9rem;
+  list-style: none;
+}
+
+.seguita {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--ion-color-light-shade, #e6e6e6);
+
+  .nome {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+    color: inherit;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+
+    span {
+      color: var(--ion-color-primary-shade, #3171e0);
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    small {
+      color: var(--ion-color-medium, #666);
+      font-size: 0.75rem;
+    }
+  }
+
+  .smetti {
+    flex: 0 0 auto;
+    --color: var(--ion-color-medium, #666);
+  }
+}
+
+.vuoto {
+  padding: 0.75rem 0 0.5rem;
+  border-top: 1px solid var(--ion-color-light-shade, #e6e6e6);
+  color: var(--ion-color-medium, #666);
+  font-size: 0.9rem;
+  line-height: 1.4;
+
+  ion-icon {
+    vertical-align: -0.15em;
+    color: var(--ion-color-primary, #3880ff);
+  }
+}
+
+.raggio {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem 0.9rem;
+  border-top: 1px solid var(--ion-color-light-shade, #e6e6e6);
+
+  ion-segment {
+    flex: 1;
+  }
+}
+
+.posizione {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0.9rem 0;
+
+  .stato-posizione {
+    flex: 1 1 12rem;
+    margin: 0;
+    font-size: 0.9rem;
+  }
+}
+
+.nota {
+  margin: 0.5rem 0.9rem 0.25rem;
+  color: var(--ion-color-medium, #666);
+  font-size: 0.78rem;
+  line-height: 1.4;
+
+  &.piede {
+    margin: 0.25rem;
+  }
+}

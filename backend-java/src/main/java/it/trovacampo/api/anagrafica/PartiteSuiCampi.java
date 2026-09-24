@@ -120,6 +120,23 @@ public class PartiteSuiCampi {
     }
 
     /**
+     * Per le notifiche: le partite da giocare, con data e campo, che
+     * cominciano fra {@code da} (compreso) e {@code a} (escluso), così come
+     * arrivano da presenze, con le società e le squadre. Dalla stessa cache
+     * di scheda e mappa: il pianificatore non aggiunge chiamate a presenze
+     * oltre a una ogni {@link #DURATA_CACHE}.
+     */
+    public List<AnagraficaPresenze.Partita> fra(Instant da, Instant a) {
+        return lette().stream()
+                .filter(partita -> "DA_GIOCARE".equals(partita.stato()))
+                .filter(partita -> partita.dataOra() != null && partita.impiantoId() != null)
+                .filter(partita -> !partita.dataOra().toInstant().isBefore(da))
+                .filter(partita -> partita.dataOra().toInstant().isBefore(a))
+                .sorted(Comparator.comparing(AnagraficaPresenze.Partita::dataOra))
+                .toList();
+    }
+
+    /**
      * Da giocare, con data e campo, dall'ora di adesso (meno quelle in corso)
      * fino alla fine dell'ultimo dei {@code giorni}.
      */

@@ -182,4 +182,22 @@ class PartiteSuiCampiTest {
         assertThat(partite.perLaMappa()).isEmpty();
         assertThat(partite.sulCampo(campo(190L))).isEmpty();
     }
+
+    @Test
+    void perLeNotificheSoloQuelleDaGiocareNellIntervallo() {
+        // [10:30, 11:30): dentro quella delle 10:30 e quella delle 11:00, fuori
+        // quella delle 11:30 (estremo escluso), quella già cominciata e quella rinviata.
+        when(anagrafica.partite(any(), any()))
+                .thenReturn(
+                        List.of(
+                                partita(190L, LocalDateTime.of(2026, 9, 4, 11, 30), "FUORI DOPO"),
+                                partita(190L, LocalDateTime.of(2026, 9, 4, 11, 0), "ALLE UNDICI"),
+                                partita(191L, LocalDateTime.of(2026, 9, 4, 10, 30), "ALLE DIECI E MEZZA"),
+                                partita(190L, LocalDateTime.of(2026, 9, 4, 10, 0), "GIA INIZIATA"),
+                                partita(190L, LocalDateTime.of(2026, 9, 4, 11, 0), "RINVIATA", "RINVIATA")));
+
+        assertThat(partite.fra(VENERDI.plus(Duration.ofMinutes(30)), VENERDI.plus(Duration.ofMinutes(90))))
+                .extracting(AnagraficaPresenze.Partita::casa)
+                .containsExactly("ALLE DIECI E MEZZA", "ALLE UNDICI");
+    }
 }

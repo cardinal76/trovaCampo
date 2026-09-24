@@ -1,6 +1,7 @@
 package it.trovacampo.api.repository;
 
 import it.trovacampo.api.dominio.Societa;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.PageRequest;
@@ -46,6 +47,9 @@ public interface SocietaRepository extends MongoRepository<Societa, String> {
      */
     @Query("{ 'lat': null, 'geocodificaFallitaVersione': { $not: { $gte: ?0 } } }")
     List<Societa> daGeocodificare(int versione, Pageable pagina);
+
+    /** I campi che vengono da questi impianti di presenze: per le notifiche delle partite. */
+    List<Societa> findByAnagraficaImpiantoIdIn(Collection<Long> impianti);
 
     default Optional<Societa> primaDaGeocodificare(int versione) {
         return daGeocodificare(versione, PageRequest.of(0, 1)).stream().findFirst();
