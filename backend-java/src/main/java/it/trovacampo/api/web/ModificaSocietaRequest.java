@@ -5,6 +5,7 @@ import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
@@ -16,6 +17,11 @@ import java.util.List;
  * <p>Latitudine e longitudine sono facoltative e vanno insieme: se mancano o
  * restano quelle di prima mentre l'indirizzo cambia, le ricalcola la
  * geocodifica automatica.
+ *
+ * <p>Lo stemma è l'eccezione alla regola del modulo completo: se manca
+ * ({@code null}, come da un'app di prima che il campo esistesse) resta quello
+ * salvato; vuoto lo toglie. Deve essere un indirizzo https, perché la pagina
+ * lo mostra così com'è.
  */
 public record ModificaSocietaRequest(
         @Size(max = 30, message = "sigla troppo lunga") String siglaSocieta,
@@ -46,4 +52,7 @@ public record ModificaSocietaRequest(
         @Size(max = 200, message = "sitoWeb troppo lungo") String sitoWeb,
         Boolean scuolaCalcio,
         @Size(max = 200, message = "prezziScuolaCalcio troppo lungo") String prezziScuolaCalcio,
-        @Size(max = 50, message = "troppi campionati") List<Campionato> campionati) {}
+        @Size(max = 50, message = "troppi campionati") List<Campionato> campionati,
+        @Size(max = 500, message = "logoUrl troppo lungo")
+                @Pattern(regexp = "^$|^https://\\S+$", message = "lo stemma deve essere un indirizzo https")
+                String logoUrl) {}

@@ -95,6 +95,19 @@ class AmministrazioneSocietaControllerTest {
     }
 
     @Test
+    void rifiutaUnoStemmaCheNonEHttps() throws Exception {
+        mockMvc.perform(
+                        put("/api/admin/societa/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(MODULO.replace("}", ",\"logoUrl\":\"http://esempio.it/s.png\"}"))
+                                .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errore").value("lo stemma deve essere un indirizzo https"));
+
+        verify(service, never()).modifica(any(), any());
+    }
+
+    @Test
     void unaSocietaCheNonEsisteRisponde404() throws Exception {
         when(service.modifica(eq("x"), any())).thenReturn(Optional.empty());
 

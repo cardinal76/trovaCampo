@@ -29,6 +29,7 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { add, location, logOut, trash, warning } from 'ionicons/icons';
+import { StemmaComponent } from '../../componenti/stemma/stemma.component';
 import { SelettoreMappaComponent } from '../../componenti/selettore-mappa/selettore-mappa.component';
 import { leggiCoordinate, scriviCoordinate } from '../../modelli/coordinate';
 import { ModificaSocieta, Societa, TipoCampionato, daPresenze } from '../../modelli/societa';
@@ -38,6 +39,11 @@ import {
   RUOLO_AMMINISTRATORE,
 } from '../../servizi/autenticazione.service';
 import { SocietaService } from '../../servizi/societa.service';
+
+/** Come lo accetta il server: un indirizzo https, senza spazi. */
+export function stemmaValido(indirizzo: string): boolean {
+  return /^https:\/\/\S+$/.test(indirizzo);
+}
 
 /** Una riga dei campionati nel modulo. */
 interface RigaCampionato {
@@ -68,6 +74,7 @@ class Modulo {
   fax = '';
   email = '';
   sitoWeb = '';
+  logoUrl = '';
   scuolaCalcio = false;
   prezziScuolaCalcio = '';
   campionati: RigaCampionato[] = [];
@@ -89,6 +96,7 @@ class Modulo {
     modulo.fax = societa.fax ?? '';
     modulo.email = societa.email ?? '';
     modulo.sitoWeb = societa.sitoWeb ?? '';
+    modulo.logoUrl = societa.logoUrl ?? '';
     modulo.scuolaCalcio = societa.scuolaCalcio ?? false;
     modulo.prezziScuolaCalcio = societa.prezziScuolaCalcio ?? '';
     modulo.campionati = (societa.campionati ?? []).map((c) => ({ ...c }));
@@ -130,6 +138,7 @@ class Modulo {
     IonTitle,
     IonToggle,
     IonToolbar,
+    StemmaComponent,
   ],
   templateUrl: './modifica.page.html',
   styleUrl: './modifica.page.scss',
@@ -154,6 +163,7 @@ export class ModificaPage {
   readonly modulo = signal<Modulo | null>(null);
   /** Per l'anteprima sotto il campo: si vede subito se le coordinate sono state capite. */
   readonly leggiCoordinate = leggiCoordinate;
+  readonly stemmaValido = stemmaValido;
   readonly salvataggio = signal(false);
   /** Se la scheda viene dall'anagrafica di presenze: cambia il messaggio di conferma dell'eliminazione. */
   private schedaDiPresenze = false;
@@ -311,6 +321,11 @@ export class ModificaPage {
     const lat = posizione?.lat;
     const lng = posizione?.lng;
 
+    const logoUrl = modulo.logoUrl.trim();
+    if (logoUrl && !stemmaValido(logoUrl)) {
+      return "Lo stemma va dato come indirizzo dell'immagine che inizia con https://.";
+    }
+
     return {
       siglaSocieta: modulo.siglaSocieta,
       nomeSocieta: modulo.nomeSocieta,
@@ -331,6 +346,7 @@ export class ModificaPage {
       scuolaCalcio: modulo.scuolaCalcio,
       prezziScuolaCalcio: modulo.prezziScuolaCalcio,
       campionati: modulo.campionati,
+      logoUrl,
     };
   }
 }

@@ -213,6 +213,11 @@ public class SocietaService {
                 .setPrezziScuolaCalcio(
                         scuolaCalcio ? oNull(richiesta.prezziScuolaCalcio()) : null)
                 .setCampionati(campionati(richiesta.campionati()));
+        if (richiesta.logoUrl() != null) {
+            // Messo a mano, per le società che il portale LND non ha: la
+            // sincronizzazione lo sostituisce solo se presenze ne porta uno.
+            societa.setLogoUrl(oNull(richiesta.logoUrl()));
+        }
 
         return repository.save(aggiornaTestoRicerca(societa));
     }

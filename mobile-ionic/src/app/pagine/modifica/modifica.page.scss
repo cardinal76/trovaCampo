@@ -38,3 +38,9 @@ ion-card-content ion-icon {
 .elimina {
   margin-top: 2.5rem;
 }
+
+/* L'anteprima dello stemma all'altezza del campo, non della sua etichetta. */
+.riga-stemma stemma-societa {
+  align-self: flex-end;
+  margin: 0 0.75rem 0.5rem 0;
+}
