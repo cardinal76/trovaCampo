@@ -141,7 +141,37 @@ class SocietaServiceTest {
                 true, "180 euro",
                 List.of(
                         new Campionato("Terza Categoria", "B", "LAZIO", null),
-                        new Campionato("  ", "", "", TipoCampionato.SCUOLA_CALCIO)));
+                        new Campionato("  ", "", "", TipoCampionato.SCUOLA_CALCIO)),
+                null);
+    }
+
+    private static ModificaSocietaRequest conStemma(ModificaSocietaRequest m, String logoUrl) {
+        return new ModificaSocietaRequest(
+                m.siglaSocieta(), m.nomeSocieta(), m.comitatoRegionale(), m.nomeImpianto(),
+                m.indirizzoImpianto(), m.localitaImpianto(), m.provinciaImpianto(), m.lat(), m.lng(),
+                m.matricola(), m.presidente(), m.indirizzoSede(), m.telefono(), m.fax(), m.email(),
+                m.sitoWeb(), m.scuolaCalcio(), m.prezziScuolaCalcio(), m.campionati(), logoUrl);
+    }
+
+    @Test
+    void loStemmaMessoAManoSiSalvaESiToglieVuoto() {
+        ModificaSocietaRequest m = modulo("Via della Certosa 12", 41.89, 12.48);
+
+        assertThat(modifica(conStemma(m, " https://esempio.it/stemma.png ")).getLogoUrl())
+                .isEqualTo("https://esempio.it/stemma.png");
+        assertThat(modifica(conStemma(m, "")).getLogoUrl()).isNull();
+    }
+
+    @Test
+    void senzaIlCampoStemmaRestaQuelloSalvato() {
+        when(repository.findById("1"))
+                .thenReturn(Optional.of(salvata().setLogoUrl("https://play.lnd.it/lndimg/1/1-web.png")));
+        when(repository.save(any())).thenAnswer(invocazione -> invocazione.getArgument(0));
+
+        Societa modificata =
+                service().modifica("1", modulo("Via della Certosa 12", 41.89, 12.48)).orElseThrow();
+
+        assertThat(modificata.getLogoUrl()).isEqualTo("https://play.lnd.it/lndimg/1/1-web.png");
     }
 
     private Societa modifica(ModificaSocietaRequest richiesta) {
@@ -221,7 +251,7 @@ class SocietaServiceTest {
                         m.siglaSocieta(), m.nomeSocieta(), m.comitatoRegionale(), m.nomeImpianto(),
                         m.indirizzoImpianto(), m.localitaImpianto(), m.provinciaImpianto(), m.lat(), m.lng(),
                         m.matricola(), m.presidente(), m.indirizzoSede(), m.telefono(), m.fax(), m.email(),
-                        m.sitoWeb(), false, "180 euro", m.campionati());
+                        m.sitoWeb(), false, "180 euro", m.campionati(), null);
 
         assertThat(modifica(senza).getPrezziScuolaCalcio()).isNull();
     }
@@ -235,7 +265,7 @@ class SocietaServiceTest {
                         m.siglaSocieta(), m.nomeSocieta(), m.comitatoRegionale(), m.nomeImpianto(),
                         m.indirizzoImpianto(), "Frosinone", " ", m.lat(), m.lng(),
                         m.matricola(), m.presidente(), m.indirizzoSede(), m.telefono(), m.fax(), m.email(),
-                        m.sitoWeb(), m.scuolaCalcio(), m.prezziScuolaCalcio(), m.campionati());
+                        m.sitoWeb(), m.scuolaCalcio(), m.prezziScuolaCalcio(), m.campionati(), null);
 
         assertThat(service().crea(senzaProvincia).getProvinciaImpianto()).isEqualTo("FR");
     }

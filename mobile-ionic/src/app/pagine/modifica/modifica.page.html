@@ -126,6 +126,44 @@
             <ion-item>
               <ion-input label="Nome società *" labelPlacement="stacked" [(ngModel)]="m.nomeSocieta"></ion-input>
             </ion-item>
+            <!--
+              Lo stemma a mano, per le società che il portale LND non ha:
+              l'indirizzo dell'immagine (tasto destro, «Copia indirizzo
+              immagine»), con l'anteprima accanto per vedere che si carica.
+            -->
+            <ion-item class="riga-stemma">
+              <stemma-societa
+                slot="start"
+                [nome]="m.nomeSocieta"
+                [logoUrl]="stemmaValido(m.logoUrl.trim()) ? m.logoUrl.trim() : undefined"
+                [dimensione]="40"
+              ></stemma-societa>
+              <ion-input
+                label="Stemma (indirizzo dell'immagine)"
+                labelPlacement="stacked"
+                type="url"
+                inputmode="url"
+                autocomplete="off"
+                placeholder="https://…"
+                [clearInput]="true"
+                [(ngModel)]="m.logoUrl"
+              ></ion-input>
+            </ion-item>
+            @if (m.logoUrl.trim() && !stemmaValido(m.logoUrl.trim())) {
+              <ion-item lines="none">
+                <ion-note color="danger" class="nota">
+                  Serve l'indirizzo dell'immagine, che inizia con https://.
+                </ion-note>
+              </ion-item>
+            } @else {
+              <ion-item lines="none">
+                <ion-note class="nota">
+                  Sul sito della società o sul portale LND: tasto destro sullo stemma, «Copia
+                  indirizzo immagine». Svuotalo per toglierlo. Se il portale LND ne ha uno,
+                  la sincronizzazione con presenze lo mette al posto di questo.
+                </ion-note>
+              </ion-item>
+            }
             <ion-item>
               <ion-input label="Comitato regionale" labelPlacement="stacked" [(ngModel)]="m.comitatoRegionale"></ion-input>
             </ion-item>
