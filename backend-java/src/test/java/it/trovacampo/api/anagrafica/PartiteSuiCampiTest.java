@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import it.trovacampo.api.dominio.Societa;
+import it.trovacampo.api.repository.SocietaRepository;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -30,7 +31,8 @@ class PartiteSuiCampiTest {
 
     private final AnagraficaPresenze anagrafica = mock(AnagraficaPresenze.class);
     private final OrologioAMano orologio = new OrologioAMano(VENERDI);
-    private final PartiteSuiCampi partite = new PartiteSuiCampi(anagrafica, orologio);
+    private final SocietaRepository societa = mock(SocietaRepository.class);
+    private final PartiteSuiCampi partite = new PartiteSuiCampi(anagrafica, societa, orologio);
 
     /** Un orologio che si manda avanti, per la cache. */
     private static final class OrologioAMano extends Clock {
@@ -102,6 +104,42 @@ class PartiteSuiCampiTest {
                 .containsExactly("IN CORSO", "BOREALE", "JUNIORES");
         assertThat(partite.sulCampo(campo(190L)).get(1).dataOra())
                 .isEqualTo(OffsetDateTime.of(2026, 9, 6, 11, 0, 0, 0, ZoneOffset.ofHours(2)));
+        // Partite senza gli id delle società: nessuno stemma da cercare.
+        verify(societa, never()).stemmiDi(any());
+    }
+
+    @Test
+    void nellaSchedaOgniSquadraHaLoStemmaCheTrovaCampoConosce() {
+        AnagraficaPresenze.Partita conSocieta = new AnagraficaPresenze.Partita(
+                1L,
+                LocalDateTime.of(2026, 9, 6, 11, 0).atZone(ROMA).toOffsetDateTime(),
+                "DA_GIOCARE",
+                190L,
+                "BOREALE",
+                "VIGOR PERCONTI",
+                "ECCELLENZA",
+                "Regionali",
+                "A",
+                1,
+                10L,
+                20L,
+                "",
+                "");
+        when(anagrafica.partite(any(), any())).thenReturn(List.of(conSocieta));
+        // La Boreale ha due campi, quindi due righe; la Vigor uno stemma non ce l'ha.
+        when(societa.stemmiDi(any()))
+                .thenReturn(
+                        List.of(
+                                new Societa().setAnagraficaSocietaId(10L).setLogoUrl("https://lnd.it/boreale.png"),
+                                new Societa().setAnagraficaSocietaId(10L).setLogoUrl("https://lnd.it/altro.png")));
+
+        PartiteSuiCampi.Partita partita = partite.sulCampo(campo(190L)).get(0);
+
+        assertThat(partita.casaLogoUrl()).isEqualTo("https://lnd.it/boreale.png");
+        assertThat(partita.ospiteLogoUrl()).isNull();
+        // La mappa gli stemmi non li mostra e non li cerca.
+        assertThat(partite.perLaMappa().get(190L).get(0).casaLogoUrl()).isNull();
+        verify(societa, times(1)).stemmiDi(any());
     }
 
     @Test

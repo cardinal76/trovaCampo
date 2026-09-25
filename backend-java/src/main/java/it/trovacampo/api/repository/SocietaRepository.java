@@ -50,6 +50,16 @@ public interface SocietaRepository extends MongoRepository<Societa, String> {
     @Query("{ 'lat': null, 'geocodificaFallitaVersione': { $not: { $gte: ?0 } } }")
     List<Societa> daGeocodificare(int versione, Pageable pagina);
 
+    /**
+     * Gli stemmi delle società di presenze con questi id, per le squadre delle
+     * prossime partite: solo le righe che uno stemma ce l'hanno, e di ognuna
+     * solo l'id e lo stemma. Una società con più campi ha più righe.
+     */
+    @Query(
+            value = "{ 'anagraficaSocietaId': { $in: ?0 }, 'logoUrl': { $ne: null } }",
+            fields = "{ 'anagraficaSocietaId': 1, 'logoUrl': 1 }")
+    List<Societa> stemmiDi(Collection<Long> anagraficaSocietaIds);
+
     /** I campi che vengono da questi impianti di presenze: per le notifiche delle partite. */
     List<Societa> findByAnagraficaImpiantoIdIn(Collection<Long> impianti);
 

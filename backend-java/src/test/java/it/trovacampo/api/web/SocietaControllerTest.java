@@ -202,7 +202,9 @@ class SocietaControllerTest {
                 "ECCELLENZA",
                 "Regionali",
                 "A",
-                1);
+                1,
+                "https://www.lnd.it/stemmi/boreale.png",
+                null);
     }
 
     @Test
