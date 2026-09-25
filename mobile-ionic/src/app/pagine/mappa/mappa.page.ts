@@ -43,6 +43,7 @@ import {
   squadrePartita,
 } from '../../modelli/partita';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
+import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
 import { RiquadroDiagnosiComponent } from '../../componenti/riquadro-diagnosi/riquadro-diagnosi.component';
 import { DiagnosiService } from '../../servizi/diagnosi.service';
 import { istruzioniPosizione } from '../../servizi/istruzioni';
@@ -173,6 +174,12 @@ export class MappaPage implements OnDestroy {
   readonly geolocalizzati = computed(() =>
     this.campiNellaProvincia().filter(haCoordinate).filter(this.passaFiltroPartite()),
   );
+  /**
+   * Il conto dei campi sulla mappa e di quelli ancora senza posizione è un
+   * dato di lavoro per chi amministra (il link porta all'elenco da
+   * correggere): al pubblico direbbe solo che mancano dei campi.
+   */
+  readonly amministratore = signal(amministratoreRicordato());
   readonly senzaPosizione = computed(
     () => this.campiNellaProvincia().filter((campo) => !haCoordinate(campo)).length,
   );
@@ -200,6 +207,21 @@ export class MappaPage implements OnDestroy {
     const candidati = this.campi().filter(haCoordinate).filter(this.passaFiltroPartite());
     return posizione ? piuVicini(candidati, posizione, this.numero()) : [];
   });
+
+  /**
+   * La riga sopra la mappa: sempre con "Vicino a me" o il filtro delle
+   * partite, che raccontano cosa si sta guardando; il conto nudo dei campi
+   * solo a chi amministra.
+   */
+  readonly conRiepilogo = computed(
+    () =>
+      this.posizione() !== null || (this.soloConPartite() && this.ciSonoPartite()) || this.amministratore(),
+  );
+
+  /** A ogni ingresso: tornando dal login (o dopo l'uscita) il riepilogo si adegua. */
+  ionViewWillEnter(): void {
+    this.amministratore.set(amministratoreRicordato());
+  }
 
   constructor() {
     addIcons({ close, locate });
