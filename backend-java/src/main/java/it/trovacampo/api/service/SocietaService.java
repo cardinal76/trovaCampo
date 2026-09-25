@@ -1,14 +1,18 @@
 package it.trovacampo.api.service;
 
 import it.trovacampo.api.dominio.Campionato;
+import it.trovacampo.api.dominio.Esclusione;
 import it.trovacampo.api.dominio.ProvinciaDalComune;
 import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.dominio.Testo;
 import it.trovacampo.api.dominio.TipoCampionato;
+import it.trovacampo.api.repository.EsclusioniRepository;
 import it.trovacampo.api.repository.SocietaRepository;
 import it.trovacampo.api.web.DatiNonValidiException;
 import it.trovacampo.api.web.ModificaSocietaRequest;
 import it.trovacampo.api.web.NuovoCampoRequest;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -21,10 +25,13 @@ public class SocietaService {
 
     private final SocietaRepository repository;
     private final Geocoding geocoding;
+    private final EsclusioniRepository esclusioni;
 
-    public SocietaService(SocietaRepository repository, Geocoding geocoding) {
+    public SocietaService(
+            SocietaRepository repository, Geocoding geocoding, EsclusioniRepository esclusioni) {
         this.repository = repository;
         this.geocoding = geocoding;
+        this.esclusioni = esclusioni;
     }
 
     /** Funzione 1: ricerca per nome società, nome impianto, indirizzo o località. */
@@ -87,13 +94,56 @@ public class SocietaService {
         return applicaModulo(new Societa(), richiesta);
     }
 
-    /** Toglie la società dall'archivio. Falso se non c'era. */
-    public boolean elimina(String id) {
-        if (!repository.existsById(id)) {
-            return false;
-        }
-        repository.deleteById(id);
-        return true;
+    /**
+     * Toglie la società dall'archivio. Vuoto se non c'era.
+     *
+     * <p>Una scheda che viene dall'anagrafica di presenze tornerebbe con la
+     * sincronizzazione successiva: per lei resta un'{@link Esclusione}, che
+     * la sincronizzazione rispetta finché chi amministra non la annulla. Un
+     * campo inserito a mano o da un file non torna da solo, e si elimina e
+     * basta.
+     *
+     * @param chi il nome di chi elimina, per l'elenco delle esclusioni
+     */
+    public Optional<Eliminazione> elimina(String id, String chi) {
+        return repository
+                .findById(id)
+                .map(
+                        societa -> {
+                            boolean daPresenze =
+                                    societa.getAnagraficaSocietaId() != null
+                                            || societa.getAnagraficaImpiantoId() != null;
+                            // Prima l'esclusione e poi la cancellazione: se la
+                            // seconda fallisse resterebbe una scheda esclusa,
+                            // che si vede e si rimedia; al contrario, una
+                            // scheda che ricompare senza spiegazione.
+                            if (daPresenze) {
+                                esclusioni.save(Esclusione.di(societa, chi, Instant.now(Clock.systemUTC())));
+                            }
+                            repository.deleteById(id);
+                            return new Eliminazione(societa, daPresenze);
+                        });
+    }
+
+    /**
+     * @param esclusa vero se è rimasta un'esclusione: la sincronizzazione non
+     *     la ricreerà
+     */
+    public record Eliminazione(Societa societa, boolean esclusa) {}
+
+    /** I campi di presenze eliminati da chi amministra, i più recenti prima. */
+    public List<Esclusione> esclusioni() {
+        return esclusioni.findAllByOrderByEsclusaIlDesc();
+    }
+
+    /**
+     * Toglie un'esclusione: alla sincronizzazione successiva il campo torna,
+     * se presenze lo manda ancora. Vuoto se non c'era.
+     */
+    public Optional<Esclusione> annullaEsclusione(String id) {
+        Optional<Esclusione> esclusione = esclusioni.findById(id);
+        esclusione.ifPresent(e -> esclusioni.deleteById(id));
+        return esclusione;
     }
 
     private static void controllaCoordinate(ModificaSocietaRequest richiesta) {

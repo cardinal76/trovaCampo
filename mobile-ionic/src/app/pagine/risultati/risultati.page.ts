@@ -37,6 +37,7 @@ import {
   nomeCompleto,
   testoSicuro,
 } from '../../modelli/societa';
+import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
 import { SocietaService } from '../../servizi/societa.service';
 import { aggiornaNomiCampi, iconaCampo } from '../../mappa/icona-campo';
 
@@ -77,6 +78,9 @@ export class RisultatiPage implements OnDestroy {
   private readonly router = inject(Router);
   private readonly service = inject(SocietaService);
   private readonly zona = inject(NgZone);
+  private readonly cambiati = inject(CampiCambiatiService);
+  /** La versione dell'archivio dei campi dell'ultima ricerca: se al rientro è salita, si ripete. */
+  private versioneCercata = -1;
 
   readonly termine = signal('');
   readonly testo = signal('');
@@ -120,8 +124,20 @@ export class RisultatiPage implements OnDestroy {
     this.mappa = undefined;
   }
 
-  cerca(): void {
+  /**
+   * Di ritorno da una scheda eliminata o modificata la stessa ricerca si
+   * ripete, senza spinner: la scheda eliminata sparisce dai risultati.
+   */
+  ionViewWillEnter(): void {
+    if (this.stato() === 'completata' && this.cambiati.versione() !== this.versioneCercata) {
+      this.cerca(true);
+    }
+  }
+
+  /** @param silenziosa senza spinner, e con i risultati di prima se non risponde */
+  cerca(silenziosa = false): void {
     const query = this.termine();
+    this.versioneCercata = this.cambiati.versione();
 
     if (query.length === 0) {
       this.risultati.set([]);
@@ -129,7 +145,9 @@ export class RisultatiPage implements OnDestroy {
       return;
     }
 
-    this.stato.set('caricamento');
+    if (!silenziosa) {
+      this.stato.set('caricamento');
+    }
 
     this.service.cerca(query).subscribe({
       next: (dati) => {
@@ -137,6 +155,10 @@ export class RisultatiPage implements OnDestroy {
         this.stato.set('completata');
       },
       error: () => {
+        if (silenziosa) {
+          this.versioneCercata = -1;
+          return;
+        }
         this.risultati.set([]);
         this.stato.set('errore');
       },

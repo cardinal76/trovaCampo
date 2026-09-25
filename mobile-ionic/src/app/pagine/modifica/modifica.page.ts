@@ -31,7 +31,7 @@ import { addIcons } from 'ionicons';
 import { add, location, logOut, trash, warning } from 'ionicons/icons';
 import { SelettoreMappaComponent } from '../../componenti/selettore-mappa/selettore-mappa.component';
 import { leggiCoordinate, scriviCoordinate } from '../../modelli/coordinate';
-import { ModificaSocieta, Societa, TipoCampionato } from '../../modelli/societa';
+import { ModificaSocieta, Societa, TipoCampionato, daPresenze } from '../../modelli/societa';
 import { AmministrazioneService } from '../../servizi/amministrazione.service';
 import {
   AutenticazioneService,
@@ -155,6 +155,8 @@ export class ModificaPage {
   /** Per l'anteprima sotto il campo: si vede subito se le coordinate sono state capite. */
   readonly leggiCoordinate = leggiCoordinate;
   readonly salvataggio = signal(false);
+  /** Se la scheda viene dall'anagrafica di presenze: cambia il messaggio di conferma dell'eliminazione. */
+  private schedaDiPresenze = false;
   readonly errore = signal<string | null>(null);
 
   constructor() {
@@ -235,7 +237,11 @@ export class ModificaPage {
     const modulo = this.modulo();
     const conferma = await this.avvisi.create({
       header: 'Eliminare la società?',
-      message: `${modulo?.nomeSocieta ?? 'La società'} e il suo campo spariranno da ricerca, elenco e mappa. Non si può annullare.`,
+      // Una scheda di presenze resta esclusa dalla sincronizzazione: senza,
+      // tornerebbe al giro dopo. Lo si dice, perché è la differenza.
+      message: this.schedaDiPresenze
+        ? `${modulo?.nomeSocieta ?? 'La società'} e il suo campo spariranno da ricerca, elenco e mappa, e non ricompariranno con la sincronizzazione con presenze. L'esclusione si annulla da Importa campi.`
+        : `${modulo?.nomeSocieta ?? 'La società'} e il suo campo spariranno da ricerca, elenco e mappa. Non si può annullare.`,
       buttons: [
         { text: 'Annulla', role: 'cancel' },
         { text: 'Elimina', role: 'destructive' },
@@ -278,6 +284,7 @@ export class ModificaPage {
     this.stato.set('caricamento');
     this.societa.perId(this.id).subscribe({
       next: (societa) => {
+        this.schedaDiPresenze = daPresenze(societa);
         this.modulo.set(Modulo.da(societa));
         this.stato.set('pronto');
       },

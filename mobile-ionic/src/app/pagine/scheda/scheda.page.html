@@ -10,6 +10,18 @@
           <ion-icon slot="start" name="create"></ion-icon>
           Modifica
         </ion-button>
+        @if (societa()) {
+          <ion-button
+            class="elimina"
+            color="danger"
+            aria-label="Elimina società"
+            title="Elimina società"
+            [disabled]="eliminazione()"
+            (click)="elimina()"
+          >
+            <ion-icon slot="icon-only" name="trash"></ion-icon>
+          </ion-button>
+        }
       </ion-buttons>
     }
   </ion-toolbar>

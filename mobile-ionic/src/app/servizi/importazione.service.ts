@@ -1,15 +1,17 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, from, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, from, switchMap, tap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { EsitoImportazione } from '../modelli/importazione';
 import { AutenticazioneService } from './autenticazione.service';
+import { CampiCambiatiService } from './campi-cambiati.service';
 import { messaggioErrore } from './errori-amministrazione';
 
 @Injectable({ providedIn: 'root' })
 export class ImportazioneService {
   private readonly http = inject(HttpClient);
   private readonly autenticazione = inject(AutenticazioneService);
+  private readonly cambiati = inject(CampiCambiatiService);
   private readonly url = `${environment.apiUrl}/api/admin/importazione`;
 
   /**
@@ -25,6 +27,12 @@ export class ImportazioneService {
           params: new HttpParams().set('prova', String(prova)),
         }),
       ),
+      // Un'importazione vera cambia l'archivio: elenco e mappa ricaricano al rientro.
+      tap(() => {
+        if (!prova) {
+          this.cambiati.segnala();
+        }
+      }),
       catchError((errore: unknown) => throwError(() => new Error(messaggioErrore(errore)))),
     );
   }
@@ -45,6 +53,12 @@ export class ImportazioneService {
           params: new HttpParams().set('prova', String(prova)),
         }),
       ),
+      // Un'importazione vera cambia l'archivio: elenco e mappa ricaricano al rientro.
+      tap(() => {
+        if (!prova) {
+          this.cambiati.segnala();
+        }
+      }),
       catchError((errore: unknown) => throwError(() => new Error(messaggioErrore(errore)))),
     );
   }

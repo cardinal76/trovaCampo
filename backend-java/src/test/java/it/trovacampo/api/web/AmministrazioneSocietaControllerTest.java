@@ -133,17 +133,24 @@ class AmministrazioneSocietaControllerTest {
 
     @Test
     void lAmministratoreEliminaUnaSocieta() throws Exception {
-        when(service.elimina("1")).thenReturn(true);
+        when(service.elimina(eq("1"), any()))
+                .thenReturn(
+                        Optional.of(
+                                new SocietaService.Eliminazione(
+                                        new Societa().setId("1").setNomeSocieta("Certosa Calcio"), true)));
 
         mockMvc.perform(
                         delete("/api/admin/societa/1")
                                 .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
                 .andExpect(status().isNoContent());
+
+        // Chi elimina resta scritto nell'esclusione: il nome viene dal token.
+        verify(service).elimina(eq("1"), eq("user"));
     }
 
     @Test
     void eliminareUnaSocietaCheNonCeRisponde404() throws Exception {
-        when(service.elimina("x")).thenReturn(false);
+        when(service.elimina(eq("x"), any())).thenReturn(Optional.empty());
 
         mockMvc.perform(
                         delete("/api/admin/societa/x")
@@ -155,6 +162,14 @@ class AmministrazioneSocietaControllerTest {
     void senzaLoginNonSiElimina() throws Exception {
         mockMvc.perform(delete("/api/admin/societa/1")).andExpect(status().isUnauthorized());
 
-        verify(service, never()).elimina(any());
+        verify(service, never()).elimina(any(), any());
+    }
+
+    @Test
+    void senzaIlRuoloNonSiElimina() throws Exception {
+        mockMvc.perform(delete("/api/admin/societa/1").with(conRuolo("allenatore")))
+                .andExpect(status().isForbidden());
+
+        verify(service, never()).elimina(any(), any());
     }
 }

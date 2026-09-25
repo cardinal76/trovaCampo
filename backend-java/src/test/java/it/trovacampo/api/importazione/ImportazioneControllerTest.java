@@ -53,7 +53,7 @@ class ImportazioneControllerTest {
     @Test
     void importaPerChiHaIlRuolo() throws Exception {
         when(service.importa(any(), eq(true)))
-                .thenReturn(new EsitoImportazione(true, 1, 1, 0, 0, List.of(), 1, List.of()));
+                .thenReturn(new EsitoImportazione(true, 1, 1, 0, 0, List.of(), 1, List.of(), 0));
 
         mockMvc.perform(
                         multipart("/api/admin/importazione")
@@ -103,7 +103,7 @@ class ImportazioneControllerTest {
     @Test
     void lAnagraficaDiPresenzeSiImportaSoloConIlRuolo() throws Exception {
         when(sincronizzazione.sincronizza(true))
-                .thenReturn(new EsitoImportazione(true, 3, 2, 1, 0, List.of(), 0, List.of()));
+                .thenReturn(new EsitoImportazione(true, 3, 2, 1, 0, List.of(), 0, List.of(), 0));
 
         mockMvc.perform(
                         post("/api/admin/anagrafica")

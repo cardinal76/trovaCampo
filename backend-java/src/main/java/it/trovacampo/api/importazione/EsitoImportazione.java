@@ -13,6 +13,8 @@ import java.util.List;
  *     secondo
  * @param colonneIgnorate le intestazioni che non corrispondono a nessuna
  *     colonna nota, utili per accorgersi di un nome scritto diversamente
+ * @param escluse le righe saltate perché il loro campo è stato eliminato da chi
+ *     amministra (vedi {@link it.trovacampo.api.dominio.Esclusione})
  */
 public record EsitoImportazione(
         boolean prova,
@@ -22,4 +24,5 @@ public record EsitoImportazione(
         int invariate,
         List<Scarto> scartate,
         int daGeocodificare,
-        List<String> colonneIgnorate) {}
+        List<String> colonneIgnorate,
+        int escluse) {}

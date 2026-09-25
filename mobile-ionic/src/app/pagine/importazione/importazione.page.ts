@@ -21,8 +21,18 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, cloudUpload, documentAttach, logOut, sync, warning } from 'ionicons/icons';
+import {
+  arrowUndo,
+  checkmarkCircle,
+  cloudUpload,
+  documentAttach,
+  logOut,
+  sync,
+  warning,
+} from 'ionicons/icons';
 import { EsitoImportazione } from '../../modelli/importazione';
+import { Esclusione } from '../../modelli/societa';
+import { AmministrazioneService } from '../../servizi/amministrazione.service';
 import {
   AutenticazioneService,
   RUOLO_AMMINISTRATORE,
@@ -67,6 +77,7 @@ import { ImportazioneService } from '../../servizi/importazione.service';
 })
 export class ImportazionePage {
   private readonly service = inject(ImportazioneService);
+  private readonly amministrazione = inject(AmministrazioneService);
   readonly autenticazione = inject(AutenticazioneService);
   readonly ruolo = RUOLO_AMMINISTRATORE;
 
@@ -82,6 +93,15 @@ export class ImportazionePage {
   /** Esito del salvataggio vero. */
   readonly salvato = signal<EsitoImportazione | null>(null);
 
+  /**
+   * I campi di presenze eliminati da chi amministra, che la sincronizzazione
+   * salta. Null finché non arrivano; se non arrivano la sezione non compare.
+   */
+  readonly esclusioni = signal<Esclusione[] | null>(null);
+  readonly erroreEsclusioni = signal<string | null>(null);
+  /** L'id dell'esclusione che si sta annullando. */
+  readonly annullamento = signal<string | null>(null);
+
   readonly esito = computed(() => this.salvato() ?? this.prova());
   readonly pronto = computed(
     () => this.autenticazione.amministratore() && this.file() !== null,
@@ -96,20 +116,67 @@ export class ImportazionePage {
   );
 
   constructor() {
-    addIcons({ checkmarkCircle, cloudUpload, documentAttach, logOut, sync, warning });
+    addIcons({ arrowUndo, checkmarkCircle, cloudUpload, documentAttach, logOut, sync, warning });
     this.entra();
   }
 
   entra(): void {
     this.accesso.set('in-corso');
     this.autenticazione.accedi().then(
-      (entrato) => this.accesso.set(entrato ? 'entrato' : 'errore'),
+      (entrato) => {
+        this.accesso.set(entrato ? 'entrato' : 'errore');
+        if (entrato && this.autenticazione.amministratore()) {
+          this.caricaEsclusioni();
+        }
+      },
       () => this.accesso.set('errore'),
     );
   }
 
   esci(): void {
     void this.autenticazione.esci();
+  }
+
+  caricaEsclusioni(): void {
+    this.amministrazione.esclusioni().subscribe({
+      next: (esclusioni) => {
+        this.esclusioni.set(esclusioni);
+        this.erroreEsclusioni.set(null);
+      },
+      error: (errore: Error) => this.erroreEsclusioni.set(errore.message),
+    });
+  }
+
+  /**
+   * Riammette un campo eliminato per sbaglio: torna alla prossima
+   * sincronizzazione (o subito, con "Controlla l'anagrafica di presenze"),
+   * se presenze lo manda ancora.
+   */
+  annullaEsclusione(esclusione: Esclusione): void {
+    if (this.annullamento()) {
+      return;
+    }
+    this.annullamento.set(esclusione.id);
+    this.amministrazione.annullaEsclusione(esclusione.id).subscribe({
+      next: () => {
+        this.annullamento.set(null);
+        this.esclusioni.update((elenco) => (elenco ?? []).filter((e) => e.id !== esclusione.id));
+      },
+      error: (errore: Error) => {
+        this.annullamento.set(null);
+        this.erroreEsclusioni.set(errore.message);
+      },
+    });
+  }
+
+  quando(esclusione: Esclusione): string {
+    return esclusione.esclusaIl
+      ? new Date(esclusione.esclusaIl).toLocaleDateString('it-IT', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : '';
   }
 
   scegliFile(evento: Event): void {

@@ -53,12 +53,21 @@ public class AmministrazioneSocietaController {
         return ResponseEntity.status(HttpStatus.CREATED).body(creata);
     }
 
+    /**
+     * Una scheda che viene da presenze lascia un'esclusione, così la
+     * sincronizzazione non la ricrea: vedi {@link SocietaService#elimina}.
+     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> elimina(@PathVariable String id, Authentication chi) {
-        if (!service.elimina(id)) {
-            throw new SocietaNonTrovataException();
-        }
-        log.info("Scheda {} eliminata da {}", id, chi.getName());
+        SocietaService.Eliminazione eliminata =
+                service.elimina(id, chi.getName()).orElseThrow(SocietaNonTrovataException::new);
+        log.info(
+                "Scheda {} ({} - {}) eliminata da {}{}",
+                id,
+                eliminata.societa().getNomeSocieta(),
+                eliminata.societa().getNomeImpianto(),
+                chi.getName(),
+                eliminata.esclusa() ? ", esclusa dalla sincronizzazione" : "");
         return ResponseEntity.noContent().build();
     }
 }

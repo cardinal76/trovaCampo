@@ -8,8 +8,11 @@ import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
 
 import it.trovacampo.api.anagrafica.AnagraficaPresenze;
+import it.trovacampo.api.dominio.Esclusione;
 import it.trovacampo.api.dominio.Societa;
+import it.trovacampo.api.repository.EsclusioniRepository;
 import it.trovacampo.api.repository.SocietaRepository;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -18,8 +21,9 @@ class SincronizzazioneAnagraficaTest {
 
     private final SocietaRepository repository = mock(SocietaRepository.class);
     private final AnagraficaPresenze anagrafica = mock(AnagraficaPresenze.class);
+    private final EsclusioniRepository esclusioni = mock(EsclusioniRepository.class);
     private final SincronizzazioneAnagrafica sincronizzazione =
-            new SincronizzazioneAnagrafica(anagrafica, new ImportazioneService(repository));
+            new SincronizzazioneAnagrafica(anagrafica, new ImportazioneService(repository, esclusioni));
 
     private static AnagraficaPresenze.Riferimento societa(long id, String nome) {
         return new AnagraficaPresenze.Riferimento(id, nome);
@@ -181,5 +185,53 @@ class SincronizzazioneAnagraficaTest {
 
         assertThat(esito.aggiornate()).isEqualTo(1);
         assertThat(salvate().get(0).getLogoUrl()).isEqualTo("https://play.lnd.it/lndimg/1/1-web.jpg");
+    }
+
+    /**
+     * Il caso di POMEZIA CALCIO 1957: presenze manda la società con il campo
+     * giusto e con un "DA DESIGNARE" letto male da un comunicato. Chi
+     * amministra ha eliminato il secondo: la sincronizzazione non lo ricrea,
+     * né per nome né per id (anche se il nome del campo cambiasse grafia), e
+     * il campo giusto della stessa società resta.
+     */
+    @Test
+    void unCampoEliminatoDaChiAmministraNonTornaConLaSincronizzazione() {
+        when(repository.findAll()).thenReturn(List.of());
+        when(esclusioni.findAll())
+                .thenReturn(
+                        List.of(
+                                new Esclusione(
+                                        "e1", "pomeziacalcio1957|dadesignare", 40L, 900L,
+                                        "POMEZIA CALCIO 1957", "DA DESIGNARE                     (",
+                                        "XXXXXXXXX", "mario", Instant.EPOCH),
+                                // Un'esclusione vecchia, di un campo messo a mano: vale per nome.
+                                new Esclusione(
+                                        "e2", "ardea|campoverde", null, null, "ARDEA", "CAMPO VERDE",
+                                        "VIA X", "mario", Instant.EPOCH)));
+        when(anagrafica.impianti())
+                .thenReturn(
+                        List.of(
+                                new AnagraficaPresenze.Impianto(
+                                        78L, "COMUNALE", "VIA VARRONE 15", "POMEZIA", null, null,
+                                        List.of(societa(40, "POMEZIA CALCIO 1957"))),
+                                new AnagraficaPresenze.Impianto(
+                                        900L, "DA DESIGNARE (SINTEX)", "XXXXXXXXX", "POMEZIA", null,
+                                        null, List.of(societa(40, "POMEZIA CALCIO 1957"))),
+                                new AnagraficaPresenze.Impianto(
+                                        55L, "Campo Verde", "VIA X", "ARDEA", null, null,
+                                        List.of(societa(41, "ARDEA")))));
+
+        EsitoImportazione esito = sincronizzazione.sincronizza(false);
+
+        assertThat(esito.inserite()).isEqualTo(1);
+        assertThat(esito.escluse()).isEqualTo(2);
+        assertThat(esito.scartate()).isEmpty();
+        assertThat(salvate())
+                .singleElement()
+                .satisfies(
+                        giusto -> {
+                            assertThat(giusto.getNomeImpianto()).isEqualTo("COMUNALE");
+                            assertThat(giusto.getAnagraficaImpiantoId()).isEqualTo(78L);
+                        });
     }
 }

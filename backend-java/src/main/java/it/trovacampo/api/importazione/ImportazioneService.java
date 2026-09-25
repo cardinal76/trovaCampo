@@ -1,8 +1,9 @@
 package it.trovacampo.api.importazione;
 
+import it.trovacampo.api.dominio.Esclusione;
 import it.trovacampo.api.dominio.ProvinciaDalComune;
 import it.trovacampo.api.dominio.Societa;
-import it.trovacampo.api.dominio.Testo;
+import it.trovacampo.api.repository.EsclusioniRepository;
 import it.trovacampo.api.repository.SocietaRepository;
 import it.trovacampo.api.service.SocietaService;
 import java.io.BufferedInputStream;
@@ -33,6 +34,10 @@ import org.springframework.stereotype.Service;
  *
  * <p>Una cella vuota non cancella un valore già presente: un file con meno
  * colonne non deve impoverire quello che c'è.
+ *
+ * <p>Le righe che corrispondono a un campo eliminato da chi amministra (una
+ * {@link Esclusione}) si saltano: altrimenti la sincronizzazione con presenze
+ * lo ricreerebbe al giro dopo.
  */
 @Service
 public class ImportazioneService {
@@ -41,11 +46,13 @@ public class ImportazioneService {
     private static final byte[] FIRMA_PDF = "%PDF".getBytes(StandardCharsets.US_ASCII);
 
     private final SocietaRepository repository;
+    private final EsclusioniRepository esclusioni;
     private final LettoreExcel lettoreExcel = new LettoreExcel();
     private final LettoreComunicato lettoreComunicato = new LettoreComunicato();
 
-    public ImportazioneService(SocietaRepository repository) {
+    public ImportazioneService(SocietaRepository repository, EsclusioniRepository esclusioni) {
         this.repository = repository;
+        this.esclusioni = esclusioni;
     }
 
     public EsitoImportazione importa(InputStream file, boolean prova) {
@@ -64,14 +71,26 @@ public class ImportazioneService {
             esistenti.putIfAbsent(chiave(societa.getNomeSocieta(), societa.getNomeImpianto()), societa);
         }
 
+        List<Esclusione> escluse = esclusioni.findAll();
+
         Map<String, Integer> giaNelFile = new HashMap<>();
         List<Societa> daSalvare = new ArrayList<>();
         int inserite = 0;
         int aggiornate = 0;
         int invariate = 0;
+        int saltate = 0;
 
         for (RigaExcel riga : lettura.righe()) {
             String chiave = chiave(riga.nomeSocieta(), riga.nomeImpianto());
+
+            if (escluse.stream()
+                    .anyMatch(
+                            e -> e.riguarda(
+                                    chiave, riga.anagraficaSocietaId(), riga.anagraficaImpiantoId()))) {
+                // Eliminata di proposito: non è uno scarto da guardare, solo un conteggio.
+                saltate++;
+                continue;
+            }
 
             Integer precedente = giaNelFile.putIfAbsent(chiave, riga.numero());
             if (precedente != null) {
@@ -109,7 +128,8 @@ public class ImportazioneService {
                 invariate,
                 scarti,
                 daGeocodificare,
-                lettura.colonneIgnorate());
+                lettura.colonneIgnorate(),
+                saltate);
     }
 
     /** Un PDF comincia sempre con "%PDF"; tutto il resto lo prova Excel. */
@@ -234,10 +254,6 @@ public class ImportazioneService {
 
     /** "A.S.D. Certosa  Calcio" e "asd certosa calcio" sono la stessa società. */
     static String chiave(String nomeSocieta, String nomeImpianto) {
-        return compatta(nomeSocieta) + "|" + compatta(nomeImpianto);
-    }
-
-    private static String compatta(String testo) {
-        return Testo.normalizza(testo).replaceAll("[^a-z0-9]+", "");
+        return Esclusione.chiave(nomeSocieta, nomeImpianto);
     }
 }

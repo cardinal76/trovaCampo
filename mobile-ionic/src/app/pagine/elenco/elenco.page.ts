@@ -38,6 +38,7 @@ import {
   senzaPosizionePrecisa,
 } from '../../modelli/societa';
 import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
+import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
 import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
 import { SocietaService } from '../../servizi/societa.service';
 
@@ -97,6 +98,9 @@ function normalizza(testo: string): string {
 export class ElencoPage {
   private readonly service = inject(SocietaService);
   private readonly provinciaScelta = inject(ProvinciaSceltaService);
+  private readonly cambiati = inject(CampiCambiatiService);
+  /** La versione dell'archivio dei campi scaricati: se al rientro è salita, si ricarica. */
+  private versioneCaricata = -1;
 
   readonly stato = signal<'caricamento' | 'pronto' | 'errore'>('caricamento');
   readonly campi = signal<Societa[]>([]);
@@ -163,16 +167,37 @@ export class ElencoPage {
   /** A ogni ingresso: si può essere appena entrati o usciti dal menu utente. */
   ionViewWillEnter(): void {
     this.amministratore.set(amministratoreRicordato());
+    // Di ritorno da una scheda eliminata, modificata o creata: l'elenco
+    // deve mostrarla com'è adesso (o non mostrarla più).
+    if (this.cambiati.versione() !== this.versioneCaricata) {
+      this.carica();
+    }
   }
 
+  /**
+   * Scarica i campi. Se ce ne sono già, li sostituisce senza passare dallo
+   * spinner: filtro, provincia, righe mostrate e scorrimento restano dove
+   * erano, e le righe (tracciate per id) non si ridisegnano. Se il nuovo
+   * scaricamento fallisce restano i campi di prima, e si riprova al
+   * prossimo rientro.
+   */
   carica(): void {
-    this.stato.set('caricamento');
+    const giaPronto = this.stato() === 'pronto';
+    this.versioneCaricata = this.cambiati.versione();
+    if (!giaPronto) {
+      this.stato.set('caricamento');
+    }
     this.service.tutti().subscribe({
       next: (campi) => {
         this.campi.set(campi);
         this.stato.set('pronto');
       },
-      error: () => this.stato.set('errore'),
+      error: () => {
+        this.versioneCaricata = -1;
+        if (!giaPronto) {
+          this.stato.set('errore');
+        }
+      },
     });
   }
 

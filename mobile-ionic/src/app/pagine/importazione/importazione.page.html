@@ -159,6 +159,13 @@
                   </div>
                 </div>
 
+                @if (e.escluse) {
+                  <p>
+                    {{ e.escluse }} {{ e.escluse === 1 ? 'campo saltato perché eliminato' : 'campi saltati perché eliminati' }}
+                    da chi amministra: vedi «Campi esclusi» qui sotto.
+                  </p>
+                }
+
                 @if (e.daGeocodificare > 0) {
                   <p>
                     {{ e.daGeocodificare }} campi senza coordinate: il server le cerca in sottofondo, una al
@@ -210,6 +217,59 @@
                 </p>
               </ion-text>
             }
+          }
+
+          @if (esclusioni(); as elenco) {
+            <section class="esclusioni">
+              <h2>Campi esclusi</h2>
+              <ion-text color="medium">
+                <p>
+                  Campi dell'anagrafica di presenze eliminati da chi amministra: la sincronizzazione
+                  non li ricrea. «Riammetti» li fa tornare al prossimo giro, se presenze li manda ancora.
+                </p>
+              </ion-text>
+              @if (erroreEsclusioni(); as messaggio) {
+                <ion-card color="danger" class="avviso">
+                  <ion-card-content>
+                    <ion-icon name="warning"></ion-icon>
+                    {{ messaggio }}
+                  </ion-card-content>
+                </ion-card>
+              }
+              <ion-list>
+                @for (esclusione of elenco; track esclusione.id) {
+                  <ion-item>
+                    <ion-label class="ion-text-wrap">
+                      <h3>{{ esclusione.nomeSocieta }} – {{ esclusione.nomeImpianto }}</h3>
+                      <p>{{ esclusione.indirizzoImpianto }}</p>
+                      <p>
+                        Esclusa {{ quando(esclusione) }}
+                        @if (esclusione.esclusaDa) {
+                          da {{ esclusione.esclusaDa }}
+                        }
+                      </p>
+                    </ion-label>
+                    <ion-button
+                      slot="end"
+                      fill="outline"
+                      [disabled]="annullamento() !== null"
+                      (click)="annullaEsclusione(esclusione)"
+                    >
+                      @if (annullamento() === esclusione.id) {
+                        <ion-spinner name="crescent"></ion-spinner>
+                      } @else {
+                        <ion-icon slot="start" name="arrow-undo"></ion-icon>
+                        Riammetti
+                      }
+                    </ion-button>
+                  </ion-item>
+                } @empty {
+                  <ion-item lines="none">
+                    <ion-label color="medium">Nessun campo escluso.</ion-label>
+                  </ion-item>
+                }
+              </ion-list>
+            </section>
           }
         }
       }

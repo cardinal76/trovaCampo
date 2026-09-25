@@ -4,6 +4,7 @@ import { provideIonicAngular } from '@ionic/angular/standalone';
 import { of } from 'rxjs';
 import { Societa } from '../../modelli/societa';
 import { ricordaAmministratore } from '../../servizi/amministratore-ricordato';
+import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
 import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
 import { SocietaService } from '../../servizi/societa.service';
 import { ElencoPage } from './elenco.page';
@@ -34,6 +35,8 @@ const CAMPI: Societa[] = [
 describe('ElencoPage', () => {
   let fixture: ComponentFixture<ElencoPage>;
   let pagina: ElencoPage;
+  /** Quello che risponde il backend: i test di ricarica lo cambiano. */
+  let scaricati: Societa[];
 
   function crea(): void {
     fixture = TestBed.createComponent(ElencoPage);
@@ -50,12 +53,13 @@ describe('ElencoPage', () => {
   }
 
   beforeEach(() => {
+    scaricati = CAMPI;
     TestBed.configureTestingModule({
       imports: [ElencoPage],
       providers: [
         provideIonicAngular(),
         provideRouter([]),
-        { provide: SocietaService, useValue: { tutti: () => of(CAMPI) } },
+        { provide: SocietaService, useValue: { tutti: () => of(scaricati) } },
       ],
     });
   });
@@ -218,5 +222,40 @@ describe('ElencoPage', () => {
 
     expect(pagina.provincia()).toBe('tutte');
     expect(nomi().length).toBe(CAMPI.length);
+  });
+
+  describe('al rientro dopo un cambio di chi amministra', () => {
+    it('ricarica senza spinner e tiene filtro e provincia', () => {
+      crea();
+      pagina.cambiaFiltro('calcio');
+      pagina.cambiaProvincia('LT');
+      expect(nomi()).toEqual(['Latina Calcio']);
+
+      // Eliminata dalla scheda: il backend non la manda più.
+      scaricati = CAMPI.filter((c) => c.id !== '5');
+      TestBed.inject(CampiCambiatiService).segnala();
+      const stati: string[] = [];
+      const originale = pagina.stato.set.bind(pagina.stato);
+      spyOn(pagina.stato, 'set').and.callFake((valore) => {
+        stati.push(valore);
+        originale(valore);
+      });
+      pagina.ionViewWillEnter();
+
+      expect(stati).not.toContain('caricamento');
+      expect(pagina.campi().length).toBe(CAMPI.length - 1);
+      expect(nomi()).toEqual([]);
+      expect(pagina.filtro()).toBe('calcio');
+    });
+
+    it('senza cambi non riscarica niente', () => {
+      crea();
+      const service = TestBed.inject(SocietaService);
+      const tutti = spyOn(service, 'tutti').and.callThrough();
+
+      pagina.ionViewWillEnter();
+
+      expect(tutti).not.toHaveBeenCalled();
+    });
   });
 });
