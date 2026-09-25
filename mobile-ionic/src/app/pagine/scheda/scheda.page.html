@@ -68,6 +68,7 @@
 
       @if (campoGeolocalizzato()) {
         <div #contenitoreMappa class="mappa-campo"></div>
+        <percorso-campo [destinazione]="campoGeolocalizzato()!"></percorso-campo>
       } @else {
         <p class="posizione-assente">Posizione del campo non ancora disponibile.</p>
       }

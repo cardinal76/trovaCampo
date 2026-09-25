@@ -83,6 +83,97 @@
 }
 
 /*
+ * "Partenza" e "Percorso" nel popup di un campo della mappa (lo stesso blocco
+ * della scheda, dove lo disegna PercorsoCampoComponent). Largo quanto il
+ * popup e mai di più: sul telefono niente scorrimento orizzontale. Le aree
+ * da toccare sono alte almeno 44px, e il testo del campo è a 16px perché
+ * Safari su iPhone non ingrandisca la pagina quando lo si tocca.
+ */
+.percorso-popup {
+  margin: 0.5rem 0 0;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--ion-color-light-shade, #d7d8da);
+  max-width: 16rem;
+
+  label {
+    display: block;
+  }
+
+  .etichetta {
+    display: block;
+    margin-bottom: 0.2rem;
+    font-weight: 600;
+  }
+
+  .riga-partenza {
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  input {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: 44px;
+    box-sizing: border-box;
+    padding: 0 0.6rem;
+    border: 1px solid var(--ion-color-medium, #92949c);
+    border-radius: 8px;
+    background: var(--ion-background-color, #fff);
+    color: var(--ion-text-color, #000);
+    font: inherit;
+    font-size: 16px;
+  }
+
+  .usa-posizione {
+    flex: 0 0 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--ion-color-primary, #3880ff);
+    border-radius: 8px;
+    background: none;
+    color: var(--ion-color-primary, #3880ff);
+    font-size: 1.25rem;
+    cursor: pointer;
+
+    &:disabled {
+      opacity: 0.5;
+    }
+  }
+
+  .nota-percorso {
+    margin: 0.3rem 0 0;
+    font-size: 0.85rem;
+    color: var(--ion-color-medium, #92949c);
+
+    &:empty {
+      display: none;
+    }
+
+    &.errore {
+      color: var(--ion-color-danger, #c5000f);
+    }
+  }
+
+  .apri-percorso {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    margin-top: 0.4rem;
+    border-radius: 8px;
+    background: var(--ion-color-primary, #3880ff);
+    color: var(--ion-color-primary-contrast, #fff);
+    font-weight: 600;
+    text-decoration: none;
+  }
+}
+
+/*
  * L'app nasce per il telefono, ma la stessa build è anche un sito: sugli
  * schermi larghi il contenuto a colonna singola resta leggibile invece di
  * stirarsi per tutta la pagina.
