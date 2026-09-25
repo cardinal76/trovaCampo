@@ -379,7 +379,7 @@ describe('MappaPage', () => {
     it('"Solo campi con partite" lascia solo quelli dove si gioca, insieme alla provincia', async () => {
       crea();
       await disegnata();
-      expect(fixture.nativeElement.querySelector('ion-toggle.filtro-partite')).not.toBeNull();
+      expect(fixture.nativeElement.querySelector('.filtro-partite')).not.toBeNull();
 
       pagina.cambiaSoloConPartite(true);
       await disegnata();
@@ -411,7 +411,7 @@ describe('MappaPage', () => {
       await disegnata();
 
       expect(pagina.ciSonoPartite()).toBeFalse();
-      expect(fixture.nativeElement.querySelector('ion-toggle.filtro-partite')).toBeNull();
+      expect(fixture.nativeElement.querySelector('.filtro-partite')).toBeNull();
       pagina.cambiaSoloConPartite(true);
       expect(sullaMappa()).toEqual(['1', '3', '4']);
       expect(popup('3')).not.toContain('partite-popup');

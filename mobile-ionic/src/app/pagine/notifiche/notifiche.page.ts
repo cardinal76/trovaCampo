@@ -6,9 +6,6 @@ import {
   IonContent,
   IonHeader,
   IonIcon,
-  IonLabel,
-  IonSegment,
-  IonSegmentButton,
   IonSpinner,
   IonTitle,
   IonToggle,
@@ -17,6 +14,8 @@ import {
 import { addIcons } from 'ionicons';
 import {
   alertCircleOutline,
+  checkmarkCircle,
+  helpCircleOutline,
   locateOutline,
   locationOutline,
   notificationsOffOutline,
@@ -72,9 +71,6 @@ export function quandoSalvata(iso: string, adesso: Date = new Date()): string {
     IonContent,
     IonHeader,
     IonIcon,
-    IonLabel,
-    IonSegment,
-    IonSegmentButton,
     IonSpinner,
     IonTitle,
     IonToggle,
@@ -129,6 +125,8 @@ export class NotifichePage {
   constructor() {
     addIcons({
       alertCircleOutline,
+      checkmarkCircle,
+      helpCircleOutline,
       locateOutline,
       locationOutline,
       notificationsOffOutline,

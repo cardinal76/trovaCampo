@@ -25,7 +25,7 @@
     <ion-toolbar class="barra-filtri">
       <div class="contenuto-largo filtri">
         <ion-select
-          class="filtro-provincia"
+          class="filtro-provincia pillola"
           aria-label="Provincia"
           interface="popover"
           fill="outline"
@@ -42,7 +42,7 @@
         @if (amministratore()) {
           <button
             type="button"
-            class="filtro-posizione"
+            class="filtro-posizione pillola"
             [class.attivo]="soloSenzaPosizione()"
             [attr.aria-pressed]="soloSenzaPosizione()"
             (click)="cambiaSoloSenzaPosizione(!soloSenzaPosizione())"

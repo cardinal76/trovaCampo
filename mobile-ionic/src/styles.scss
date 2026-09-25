@@ -92,3 +92,54 @@
   max-width: 48rem;
   margin-inline: auto;
 }
+
+/*
+ * I filtri come pillole, uguali in Elenco e Mappa: la provincia (un
+ * ion-select) e gli interruttori che si accendono (un bottone). Stanno qui
+ * perché servono a più pagine.
+ */
+ion-select.pillola {
+  --padding-start: 0.65rem;
+  --padding-end: 0.5rem;
+  --border-radius: 999px;
+  width: auto;
+  max-width: 100%;
+  min-height: 2.25rem;
+  font-size: 0.875rem;
+
+  ion-icon {
+    margin-inline-end: 0.35rem;
+    color: var(--ion-color-primary, #3880ff);
+  }
+}
+
+button.pillola {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  min-height: 2.25rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--ion-color-step-300, #b3b3b3);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ion-text-color, #222);
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+
+  ion-icon {
+    font-size: 1.1rem;
+    color: var(--pillola-colore, var(--ion-color-primary, #3880ff));
+  }
+
+  &.attivo {
+    border-color: var(--pillola-colore, var(--ion-color-primary, #3880ff));
+    background: var(--pillola-sfondo, rgba(var(--ion-color-primary-rgb, 56, 128, 255), 0.12));
+    font-weight: 600;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--ion-color-primary, #3880ff);
+    outline-offset: 2px;
+  }
+}

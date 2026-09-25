@@ -27,52 +27,10 @@
   padding: 0 0.5rem 0.6rem;
 }
 
-/* La provincia come una pillola: si legge da chiusa, e sta in una riga con il resto. */
-.filtro-provincia {
-  --padding-start: 0.75rem;
-  --padding-end: 0.6rem;
-  --border-radius: 999px;
-  width: auto;
-  max-width: 100%;
-  min-height: 2.25rem;
-  font-size: 0.9rem;
-
-  ion-icon {
-    margin-inline-end: 0.35rem;
-    color: var(--ion-color-primary, #3880ff);
-  }
-}
-
-/* "Senza posizione precisa": una pillola che si accende, al posto dell'interruttore. */
+/* Il giallo dei campi da sistemare, sulla pillola condivisa (styles.scss). */
 .filtro-posizione {
-  display: inline-flex;
-  gap: 0.35rem;
-  align-items: center;
-  min-height: 2.25rem;
-  padding: 0 0.85rem;
-  border: 1px solid var(--ion-color-step-300, #b3b3b3);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--ion-text-color, #222);
-  font: inherit;
-  font-size: 0.9rem;
-  cursor: pointer;
-
-  ion-icon {
-    font-size: 1.1rem;
-    color: var(--ion-color-warning-shade, #e0ac08);
-  }
-
-  &.attivo {
-    border-color: var(--ion-color-warning, #ffc409);
-    background: rgba(var(--ion-color-warning-rgb, 255, 196, 9), 0.18);
-    font-weight: 600;
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--ion-color-primary, #3880ff);
-    outline-offset: 2px;
-  }
+  --pillola-colore: var(--ion-color-warning, #ffc409);
+  --pillola-sfondo: rgba(var(--ion-color-warning-rgb, 255, 196, 9), 0.18);
 }
 
 .conteggio {

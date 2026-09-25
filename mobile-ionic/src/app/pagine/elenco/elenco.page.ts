@@ -27,6 +27,7 @@ import {
   nellaProvincia,
   opzioniProvincia,
   provinciaValida,
+  testoProvincia,
 } from '../../modelli/provincia';
 import {
   Societa,
@@ -119,12 +120,7 @@ export class ElencoPage {
   /** Le province dei campi scaricati, con "Tutte" in testa. */
   readonly opzioniProvincia = computed(() => opzioniProvincia(this.campi()));
   /** Sulla pillola chiusa: "Tutte" da solo non direbbe di cosa. */
-  readonly testoProvincia = computed(() => {
-    const scelta = this.provincia();
-    return scelta === TUTTE
-      ? 'Tutte le province'
-      : (this.opzioniProvincia().find((o) => o.valore === scelta)?.etichetta ?? scelta);
-  });
+  readonly testoProvincia = computed(() => testoProvincia(this.provincia(), this.opzioniProvincia()));
   readonly provincia = computed(() =>
     provinciaValida(this.provinciaScelta.scelta(), this.opzioniProvincia()),
   );

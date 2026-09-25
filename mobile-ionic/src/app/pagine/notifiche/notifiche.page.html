@@ -16,12 +16,12 @@
 
     <!-- Cosa c'è e cosa manca, prima di tutto il resto. -->
     <p class="stato-permessi" aria-live="polite">
-      <span class="voce" data-permesso="notifiche" [attr.data-tono]="statoNotifiche().tono">
+      <span class="voce stato" data-permesso="notifiche" [attr.data-tono]="statoNotifiche().tono">
         <span class="pallino" aria-hidden="true"></span>
         Notifiche: <strong>{{ statoNotifiche().testo }}</strong>
       </span>
       @if (statoPosizione(); as posizione) {
-        <span class="voce" data-permesso="posizione" [attr.data-tono]="posizione.tono">
+        <span class="voce stato" data-permesso="posizione" [attr.data-tono]="posizione.tono">
           <span class="pallino" aria-hidden="true"></span>
           Posizione: <strong>{{ posizione.testo }}</strong>
         </span>
@@ -147,23 +147,31 @@
       }
 
       <div class="raggio">
-        <ion-label id="etichetta-raggio">Entro</ion-label>
-        <ion-segment
-          aria-labelledby="etichetta-raggio"
-          [value]="preferenze().raggioKm"
-          [disabled]="!utilizzabile() || occupato()"
-          (ionChange)="cambiaRaggio($event.detail.value)"
-        >
+        <span class="etichetta-raggio" id="etichetta-raggio">Entro</span>
+        <div class="scelte-raggio" role="radiogroup" aria-labelledby="etichetta-raggio">
           @for (raggio of raggi; track raggio) {
-            <ion-segment-button [value]="raggio">
-              <ion-label>{{ raggio }} km</ion-label>
-            </ion-segment-button>
+            <button
+              type="button"
+              role="radio"
+              class="pillola scelta-raggio"
+              [class.attivo]="preferenze().raggioKm === raggio"
+              [attr.aria-checked]="preferenze().raggioKm === raggio"
+              [disabled]="!utilizzabile() || occupato()"
+              (click)="cambiaRaggio(raggio)"
+            >
+              {{ raggio }} km
+            </button>
           }
-        </ion-segment>
+        </div>
       </div>
 
       <div class="posizione">
         <p class="stato-posizione">
+          <ion-icon
+            [name]="posizioneSalvata() ? 'checkmark-circle' : 'help-circle-outline'"
+            [class.salvata]="posizioneSalvata()"
+            aria-hidden="true"
+          ></ion-icon>
           @if (posizioneSalvata(); as quando) {
             Posizione salvata {{ quando }}.
           } @else {
@@ -171,16 +179,15 @@
           }
         </p>
         <!-- Sempre toccabile: anche dove le notifiche non vanno si può dare la posizione. -->
-        <ion-button
-          fill="outline"
-          size="small"
-          class="aggiorna-posizione"
+        <button
+          type="button"
+          class="pillola aggiorna-posizione"
           [disabled]="occupato()"
           (click)="aggiornaPosizione()"
         >
-          <ion-icon slot="start" name="locate-outline"></ion-icon>
+          <ion-icon name="locate-outline" aria-hidden="true"></ion-icon>
           {{ posizioneSalvata() ? 'Aggiorna posizione' : 'Usa la mia posizione' }}
-        </ion-button>
+        </button>
         @if (occupato()) {
           <ion-spinner name="crescent" aria-label="Attendere"></ion-spinner>
         }
