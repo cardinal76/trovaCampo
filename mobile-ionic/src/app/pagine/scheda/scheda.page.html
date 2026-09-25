@@ -121,10 +121,27 @@
                             <span class="giornata">{{ partita.giornata }}ª giornata</span>
                           }
                         </p>
+                        <!-- Lo stemma di ogni squadra, o il cerchio con l'iniziale
+                             quando TrovaCampo non lo conosce: le righe restano
+                             allineate con e senza. -->
                         <p class="squadre">
-                          <span class="casa">{{ partita.casa }}</span>
+                          <span class="squadra">
+                            <stemma-societa
+                              [nome]="partita.casa"
+                              [logoUrl]="partita.casaLogoUrl"
+                              [dimensione]="24"
+                            ></stemma-societa>
+                            <span class="casa">{{ partita.casa }}</span>
+                          </span>
                           <span class="contro">vs</span>
-                          <span class="ospite">{{ partita.ospite }}</span>
+                          <span class="squadra">
+                            <stemma-societa
+                              [nome]="partita.ospite"
+                              [logoUrl]="partita.ospiteLogoUrl"
+                              [dimensione]="24"
+                            ></stemma-societa>
+                            <span class="ospite">{{ partita.ospite }}</span>
+                          </span>
                         </p>
                         <p class="campionato">
                           <span class="nome-campionato">{{ partita.campionato }}</span>
