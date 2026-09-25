@@ -457,6 +457,100 @@ describe('MappaPage', () => {
     });
   });
 
+  /**
+   * "Partenza" e "Percorso" nel popup: HTML scritto a mano, ricollegato
+   * all'apertura come "Vedi scheda società".
+   */
+  describe('percorso nel popup', () => {
+    /** Il popup del campo 1 com'è nel DOM dopo l'apertura, con gli eventi collegati. */
+    function apriPopup(): HTMLFormElement {
+      const campo = pagina['mostrati'].find((c) => c.id === '1')!;
+      const contenitore = document.createElement('div');
+      contenitore.innerHTML = pagina['popup'](campo);
+      const modulo = contenitore.querySelector<HTMLFormElement>('[data-percorso]')!;
+      pagina['collegaPercorso'](modulo);
+      return modulo;
+    }
+
+    function link(modulo: HTMLFormElement): HTMLAnchorElement {
+      return modulo.querySelector<HTMLAnchorElement>('.apri-percorso')!;
+    }
+
+    it('aprire il popup non chiede la posizione, e il link lascia partire Google dal dispositivo', async () => {
+      crea();
+      await disegnata();
+      const modulo = apriPopup();
+
+      expect(posizione).not.toHaveBeenCalled();
+      expect(modulo.querySelector('input')!.placeholder).toBe('La mia posizione');
+      expect(link(modulo).href).toBe('https://www.google.com/maps/dir/?api=1&destination=41.89,12.48');
+      expect(link(modulo).target).toBe('_blank');
+      expect(link(modulo).rel).toBe('noopener');
+    });
+
+    it("l'indirizzo scritto diventa la partenza", async () => {
+      crea();
+      await disegnata();
+      const modulo = apriPopup();
+      const campo = modulo.querySelector('input')!;
+
+      campo.value = 'Piazza Venezia, Roma';
+      campo.dispatchEvent(new Event('input'));
+
+      expect(link(modulo).href).toBe(
+        'https://www.google.com/maps/dir/?api=1&origin=Piazza%20Venezia%2C%20Roma&destination=41.89,12.48',
+      );
+    });
+
+    it('il pulsante chiede la posizione e parte da lì, anche nei popup aperti dopo', async () => {
+      crea();
+      await disegnata();
+      const modulo = apriPopup();
+
+      modulo.querySelector<HTMLButtonElement>('[data-usa-posizione]')!.click();
+      await disegnata();
+
+      expect(posizione).toHaveBeenCalledTimes(1);
+      expect(link(modulo).href).toContain('&origin=41.892,12.482&');
+      expect(modulo.querySelector('.nota-percorso')!.textContent).toContain('tua posizione attuale');
+      expect(link(apriPopup()).href).toContain('&origin=41.892,12.482&');
+      // L'errore del percorso non è quello di "Vicino a me".
+      expect(pagina.erroreVicini()).toBeNull();
+    });
+
+    it('se la posizione non arriva lo dice nel popup, e il link resta senza partenza', async () => {
+      posizione.and.rejectWith(errorePerCodice(1));
+      crea();
+      await disegnata();
+      const modulo = apriPopup();
+
+      modulo.querySelector<HTMLButtonElement>('[data-usa-posizione]')!.click();
+      await disegnata();
+
+      const nota = modulo.querySelector('.nota-percorso')!;
+      expect(nota.classList).toContain('errore');
+      expect(nota.textContent).toContain('Non hai dato il permesso');
+      expect(link(modulo).href).not.toContain('origin');
+      expect(pagina.riquadroVicini()).toBeNull();
+    });
+
+    it('con "Vicino a me" già chiesto parte dalla posizione avuta', async () => {
+      crea();
+      await pagina.vicinoAMe();
+      await disegnata();
+
+      expect(link(apriPopup()).href).toContain('&origin=41.892,12.482&');
+    });
+
+    it('i nomi che arrivano da fuori non diventano HTML nel popup', async () => {
+      crea();
+      await disegnata();
+      const campo = { ...pagina['mostrati'][0], nomeImpianto: '<img src=x onerror=alert(1)>' };
+
+      expect(pagina['popup'](campo)).not.toContain('<img');
+    });
+  });
+
   /** L'effetto disegna dopo che l'icona per il canvas è caricata: si aspetta anche quella. */
   async function disegnata(): Promise<void> {
     fixture.detectChanges();

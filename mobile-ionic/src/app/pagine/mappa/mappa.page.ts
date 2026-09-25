@@ -23,7 +23,14 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { calendarOutline, checkmarkCircle, close, locate, locationOutline } from 'ionicons/icons';
+import {
+  calendarOutline,
+  checkmarkCircle,
+  close,
+  locate,
+  locationOutline,
+  navigateOutline,
+} from 'ionicons/icons';
 import * as L from 'leaflet';
 import {
   Societa,
@@ -45,7 +52,6 @@ import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.co
 import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
 import { RiquadroDiagnosiComponent } from '../../componenti/riquadro-diagnosi/riquadro-diagnosi.component';
 import { DiagnosiService } from '../../servizi/diagnosi.service';
-import { istruzioniPosizione } from '../../servizi/istruzioni';
 import {
   nellaProvincia,
   opzioniProvincia,
@@ -53,7 +59,8 @@ import {
   testoProvincia,
 } from '../../modelli/provincia';
 import { NumeroViciniService } from '../../servizi/numero-vicini.service';
-import { ErrorePosizione, PosizioneService } from '../../servizi/posizione.service';
+import { RichiestaPosizione } from '../../servizi/richiesta-posizione';
+import { linkPercorso, suggerimentoPartenza } from '../../modelli/percorso';
 import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
 import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
 import { SocietaService } from '../../servizi/societa.service';
@@ -73,7 +80,25 @@ import {
 } from '../../modelli/vicini';
 
 /** L'Italia intera, finché non ci sono campi da inquadrare. */
+
 const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
+
+/**
+ * Un popup si allunga verso l'alto: quando una riga nuova (la nota del
+ * percorso, un errore) lo fa uscire dalla mappa, sul telefono finirebbe
+ * sotto i filtri con la sua X. Si sposta la mappa quel tanto che basta.
+ * Non con popup.update(), che riscriverebbe il contenuto e staccherebbe
+ * gli eventi.
+ */
+function tieniDentro(elemento: HTMLElement, mappa: L.Map): void {
+  const popup = elemento.closest<HTMLElement>('.leaflet-popup') ?? elemento;
+  const margine = 10;
+  const sopra =
+    popup.getBoundingClientRect().top - mappa.getContainer().getBoundingClientRect().top - margine;
+  if (sopra < 0) {
+    mappa.panBy([0, sopra], { animate: true });
+  }
+}
 
 /**
  * Tutti i campi con una posizione, su una mappa sola.
@@ -132,7 +157,6 @@ export class MappaPage implements OnDestroy {
   private readonly zona = inject(NgZone);
   private readonly provinciaScelta = inject(ProvinciaSceltaService);
   private readonly numeroVicini = inject(NumeroViciniService);
-  private readonly posizioneService = inject(PosizioneService);
   private readonly diagnosi = inject(DiagnosiService);
   private readonly cambiati = inject(CampiCambiatiService);
   /** La versione dell'archivio dei campi scaricati: se al rientro è salita, si ricarica. */
@@ -196,18 +220,18 @@ export class MappaPage implements OnDestroy {
   readonly numero = this.numeroVicini.numero;
   /** Dove si trova chi guarda; null finché non ha chiesto "Vicino a me". */
   readonly posizione = signal<Posizione | null>(null);
-  readonly cercoPosizione = signal(false);
-  readonly erroreVicini = signal<string | null>(null);
+  /** La richiesta di "Vicino a me": in corso, errore e riquadro "come sbloccarla". */
+  private readonly richiestaVicini = new RichiestaPosizione();
+  readonly cercoPosizione = this.richiestaVicini.inCorso;
+  readonly erroreVicini = this.richiestaVicini.errore;
+  readonly riquadroVicini = this.richiestaVicini.riquadro;
   /**
-   * Dopo un errore, cosa blocca la posizione e come sbloccarla: le stesse
-   * istruzioni della pagina Notifiche. Null se la diagnosi non sa dire di
-   * più del messaggio d'errore, che allora resta da solo.
+   * La richiesta del percorso, dal popup di un campo: a parte, perché un
+   * errore lì non deve aprire il riquadro di "Vicino a me".
    */
-  readonly riquadroVicini = computed(() =>
-    this.erroreVicini() === null
-      ? null
-      : istruzioniPosizione(this.diagnosi.posizione(), this.diagnosi.piattaforma),
-  );
+  private readonly richiestaPercorso = new RichiestaPosizione();
+  /** L'ultima posizione avuta dal popup: vale per tutti i popup che si aprono dopo. */
+  private posizionePercorso: Posizione | null = null;
 
   /** Gli N campi più vicini, fra tutti quelli con una posizione e senza guardare la provincia. */
   readonly vicini = computed<CampoVicino[]>(() => {
@@ -237,7 +261,7 @@ export class MappaPage implements OnDestroy {
   }
 
   constructor() {
-    addIcons({ calendarOutline, checkmarkCircle, close, locate, locationOutline });
+    addIcons({ calendarOutline, checkmarkCircle, close, locate, locationOutline, navigateOutline });
     this.carica();
 
     // Il contenitore esiste solo dopo che i dati sono arrivati: la mappa si
@@ -282,25 +306,9 @@ export class MappaPage implements OnDestroy {
 
   /** Chiede la posizione e, se arriva, mostra i campi più vicini. */
   async vicinoAMe(): Promise<void> {
-    if (this.cercoPosizione()) {
-      return;
-    }
-    this.cercoPosizione.set(true);
-    this.erroreVicini.set(null);
-    try {
-      this.posizione.set(await this.posizioneService.attuale());
-      await this.diagnosi.esitoPosizione(null);
-    } catch (errore) {
-      // Prima la diagnosi, poi il messaggio: così il riquadro compare già
-      // con il caso giusto (bloccata o solo rifiutata), senza cambiare sotto gli occhi.
-      await this.diagnosi.esitoPosizione(errore);
-      this.erroreVicini.set(
-        errore instanceof ErrorePosizione
-          ? errore.message
-          : 'Non è stato possibile avere la posizione. Riprova.',
-      );
-    } finally {
-      this.cercoPosizione.set(false);
+    const posizione = await this.richiestaVicini.chiedi();
+    if (posizione) {
+      this.posizione.set(posizione);
     }
   }
 
@@ -374,15 +382,18 @@ export class MappaPage implements OnDestroy {
       mappa.on('zoomend moveend', () => this.aggiornaSegnaposto(mappa));
 
       mappa.on('popupopen', (evento: L.PopupEvent) => {
-        const bottone = evento.popup
-          .getElement()
-          ?.querySelector<HTMLButtonElement>('[data-societa]');
+        const elemento = evento.popup.getElement();
+        const bottone = elemento?.querySelector<HTMLButtonElement>('[data-societa]');
         bottone?.addEventListener('click', () => {
           const id = bottone.dataset['societa'];
           if (id) {
             this.zona.run(() => this.router.navigate(['/societa', id]));
           }
         });
+        const percorso = elemento?.querySelector<HTMLFormElement>('[data-percorso]');
+        if (percorso) {
+          this.collegaPercorso(percorso, mappa);
+        }
       });
 
       // Le dimensioni definitive arrivano solo a transizione di pagina finita.
@@ -538,10 +549,111 @@ export class MappaPage implements OnDestroy {
       ${testoSicuro(campo.nomeImpianto)}<br />
       ${testoSicuro(indirizzoCompleto(campo))}<br />
       ${this.partiteNelPopup(campo)}
+      ${this.percorsoNelPopup(campo)}
       <button type="button" class="collegamento-scheda" data-societa="${testoSicuro(campo.id)}">
         Vedi scheda società ›
       </button>
     `;
+  }
+
+  /**
+   * "Partenza" e "Percorso": lo stesso blocco della scheda, scritto a mano
+   * perché il popup è HTML di Leaflet e non un template. Il link è già
+   * pronto per il campo vuoto; lo aggiorna {@link collegaPercorso}.
+   *
+   * La posizione qui non si chiede: aprire un popup è toccare un campo per
+   * curiosità, e un permesso a ogni tocco sarebbe un fastidio. La chiede il
+   * pulsante accanto alla partenza; se non la si chiede, il campo vuoto
+   * lascia che sia Google a partire dalla posizione del dispositivo.
+   */
+  private percorsoNelPopup(campo: SocietaGeolocalizzata): string {
+    const posizione = this.posizioneNota();
+    const link = linkPercorso(campo, '', posizione);
+    const nota = posizione ? 'Parti dalla tua posizione attuale.' : '';
+    return `
+      <form class="percorso-popup" data-percorso data-lat="${campo.lat}" data-lng="${campo.lng}">
+        <label>
+          <span class="etichetta">Partenza</span>
+          <span class="riga-partenza">
+            <input
+              type="text"
+              name="partenza"
+              placeholder="${testoSicuro(suggerimentoPartenza(this.diagnosi.posizione()))}"
+              autocomplete="street-address"
+              enterkeyhint="go"
+            />
+            <button type="button" class="usa-posizione" data-usa-posizione
+              aria-label="Parti dalla mia posizione" title="Parti dalla mia posizione">
+              <ion-icon name="locate" aria-hidden="true"></ion-icon>
+            </button>
+          </span>
+        </label>
+        <p class="nota-percorso" aria-live="polite">${nota}</p>
+        <a class="apri-percorso" href="${testoSicuro(link)}" target="_blank" rel="noopener">
+          <ion-icon name="navigate-outline" aria-hidden="true"></ion-icon>
+          Percorso
+        </a>
+      </form>`;
+  }
+
+  /** La posizione di chi guarda, se già nota: da "Vicino a me" o dal popup. */
+  private posizioneNota(): Posizione | null {
+    return this.posizione() ?? this.posizionePercorso;
+  }
+
+  /**
+   * Dà vita al blocco del percorso di un popup appena aperto: il link segue
+   * quello che si scrive, il pulsante chiede la posizione, e Invio apre il
+   * percorso come il link.
+   */
+  private collegaPercorso(modulo: HTMLFormElement, mappa?: L.Map): void {
+    const destinazione = { lat: Number(modulo.dataset['lat']), lng: Number(modulo.dataset['lng']) };
+    const campo = modulo.querySelector<HTMLInputElement>('input[name="partenza"]');
+    const link = modulo.querySelector<HTMLAnchorElement>('.apri-percorso');
+    const nota = modulo.querySelector<HTMLElement>('.nota-percorso');
+    const usaPosizione = modulo.querySelector<HTMLButtonElement>('[data-usa-posizione]');
+    if (!campo || !link || !nota || !usaPosizione) {
+      return;
+    }
+    const scriviNota = (testo: string, errore = false) => {
+      nota.textContent = testo;
+      nota.classList.toggle('errore', errore);
+      if (mappa && modulo.isConnected) {
+        this.zona.runOutsideAngular(() => tieniDentro(modulo, mappa));
+      }
+    };
+    const aggiorna = () => {
+      link.href = linkPercorso(destinazione, campo.value, this.posizioneNota());
+      const dallaPosizione = campo.value.trim() === '' && this.posizioneNota() !== null;
+      scriviNota(dallaPosizione ? 'Parti dalla tua posizione attuale.' : '');
+    };
+    campo.addEventListener('input', aggiorna);
+    // Invio sulla tastiera del telefono ("Vai") apre il percorso come il
+    // link: dentro il gesto dell'utente, quindi in una nuova scheda e senza
+    // che il blocco dei popup lo fermi.
+    modulo.addEventListener('submit', (evento) => {
+      evento.preventDefault();
+      aggiorna();
+      link.click();
+    });
+    usaPosizione.addEventListener('click', async () => {
+      campo.value = '';
+      usaPosizione.disabled = true;
+      scriviNota('Cerco dove sei…');
+      const posizione = await this.richiestaPercorso.chiedi();
+      usaPosizione.disabled = false;
+      if (posizione) {
+        this.posizionePercorso = posizione;
+      }
+      aggiorna();
+      // Nel popup basta il messaggio, che già dice cosa fare: il riquadro con
+      // tutti i passi non ci starebbe. Il campo resta libero per scrivere
+      // l'indirizzo, e il link parte comunque dalla posizione del dispositivo.
+      const errore = this.richiestaPercorso.errore();
+      if (errore) {
+        scriviNota(errore, true);
+      }
+    });
   }
 
   /** Le prime partite della settimana su questo campo, o niente. */

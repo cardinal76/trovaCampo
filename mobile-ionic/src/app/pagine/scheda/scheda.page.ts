@@ -62,6 +62,7 @@ import {
   squadrePartita,
 } from '../../modelli/partita';
 import { Squadra, dettaglioSquadra } from '../../modelli/squadra';
+import { PercorsoCampoComponent } from '../../componenti/percorso-campo/percorso-campo.component';
 import { StemmaComponent } from '../../componenti/stemma/stemma.component';
 import { iconaCampo } from '../../mappa/icona-campo';
 import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
@@ -96,6 +97,7 @@ const ZOOM_SCHEDA = 16;
   selector: 'pagina-scheda',
   imports: [
     RouterLink,
+    PercorsoCampoComponent,
     StemmaComponent,
     IonAccordion,
     IonAccordionGroup,
