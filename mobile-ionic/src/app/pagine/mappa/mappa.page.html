@@ -98,24 +98,26 @@
         } @else if (erroreVicini(); as errore) {
           <p class="errore-vicini" role="alert">{{ errore }}</p>
         }
-        <div class="riepilogo">
-          @if (posizione()) {
-            {{ vicini().length === 1 ? 'Il campo più vicino' : 'I ' + vicini().length + ' campi più vicini' }}
-            a te, fra quelli di tutte le province
-            @if (soloConPartite() && ciSonoPartite()) {
-              con partite in programma
+        @if (conRiepilogo()) {
+          <div class="riepilogo">
+            @if (posizione()) {
+              {{ vicini().length === 1 ? 'Il campo più vicino' : 'I ' + vicini().length + ' campi più vicini' }}
+              a te, fra quelli di tutte le province
+              @if (soloConPartite() && ciSonoPartite()) {
+                con partite in programma
+              }
+            } @else if (soloConPartite() && ciSonoPartite()) {
+              {{ geolocalizzati().length === 1 ? '1 campo' : geolocalizzati().length + ' campi' }}
+              con partite nei prossimi {{ giorniPartite }} giorni
+            } @else if (amministratore()) {
+              {{ geolocalizzati().length === 1 ? '1 campo' : geolocalizzati().length + ' campi' }}
+              sulla mappa
+              @if (senzaPosizione() > 0) {
+                · <a routerLink="/campi">{{ senzaPosizione() }} ancora senza posizione</a>
+              }
             }
-          } @else if (soloConPartite() && ciSonoPartite()) {
-            {{ geolocalizzati().length === 1 ? '1 campo' : geolocalizzati().length + ' campi' }}
-            con partite nei prossimi {{ giorniPartite }} giorni
-          } @else {
-            {{ geolocalizzati().length === 1 ? '1 campo' : geolocalizzati().length + ' campi' }}
-            sulla mappa
-            @if (senzaPosizione() > 0) {
-              · <a routerLink="/campi">{{ senzaPosizione() }} ancora senza posizione</a>
-            }
-          }
-        </div>
+          </div>
+        }
         <div #contenitoreMappa class="mappa"></div>
         @if (posizione()) {
           <ol class="elenco-vicini">

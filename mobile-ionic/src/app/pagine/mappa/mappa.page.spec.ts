@@ -4,6 +4,7 @@ import { provideIonicAngular } from '@ionic/angular/standalone';
 import { Observable, of, throwError } from 'rxjs';
 import { Partita, PartitePerCampo } from '../../modelli/partita';
 import { Societa } from '../../modelli/societa';
+import { ricordaAmministratore } from '../../servizi/amministratore-ricordato';
 import { NumeroViciniService } from '../../servizi/numero-vicini.service';
 import { ErrorePosizione, PosizioneService, errorePerCodice } from '../../servizi/posizione.service';
 import { SONDE_BROWSER } from '../../servizi/sonde-browser';
@@ -85,6 +86,7 @@ describe('MappaPage', () => {
   });
 
   afterEach(() => {
+    ricordaAmministratore(false);
     fixture?.destroy();
     localStorage.removeItem('trovacampo.provincia');
     localStorage.removeItem('trovacampo.numeroVicini');
@@ -100,6 +102,43 @@ describe('MappaPage', () => {
       'Latina',
       'Roma',
     ]);
+  });
+
+  /**
+   * "N campi sulla mappa · M ancora senza posizione" è un dato di lavoro per
+   * chi amministra: al pubblico direbbe solo che mancano dei campi.
+   */
+  describe('il conto dei campi sopra la mappa', () => {
+    function riepilogo(): string | null {
+      const elemento = fixture.nativeElement.querySelector('.riepilogo') as HTMLElement | null;
+      return elemento?.textContent?.replace(/\s+/g, ' ').trim() ?? null;
+    }
+
+    it('non si vede a chi non amministra', () => {
+      ricordaAmministratore(false);
+      crea();
+
+      expect(riepilogo()).toBeNull();
+      expect(fixture.nativeElement.textContent).not.toContain('ancora senza posizione');
+    });
+
+    it('si vede a chi amministra, con il link ai campi da sistemare', () => {
+      ricordaAmministratore(true);
+      crea();
+
+      expect(riepilogo()).toBe('3 campi sulla mappa · 1 ancora senza posizione');
+      expect(fixture.nativeElement.querySelector('.riepilogo a').getAttribute('href')).toBe('/campi');
+    });
+
+    it('si adegua rientrando nella pagina dopo il login', () => {
+      ricordaAmministratore(false);
+      crea();
+      ricordaAmministratore(true);
+
+      pagina.ionViewWillEnter();
+      fixture.detectChanges();
+      expect(riepilogo()).toContain('ancora senza posizione');
+    });
   });
 
   it('senza filtro mette sulla mappa tutti i campi con una posizione', () => {
