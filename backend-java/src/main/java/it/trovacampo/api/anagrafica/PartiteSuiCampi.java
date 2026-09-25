@@ -1,6 +1,7 @@
 package it.trovacampo.api.anagrafica;
 
 import it.trovacampo.api.dominio.Societa;
+import it.trovacampo.api.repository.SocietaRepository;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -8,10 +9,14 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +33,11 @@ import org.springframework.stereotype.Service;
  * <p>Le partite di due settimane si chiedono a presenze con una chiamata sola
  * e si tengono per qualche minuto: la mappa ha qualche centinaio di campi e
  * la apre chiunque, una chiamata per campo o per visita sarebbe troppo.
+ *
+ * <p>Nella scheda ogni squadra ha anche il suo stemma, preso dalle società
+ * di TrovaCampo legate alla stessa società di presenze
+ * ({@link Societa#getAnagraficaSocietaId()}): presenze non lo manda con le
+ * partite. La mappa non li mostra e non li cerca.
  *
  * <p>Se presenze non risponde non è un errore per chi guarda: scheda e mappa
  * funzionano lo stesso, con le partite dell'ultima lettura riuscita o senza
@@ -62,6 +72,9 @@ public class PartiteSuiCampi {
      *
      * @param dataOra con il fuso di Roma, come la scrive il comunicato
      * @param ente "Regionali" per il Comitato, il nome della delegazione per i provinciali
+     * @param casaLogoUrl lo stemma della squadra di casa; nullo sulla mappa e quando
+     *     TrovaCampo non ce l'ha
+     * @param ospiteLogoUrl lo stesso, per gli ospiti
      */
     public record Partita(
             OffsetDateTime dataOra,
@@ -70,9 +83,12 @@ public class PartiteSuiCampi {
             String campionato,
             String ente,
             String girone,
-            int giornata) {}
+            int giornata,
+            String casaLogoUrl,
+            String ospiteLogoUrl) {}
 
     private final AnagraficaPresenze anagrafica;
+    private final SocietaRepository societa;
     private final Clock orologio;
 
     private List<AnagraficaPresenze.Partita> lette = List.of();
@@ -81,12 +97,13 @@ public class PartiteSuiCampi {
     private boolean ultimoRiuscito;
 
     @Autowired
-    public PartiteSuiCampi(AnagraficaPresenze anagrafica) {
-        this(anagrafica, Clock.system(ROMA));
+    public PartiteSuiCampi(AnagraficaPresenze anagrafica, SocietaRepository societa) {
+        this(anagrafica, societa, Clock.system(ROMA));
     }
 
-    PartiteSuiCampi(AnagraficaPresenze anagrafica, Clock orologio) {
+    PartiteSuiCampi(AnagraficaPresenze anagrafica, SocietaRepository societa, Clock orologio) {
         this.anagrafica = anagrafica;
+        this.societa = societa;
         this.orologio = orologio;
     }
 
@@ -96,11 +113,35 @@ public class PartiteSuiCampi {
         if (impianto == null) {
             return List.of();
         }
-        return prossime(GIORNI_SCHEDA).stream()
+        List<AnagraficaPresenze.Partita> sulCampo = prossime(GIORNI_SCHEDA).stream()
                 .filter(partita -> impianto.equals(partita.impiantoId()))
                 .limit(MASSIMO_SCHEDA)
-                .map(PartiteSuiCampi::perChiGuarda)
                 .toList();
+        Map<Long, String> stemmi = stemmiDi(sulCampo);
+        return sulCampo.stream().map(partita -> perChiGuarda(partita, stemmi)).toList();
+    }
+
+    /**
+     * Gli stemmi delle squadre di queste partite, per id della società in
+     * presenze, con una query sola. Una società con più campi ha più righe in
+     * Mongo: vale il primo stemma trovato.
+     */
+    private Map<Long, String> stemmiDi(List<AnagraficaPresenze.Partita> partite) {
+        Collection<Long> ids = partite.stream()
+                .flatMap(partita -> Stream.of(partita.casaSocietaId(), partita.ospiteSocietaId()))
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, String> stemmi = new HashMap<>();
+        if (ids.isEmpty()) {
+            return stemmi;
+        }
+        for (Societa riga : societa.stemmiDi(ids)) {
+            if (riga.getLogoUrl() != null && !riga.getLogoUrl().isBlank()) {
+                stemmi.putIfAbsent(riga.getAnagraficaSocietaId(), riga.getLogoUrl());
+            }
+        }
+        return stemmi;
     }
 
     /**
@@ -113,7 +154,7 @@ public class PartiteSuiCampi {
             List<Partita> sulCampo =
                     perCampo.computeIfAbsent(partita.impiantoId(), id -> new ArrayList<>());
             if (sulCampo.size() < MASSIMO_MAPPA) {
-                sulCampo.add(perChiGuarda(partita));
+                sulCampo.add(perChiGuarda(partita, Map.of()));
             }
         }
         return perCampo;
@@ -177,7 +218,7 @@ public class PartiteSuiCampi {
         return lette;
     }
 
-    private static Partita perChiGuarda(AnagraficaPresenze.Partita partita) {
+    private static Partita perChiGuarda(AnagraficaPresenze.Partita partita, Map<Long, String> stemmi) {
         return new Partita(
                 partita.dataOra().atZoneSameInstant(ROMA).toOffsetDateTime(),
                 partita.casa(),
@@ -185,6 +226,12 @@ public class PartiteSuiCampi {
                 partita.campionato(),
                 partita.ente(),
                 partita.girone(),
-                partita.giornata());
+                partita.giornata(),
+                stemma(stemmi, partita.casaSocietaId()),
+                stemma(stemmi, partita.ospiteSocietaId()));
+    }
+
+    private static String stemma(Map<Long, String> stemmi, Long societaId) {
+        return societaId == null ? null : stemmi.get(societaId);
     }
 }

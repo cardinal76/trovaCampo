@@ -13,6 +13,10 @@ export interface Partita {
   ente?: string;
   girone?: string;
   giornata: number;
+  /** Lo stemma della squadra di casa, solo nella scheda e solo se TrovaCampo lo conosce. */
+  casaLogoUrl?: string | null;
+  /** Lo stesso, per gli ospiti. */
+  ospiteLogoUrl?: string | null;
 }
 
 /** Le prime partite della settimana, per campo: la chiave è l'id del campo in presenze. */
