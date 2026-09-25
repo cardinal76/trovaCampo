@@ -138,6 +138,33 @@ describe('ElencoPage', () => {
     expect(pillola.classList).toContain('attivo');
   });
 
+  it('senza stemma lascia solo le società a cui manca, e si somma con la posizione', () => {
+    scaricati = CAMPI.map((c) =>
+      ['1', '2'].includes(c.id) ? { ...c, logoUrl: `https://play.lnd.it/lndimg/${c.id}.png` } : c,
+    );
+    ricordaAmministratore(true);
+    crea();
+    const pillola = fixture.nativeElement.querySelector('.filtro-stemma') as HTMLButtonElement;
+
+    pillola.click();
+    fixture.detectChanges();
+
+    expect(pillola.getAttribute('aria-pressed')).toBe('true');
+    expect(nomi()).toEqual(['Tor di Quinto', 'Cinecittà Bettini', 'Latina Calcio', 'Sconosciuta']);
+    expect(pagina.filtrato()).toBeTrue();
+
+    pagina.cambiaSoloSenzaPosizione(true);
+    expect(nomi()).toEqual(['Tor di Quinto', 'Latina Calcio', 'Sconosciuta']);
+  });
+
+  it('senza stemma non c è per chi non amministra, e non filtra se esce', () => {
+    crea();
+    expect(fixture.nativeElement.querySelector('.filtro-stemma')).toBeNull();
+
+    pagina.cambiaSoloSenzaStemma(true);
+    expect(nomi().length).toBe(CAMPI.length);
+  });
+
   it('la provincia chiusa dice di cosa si parla', () => {
     crea();
 
