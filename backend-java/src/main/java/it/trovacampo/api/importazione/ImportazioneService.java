@@ -168,6 +168,11 @@ public class ImportazioneService {
             societa.setAnagraficaImpiantoId(riga.anagraficaImpiantoId());
             cambiata = true;
         }
+        String stemma = stemma(riga.logoUrl());
+        if (stemma != null && !stemma.equals(societa.getLogoUrl())) {
+            societa.setLogoUrl(stemma);
+            cambiata = true;
+        }
         // Una società nuova senza località resta con "" come quelle inserite
         // dall'app, non con null.
         if (societa.getLocalitaImpianto() == null) {
@@ -205,6 +210,26 @@ public class ImportazioneService {
         }
 
         return cambiata;
+    }
+
+    /**
+     * Lo stemma, se è un indirizzo https; altrimenti niente.
+     *
+     * <p>Finisce dritto in un {@code <img src>} dell'app: qualunque altra
+     * cosa (un {@code http:} che il browser bloccherebbe come contenuto
+     * misto, un {@code javascript:}, un percorso relativo che si
+     * risolverebbe sul nostro dominio) non è uno stemma. Nullo vuol dire
+     * "non toccare": presenze che non lo manda non cancella quello che c'è.
+     */
+    static String stemma(String indirizzo) {
+        if (indirizzo == null) {
+            return null;
+        }
+        String pulito = indirizzo.strip();
+        return pulito.startsWith("https://") && pulito.length() > "https://".length() && pulito.length() <= 500
+                        && pulito.chars().noneMatch(Character::isWhitespace)
+                ? pulito
+                : null;
     }
 
     /** "A.S.D. Certosa  Calcio" e "asd certosa calcio" sono la stessa società. */

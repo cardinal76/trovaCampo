@@ -22,6 +22,6 @@ class SocietaRepositoryTest {
 
         assertThat(query.fields())
                 .contains("'lat': 1", "'lng': 1", "'provinciaImpianto': 1",
-                        "'posizioneApprossimata': 1", "'anagraficaImpiantoId': 1");
+                        "'posizioneApprossimata': 1", "'anagraficaImpiantoId': 1", "'logoUrl': 1");
     }
 }

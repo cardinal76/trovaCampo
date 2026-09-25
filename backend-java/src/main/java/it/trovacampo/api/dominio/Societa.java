@@ -71,6 +71,15 @@ public class Societa {
     private Long anagraficaImpiantoId;
 
     /**
+     * Lo stemma della società, come indirizzo https sul portale LND
+     * ({@code play.lnd.it}): lo porta la sincronizzazione dall'anagrafica di
+     * presenze, che lo raccoglie dai gironi del portale. Vuoto quando presenze
+     * non ne ha uno; l'app allora mostra l'iniziale del nome. Si mostra per
+     * indirizzo, senza copiarlo qui: il portale permette l'hotlink.
+     */
+    private String logoUrl;
+
+    /**
      * Copia normalizzata (minuscolo, senza accenti) dei campi ricercabili:
      * permette una ricerca insensibile ad accenti e maiuscole con una sola
      * espressione regolare. Non fa parte della risposta dell'API.
@@ -285,6 +294,15 @@ public class Societa {
 
     public Societa setAnagraficaImpiantoId(Long anagraficaImpiantoId) {
         this.anagraficaImpiantoId = anagraficaImpiantoId;
+        return this;
+    }
+
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    public Societa setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
         return this;
     }
 

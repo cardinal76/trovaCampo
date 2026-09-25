@@ -21,6 +21,7 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { checkmarkCircle, footballOutline, locationOutline, navigateCircleOutline } from 'ionicons/icons';
+import { StemmaComponent } from '../../componenti/stemma/stemma.component';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
 import {
   TUTTE,
@@ -72,6 +73,7 @@ function normalizza(testo: string): string {
   imports: [
     RouterLink,
     MenuUtenteComponent,
+    StemmaComponent,
     IonButton,
     IonButtons,
     IonContent,

@@ -29,7 +29,9 @@ class AnagraficaPresenzeTest {
                                 [{"id":190,"nome":"DON ORIONE","fondo":"SINTEX",
                                   "indirizzo":"VIA DELLA CAMILLUCCIA 120","comune":"ROMA",
                                   "lat":41.93,"lng":12.44,
-                                  "societa":[{"id":7,"denominazione":"BOREALE"}]},
+                                  "societa":[{"id":7,"denominazione":"BOREALE"},
+                                    {"id":8,"denominazione":"LODIGIANI",
+                                     "logoUrl":"https://play.lnd.it/lndimg/8/8-web.png"}]},
                                  {"id":191,"nome":"COMUNALE","fondo":null,"indirizzo":null,
                                   "comune":"ARCE","lat":null,"lng":null,"societa":[]}]
                                 """,
@@ -43,7 +45,11 @@ class AnagraficaPresenzeTest {
                             assertThat(campo.lat()).isEqualTo(41.93);
                             assertThat(campo.societa())
                                     .containsExactly(
-                                            new AnagraficaPresenze.Riferimento(7L, "BOREALE"));
+                                            new AnagraficaPresenze.Riferimento(7L, "BOREALE"),
+                                            // Lo stemma, quando presenze ce l'ha.
+                                            new AnagraficaPresenze.Riferimento(
+                                                    8L, "LODIGIANI",
+                                                    "https://play.lnd.it/lndimg/8/8-web.png"));
                         });
         server.verify();
     }

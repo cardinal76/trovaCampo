@@ -26,7 +26,13 @@
     </div>
   } @else {
     <ion-list class="contenuto-largo">
-      <ion-list-header>
+      <ion-list-header class="testata">
+        <stemma-societa
+          class="stemma"
+          [nome]="societa()!.nomeSocieta"
+          [logoUrl]="societa()!.logoUrl"
+          [dimensione]="48"
+        ></stemma-societa>
         <ion-label>
           <h2>{{ titolo() }}</h2>
         </ion-label>

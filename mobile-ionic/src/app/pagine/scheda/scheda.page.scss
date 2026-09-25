@@ -1,3 +1,16 @@
+/* La testata: lo stemma accanto al nome, allineato al suo centro. */
+.testata {
+  align-items: center;
+
+  .stemma {
+    margin-inline-end: 0.75rem;
+  }
+
+  h2 {
+    font-weight: 600;
+  }
+}
+
 /*
  * Mappa del solo campo della società. Allineata ai margini delle voci
  * dell'elenco, con un'altezza fissa: è un riferimento visivo, non la pagina

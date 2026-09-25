@@ -27,7 +27,8 @@ public interface SocietaRepository extends MongoRepository<Societa, String> {
      * amministra, e c'è solo sulle poche società che ce l'hanno vera.
      * {@code anagraficaImpiantoId} è la chiave con cui la mappa trova le
      * prossime partite di ogni campo: senza, il popup e il filtro «solo campi
-     * con partite» non ne troverebbero mai nessuna.
+     * con partite» non ne troverebbero mai nessuna. {@code logoUrl} è lo
+     * stemma accanto a ogni riga dell'elenco.
      */
     @Query(
             value = "{}",
@@ -35,7 +36,8 @@ public interface SocietaRepository extends MongoRepository<Societa, String> {
                     "{ 'siglaSocieta': 1, 'nomeSocieta': 1, 'nomeImpianto': 1,"
                             + " 'indirizzoImpianto': 1, 'localitaImpianto': 1,"
                             + " 'provinciaImpianto': 1, 'lat': 1, 'lng': 1,"
-                            + " 'posizioneApprossimata': 1, 'anagraficaImpiantoId': 1 }",
+                            + " 'posizioneApprossimata': 1, 'anagraficaImpiantoId': 1,"
+                            + " 'logoUrl': 1 }",
             sort = "{ 'nomeSocieta': 1, 'nomeImpianto': 1 }")
     List<Societa> tuttiICampi();
 

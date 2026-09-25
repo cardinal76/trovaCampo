@@ -69,6 +69,31 @@ describe('ElencoPage', () => {
     return fixture.nativeElement.querySelector('ion-select.filtro-provincia');
   }
 
+  it('ogni riga ha lo stemma a sinistra, o l iniziale quando manca', () => {
+    TestBed.overrideProvider(SocietaService, {
+      useValue: {
+        tutti: () =>
+          of([
+            campo('1', 'A.S.D. PALOCCO', { logoUrl: 'https://play.lnd.it/lndimg/1/1-web.png' }),
+            campo('2', 'A.S.D. ACCADEMIA SPORTING ROMA'),
+          ]),
+      },
+    });
+    crea();
+
+    const stemmi = Array.from(
+      fixture.nativeElement.querySelectorAll('ion-item stemma-societa'),
+    ) as HTMLElement[];
+    expect(stemmi.length).toBe(2);
+    expect(stemmi.every((stemma) => stemma.getAttribute('slot') === 'start')).toBeTrue();
+    expect(stemmi[0].querySelector('img')!.getAttribute('src')).toBe(
+      'https://play.lnd.it/lndimg/1/1-web.png',
+    );
+    expect(stemmi[0].style.getPropertyValue('--stemma-dimensione')).toBe('36px');
+    expect(stemmi[1].querySelector('img')).toBeNull();
+    expect(stemmi[1].querySelector('.segnaposto')!.textContent!.trim()).toBe('A');
+  });
+
   it('chi non amministra non vede l interruttore', () => {
     crea();
 

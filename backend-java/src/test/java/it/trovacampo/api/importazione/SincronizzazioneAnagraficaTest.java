@@ -105,4 +105,81 @@ class SincronizzazioneAnagraficaTest {
         assertThat(esito.daGeocodificare()).isZero();
         verify(repository, never()).saveAll(any());
     }
+
+    /**
+     * Lo stemma arriva con la società: uno https si prende, uno che presenze
+     * non manda non cancella quello che c'è, e uno che non è https si scarta.
+     */
+    @Test
+    void loStemmaSiPrendeSeHttpsENonSiCancella() {
+        String stemma = "https://play.lnd.it/lndimg/111/111-web.png";
+        Societa conStemma =
+                new Societa()
+                        .setId("m1")
+                        .setNomeSocieta("BOREALE")
+                        .setNomeImpianto("DON ORIONE")
+                        .setIndirizzoImpianto("VIA DELLA CAMILLUCCIA 120")
+                        .setLocalitaImpianto("ROMA")
+                        .setProvinciaImpianto("RM")
+                        .setAnagraficaSocietaId(7L)
+                        .setAnagraficaImpiantoId(190L)
+                        .setLogoUrl(stemma)
+                        .setLat(41.9)
+                        .setLng(12.4);
+        when(repository.findAll()).thenReturn(List.of(conStemma));
+        when(anagrafica.impianti())
+                .thenReturn(
+                        List.of(
+                                new AnagraficaPresenze.Impianto(
+                                        190L, "DON ORIONE", "VIA DELLA CAMILLUCCIA 120", "ROMA", null,
+                                        null,
+                                        List.of(
+                                                // Presenze non lo manda: resta quello di prima.
+                                                societa(7, "BOREALE"),
+                                                new AnagraficaPresenze.Riferimento(
+                                                        8L, "LODIGIANI", " " + stemma + " "),
+                                                new AnagraficaPresenze.Riferimento(
+                                                        9L, "TOR SAPIENZA",
+                                                        "http://play.lnd.it/lndimg/9/9-web.png"),
+                                                new AnagraficaPresenze.Riferimento(
+                                                        10L, "VIGOR", "javascript:alert(1)")))));
+
+        EsitoImportazione esito = sincronizzazione.sincronizza(false);
+
+        assertThat(esito.invariate()).isEqualTo(1);
+        assertThat(salvate())
+                .extracting(Societa::getNomeSocieta, Societa::getLogoUrl)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple("LODIGIANI", stemma),
+                        org.assertj.core.groups.Tuple.tuple("TOR SAPIENZA", null),
+                        org.assertj.core.groups.Tuple.tuple("VIGOR", null));
+    }
+
+    @Test
+    void unoStemmaNuovoAggiornaLaSocieta() {
+        Societa senza =
+                new Societa()
+                        .setId("m1")
+                        .setNomeSocieta("BOREALE")
+                        .setNomeImpianto("DON ORIONE")
+                        .setIndirizzoImpianto("VIA DELLA CAMILLUCCIA 120")
+                        .setLocalitaImpianto("ROMA")
+                        .setProvinciaImpianto("RM")
+                        .setAnagraficaSocietaId(7L)
+                        .setAnagraficaImpiantoId(190L);
+        when(repository.findAll()).thenReturn(List.of(senza));
+        when(anagrafica.impianti())
+                .thenReturn(
+                        List.of(
+                                new AnagraficaPresenze.Impianto(
+                                        190L, "DON ORIONE", "VIA DELLA CAMILLUCCIA 120", "ROMA", null,
+                                        null,
+                                        List.of(new AnagraficaPresenze.Riferimento(
+                                                7L, "BOREALE", "https://play.lnd.it/lndimg/1/1-web.jpg")))));
+
+        EsitoImportazione esito = sincronizzazione.sincronizza(false);
+
+        assertThat(esito.aggiornate()).isEqualTo(1);
+        assertThat(salvate().get(0).getLogoUrl()).isEqualTo("https://play.lnd.it/lndimg/1/1-web.jpg");
+    }
 }

@@ -49,6 +49,12 @@
     --inner-padding-end: 0.5rem;
   }
 
+  /* Lo stemma in alto, all'altezza del nome, e non centrato sulle tre righe. */
+  .stemma {
+    align-self: flex-start;
+    margin: 0.85rem 0.85rem 0 0;
+  }
+
   .societa {
     font-weight: 600;
     font-size: 1rem;

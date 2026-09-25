@@ -19,6 +19,9 @@ import org.springframework.stereotype.Service;
  * <p>Le coordinate di presenze, quando ci sono, valgono come quelle di un
  * file; quando mancano restano quelle che TrovaCampo aveva già, se il campo
  * non si è spostato, altrimenti le cerca la geocodifica automatica.
+ *
+ * <p>Lo stemma della società arriva con lei: si prende se è un indirizzo
+ * https, e uno che presenze non manda non cancella quello che c'è.
  */
 @Service
 public class SincronizzazioneAnagrafica {
@@ -64,7 +67,8 @@ public class SincronizzazioneAnagrafica {
                                 impianto.lat(),
                                 impianto.lng(),
                                 societa.id(),
-                                impianto.id()));
+                                impianto.id(),
+                                societa.logoUrl()));
             }
         }
 

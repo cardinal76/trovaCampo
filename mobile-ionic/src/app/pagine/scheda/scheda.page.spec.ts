@@ -89,6 +89,25 @@ describe('SchedaPage', () => {
     return Array.from(pagina.querySelectorAll('ion-accordion')).map((a) => a.getAttribute('value'));
   }
 
+  it('mette lo stemma accanto al nome in testa', () => {
+    const pagina = apri({ ...SOCIETA, logoUrl: 'https://play.lnd.it/lndimg/7/7-web.png' });
+    const stemma = pagina.querySelector('.testata stemma-societa') as HTMLElement;
+
+    expect(stemma.querySelector('img')!.getAttribute('src')).toBe(
+      'https://play.lnd.it/lndimg/7/7-web.png',
+    );
+    expect(stemma.style.getPropertyValue('--stemma-dimensione')).toBe('48px');
+    expect(pagina.querySelector('.testata h2')!.textContent).toContain('BOREALE');
+  });
+
+  it('senza stemma in testa c è l iniziale del nome', () => {
+    const pagina = apri(SOCIETA);
+    const stemma = pagina.querySelector('.testata stemma-societa')!;
+
+    expect(stemma.querySelector('img')).toBeNull();
+    expect(stemma.querySelector('.segnaposto')!.textContent!.trim()).toBe('B');
+  });
+
   it('mette partite, anagrafica e campionati in tre sezioni pieghevoli', () => {
     const pagina = apri(SOCIETA);
 
