@@ -104,8 +104,18 @@ public class AnagraficaPresenze {
             Double lng,
             List<Riferimento> societa) {}
 
+    /**
+     * @param logoUrl lo stemma della società sul portale LND; nullo quando
+     *     presenze non ne ha uno, o da un presenze che non lo manda ancora
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Riferimento(Long id, String denominazione) {}
+    public record Riferimento(Long id, String denominazione, String logoUrl) {
+
+        /** Senza stemma: quello che serve alla ricerca per nome. */
+        public Riferimento(Long id, String denominazione) {
+            this(id, denominazione, null);
+        }
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Scheda(Long id, String denominazione, List<Campo> campi, List<Squadra> squadre) {}

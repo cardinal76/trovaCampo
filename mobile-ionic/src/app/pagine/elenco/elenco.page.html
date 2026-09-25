@@ -84,6 +84,13 @@
         <ion-list class="elenco" lines="full">
           @for (campo of visibili(); track campo.id) {
             <ion-item button [routerLink]="['/societa', campo.id]" detail>
+              <stemma-societa
+                slot="start"
+                class="stemma"
+                [nome]="campo.nomeSocieta"
+                [logoUrl]="campo.logoUrl"
+                [dimensione]="36"
+              ></stemma-societa>
               <ion-label class="ion-text-wrap">
                 <h2 class="societa">{{ nomeCompleto(campo) }}</h2>
                 <p class="impianto">

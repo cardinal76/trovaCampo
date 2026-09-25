@@ -44,6 +44,11 @@ export interface Societa {
    * le partite in calendario. Assente per i campi da file o inseriti a mano.
    */
   anagraficaImpiantoId?: number;
+  /**
+   * Lo stemma sul portale LND (https), portato dalla sincronizzazione con
+   * presenze. Assente quando non ce n'è uno: si mostra l'iniziale del nome.
+   */
+  logoUrl?: string;
 }
 
 /** La scheda come la manda la pagina di modifica: tutto tranne l'id. */
