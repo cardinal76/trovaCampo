@@ -33,6 +33,12 @@
   --pillola-sfondo: rgba(var(--ion-color-warning-rgb, 255, 196, 9), 0.18);
 }
 
+/* Il blu dei dati da completare: distinto dal giallo della posizione. */
+.filtro-stemma {
+  --pillola-colore: var(--ion-color-tertiary, #5260ff);
+  --pillola-sfondo: rgba(var(--ion-color-tertiary-rgb, 82, 96, 255), 0.15);
+}
+
 .conteggio {
   margin-inline-start: auto;
   color: var(--ion-color-medium, #666);

@@ -19,7 +19,7 @@
   @if (stato() === 'pronto') {
     <!--
       I filtri su una riga sola, come pillole: la provincia per tutti, e per
-      chi amministra "senza posizione precisa". Da interruttori a tutta
+      chi amministra "senza posizione precisa" e "senza stemma". Da interruttori a tutta
       larghezza erano due righe di testata, e l'interruttore usciva dal bordo.
     -->
     <ion-toolbar class="barra-filtri">
@@ -52,6 +52,19 @@
               aria-hidden="true"
             ></ion-icon>
             Senza posizione precisa
+          </button>
+          <button
+            type="button"
+            class="filtro-stemma pillola"
+            [class.attivo]="soloSenzaStemma()"
+            [attr.aria-pressed]="soloSenzaStemma()"
+            (click)="cambiaSoloSenzaStemma(!soloSenzaStemma())"
+          >
+            <ion-icon
+              [name]="soloSenzaStemma() ? 'checkmark-circle' : 'shield-outline'"
+              aria-hidden="true"
+            ></ion-icon>
+            Senza stemma
           </button>
         }
         <span class="conteggio" aria-live="polite">
@@ -112,8 +125,12 @@
                   Nessun campo corrisponde a "{{ filtro() }}"{{
                     provincia() !== TUTTE ? ' in questa provincia' : ''
                   }}.
+                } @else if (filtroPosizione() && filtroStemma()) {
+                  Nessun campo senza posizione precisa e senza stemma.
                 } @else if (filtroPosizione()) {
                   Tutti i campi hanno una posizione precisa.
+                } @else if (filtroStemma()) {
+                  Tutte le società hanno lo stemma.
                 } @else {
                   Nessun campo.
                 }

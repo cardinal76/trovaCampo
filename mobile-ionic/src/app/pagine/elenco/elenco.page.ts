@@ -20,7 +20,13 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { checkmarkCircle, footballOutline, locationOutline, navigateCircleOutline } from 'ionicons/icons';
+import {
+  checkmarkCircle,
+  footballOutline,
+  locationOutline,
+  navigateCircleOutline,
+  shieldOutline,
+} from 'ionicons/icons';
 import { StemmaComponent } from '../../componenti/stemma/stemma.component';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
 import {
@@ -64,10 +70,11 @@ function normalizza(testo: string): string {
  * Chi amministra ha in più l'interruttore "Solo senza posizione precisa":
  * lascia le società senza coordinate o col segnaposto approssimato, da
  * aprire e correggere con la modifica. Lavora sugli stessi dati già
- * scaricati, quindi anche lui è istantaneo.
+ * scaricati, quindi anche lui è istantaneo. Allo stesso modo "Senza stemma"
+ * lascia le società a cui manca ancora lo stemma.
  *
  * Il filtro per provincia è per tutti, e la scelta è la stessa della mappa
- * (vedi {@link ProvinciaSceltaService}). I tre filtri si sommano.
+ * (vedi {@link ProvinciaSceltaService}). Tutti i filtri si sommano.
  */
 @Component({
   selector: 'pagina-elenco',
@@ -110,6 +117,7 @@ export class ElencoPage {
   /** Come nella scheda: l'interruttore solo se su questo browser è entrato un amministratore. */
   readonly amministratore = signal(amministratoreRicordato());
   readonly soloSenzaPosizione = signal(false);
+  readonly soloSenzaStemma = signal(false);
 
   readonly nomeCompleto = nomeCompleto;
   readonly indirizzoCompleto = indirizzoCompleto;
@@ -122,6 +130,8 @@ export class ElencoPage {
    * l'interruttore per spegnerlo.
    */
   readonly filtroPosizione = computed(() => this.amministratore() && this.soloSenzaPosizione());
+  /** Come {@link filtroPosizione}, per le società ancora senza stemma. */
+  readonly filtroStemma = computed(() => this.amministratore() && this.soloSenzaStemma());
 
   /** Le province dei campi scaricati, con "Tutte" in testa. */
   readonly opzioniProvincia = computed(() => opzioniProvincia(this.campi()));
@@ -133,7 +143,11 @@ export class ElencoPage {
 
   /** Il conteggio "N di M" serve quando qualche filtro toglie righe. */
   readonly filtrato = computed(
-    () => this.filtro() !== '' || this.provincia() !== TUTTE || this.filtroPosizione(),
+    () =>
+      this.filtro() !== '' ||
+      this.provincia() !== TUTTE ||
+      this.filtroPosizione() ||
+      this.filtroStemma(),
   );
 
   /** Il testo su cui cerca il filtro, calcolato una volta sola per campo. */
@@ -149,10 +163,12 @@ export class ElencoPage {
   readonly filtrati = computed(() => {
     const parole = normalizza(this.filtro()).split(/\s+/).filter(Boolean);
     const soloSenzaPosizione = this.filtroPosizione();
+    const soloSenzaStemma = this.filtroStemma();
     const provincia = this.provincia();
     return this.indice()
       .filter(({ campo }) => nellaProvincia(campo, provincia))
       .filter(({ campo }) => !soloSenzaPosizione || senzaPosizionePrecisa(campo))
+      .filter(({ campo }) => !soloSenzaStemma || !campo.logoUrl)
       .filter(({ testo }) => parole.every((parola) => testo.includes(parola)))
       .map(({ campo }) => campo);
   });
@@ -160,7 +176,13 @@ export class ElencoPage {
   readonly visibili = computed(() => this.filtrati().slice(0, this.mostrati()));
 
   constructor() {
-    addIcons({ checkmarkCircle, footballOutline, locationOutline, navigateCircleOutline });
+    addIcons({
+      checkmarkCircle,
+      footballOutline,
+      locationOutline,
+      navigateCircleOutline,
+      shieldOutline,
+    });
     this.carica();
   }
 
@@ -213,6 +235,11 @@ export class ElencoPage {
 
   cambiaSoloSenzaPosizione(attivo: boolean): void {
     this.soloSenzaPosizione.set(attivo);
+    this.mostrati.set(BLOCCO);
+  }
+
+  cambiaSoloSenzaStemma(attivo: boolean): void {
+    this.soloSenzaStemma.set(attivo);
     this.mostrati.set(BLOCCO);
   }
 
