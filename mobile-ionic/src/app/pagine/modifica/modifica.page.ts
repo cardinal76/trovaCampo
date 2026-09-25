@@ -30,6 +30,7 @@ import {
 import { addIcons } from 'ionicons';
 import { add, location, logOut, trash, warning } from 'ionicons/icons';
 import { SelettoreMappaComponent } from '../../componenti/selettore-mappa/selettore-mappa.component';
+import { leggiCoordinate, scriviCoordinate } from '../../modelli/coordinate';
 import { ModificaSocieta, Societa, TipoCampionato } from '../../modelli/societa';
 import { AmministrazioneService } from '../../servizi/amministrazione.service';
 import {
@@ -48,7 +49,8 @@ interface RigaCampionato {
 
 /**
  * Tutti i campi del modulo come testo, così come li scrive chi compila:
- * latitudine e longitudine comprese, che si convertono solo al salvataggio.
+ * la posizione compresa, "lat, lng" in un campo solo, che si legge solo al
+ * salvataggio.
  */
 class Modulo {
   siglaSocieta = '';
@@ -58,8 +60,7 @@ class Modulo {
   indirizzoImpianto = '';
   localitaImpianto = '';
   provinciaImpianto = '';
-  lat = '';
-  lng = '';
+  posizione = '';
   matricola = '';
   presidente = '';
   indirizzoSede = '';
@@ -80,8 +81,7 @@ class Modulo {
     modulo.indirizzoImpianto = societa.indirizzoImpianto ?? '';
     modulo.localitaImpianto = societa.localitaImpianto ?? '';
     modulo.provinciaImpianto = societa.provinciaImpianto ?? '';
-    modulo.lat = societa.lat?.toString() ?? '';
-    modulo.lng = societa.lng?.toString() ?? '';
+    modulo.posizione = scriviCoordinate(societa.lat, societa.lng);
     modulo.matricola = societa.matricola ?? '';
     modulo.presidente = societa.presidente ?? '';
     modulo.indirizzoSede = societa.indirizzoSede ?? '';
@@ -94,16 +94,6 @@ class Modulo {
     modulo.campionati = (societa.campionati ?? []).map((c) => ({ ...c }));
     return modulo;
   }
-}
-
-/** "41,89" e "41.89" valgono uguale; vuoto vuol dire "da ricalcolare". */
-function coordinata(testo: string): number | undefined | null {
-  const pulito = testo.trim().replace(',', '.');
-  if (pulito === '') {
-    return undefined;
-  }
-  const numero = Number(pulito);
-  return Number.isFinite(numero) ? numero : null;
 }
 
 /**
@@ -162,6 +152,8 @@ export class ModificaPage {
 
   readonly stato = signal<'accesso' | 'caricamento' | 'pronto' | 'errore'>('accesso');
   readonly modulo = signal<Modulo | null>(null);
+  /** Per l'anteprima sotto il campo: si vede subito se le coordinate sono state capite. */
+  readonly leggiCoordinate = leggiCoordinate;
   readonly salvataggio = signal(false);
   readonly errore = signal<string | null>(null);
 
@@ -192,21 +184,19 @@ export class ModificaPage {
 
   /** Apre la mappa a schermo intero per scegliere le coordinate a tocco, invece di scriverle a mano. */
   async posizionaSullaMappa(modulo: Modulo): Promise<void> {
-    const lat = coordinata(modulo.lat);
-    const lng = coordinata(modulo.lng);
+    const posizione = leggiCoordinate(modulo.posizione);
     const modale = await this.modaleControllo.create({
       component: SelettoreMappaComponent,
       componentProps: {
-        lat: typeof lat === 'number' ? lat : undefined,
-        lng: typeof lng === 'number' ? lng : undefined,
+        lat: posizione?.lat,
+        lng: posizione?.lng,
       },
     });
     await modale.present();
 
     const { data, role } = await modale.onDidDismiss<{ lat: number; lng: number }>();
     if (role === 'confirm' && data) {
-      modulo.lat = data.lat.toFixed(6);
-      modulo.lng = data.lng.toFixed(6);
+      modulo.posizione = scriviCoordinate(Number(data.lat.toFixed(6)), Number(data.lng.toFixed(6)));
     }
   }
 
@@ -307,14 +297,12 @@ export class ModificaPage {
       return `Manca ${mancanti.join(', ')}.`;
     }
 
-    const lat = coordinata(modulo.lat);
-    const lng = coordinata(modulo.lng);
-    if (lat === null || lng === null) {
-      return 'Latitudine e longitudine devono essere numeri, es. 41,8919.';
+    const posizione = leggiCoordinate(modulo.posizione);
+    if (posizione === null) {
+      return 'Le coordinate vanno scritte come latitudine, longitudine: es. 41.507315, 13.058757.';
     }
-    if ((lat === undefined) !== (lng === undefined)) {
-      return 'Latitudine e longitudine vanno date insieme, oppure lasciate vuote tutte e due.';
-    }
+    const lat = posizione?.lat;
+    const lng = posizione?.lng;
 
     return {
       siglaSocieta: modulo.siglaSocieta,
