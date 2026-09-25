@@ -6,6 +6,7 @@ import { environment } from '../../environments/environment';
 import { ModificaSocieta } from '../modelli/societa';
 import { AmministrazioneService } from './amministrazione.service';
 import { AutenticazioneService } from './autenticazione.service';
+import { CampiCambiatiService } from './campi-cambiati.service';
 
 describe('AmministrazioneService', () => {
   let service: AmministrazioneService;
@@ -89,5 +90,47 @@ describe('AmministrazioneService', () => {
     chiamata.flush(null, { status: 204, statusText: 'No Content' });
 
     await esito;
+  });
+
+  it('dopo un eliminazione riuscita segnala che i campi sono cambiati, dopo un errore no', async () => {
+    const cambiati = TestBed.inject(CampiCambiatiService);
+    const prima = cambiati.versione();
+
+    const fallita = firstValueFrom(service.elimina('x'), { defaultValue: undefined }).catch((e: Error) => e);
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .expectOne(`${environment.apiUrl}/api/admin/societa/x`)
+      .flush({}, { status: 404, statusText: 'Not Found' });
+    await fallita;
+    expect(cambiati.versione()).toBe(prima);
+
+    const riuscita = firstValueFrom(service.elimina('1'), { defaultValue: undefined });
+    await Promise.resolve();
+    await Promise.resolve();
+    http
+      .expectOne(`${environment.apiUrl}/api/admin/societa/1`)
+      .flush(null, { status: 204, statusText: 'No Content' });
+    await riuscita;
+    expect(cambiati.versione()).toBe(prima + 1);
+  });
+
+  it('elenca le esclusioni e ne annulla una', async () => {
+    const elenco = firstValueFrom(service.esclusioni());
+    await Promise.resolve();
+    await Promise.resolve();
+    const lettura = http.expectOne(`${environment.apiUrl}/api/admin/esclusioni`);
+    expect(lettura.request.method).toBe('GET');
+    expect(lettura.request.headers.get('Authorization')).toBe('Bearer abc');
+    lettura.flush([{ id: 'e1', nomeSocieta: 'POMEZIA CALCIO 1957', nomeImpianto: 'DA DESIGNARE (' }]);
+    expect((await elenco)[0].id).toBe('e1');
+
+    const annullamento = firstValueFrom(service.annullaEsclusione('e1'), { defaultValue: undefined });
+    await Promise.resolve();
+    await Promise.resolve();
+    const cancellazione = http.expectOne(`${environment.apiUrl}/api/admin/esclusioni/e1`);
+    expect(cancellazione.request.method).toBe('DELETE');
+    cancellazione.flush(null, { status: 204, statusText: 'No Content' });
+    await annullamento;
   });
 });

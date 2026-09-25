@@ -51,6 +51,29 @@ export interface Societa {
   logoUrl?: string;
 }
 
+/**
+ * Vero per una scheda che arriva dall'anagrafica di presenze: eliminata, la
+ * sincronizzazione non la ricrea perché il backend la mette fra le escluse.
+ */
+export function daPresenze(societa: Societa): boolean {
+  return Boolean(societa.anagraficaSocietaId || societa.anagraficaImpiantoId);
+}
+
+/**
+ * Un campo di presenze eliminato da chi amministra, che la sincronizzazione
+ * salta (vedi Esclusione nel backend). Nomi e indirizzo servono a
+ * riconoscerlo nell'elenco.
+ */
+export interface Esclusione {
+  id: string;
+  nomeSocieta: string;
+  nomeImpianto: string;
+  indirizzoImpianto?: string;
+  esclusaDa?: string;
+  /** ISO 8601. */
+  esclusaIl?: string;
+}
+
 /** La scheda come la manda la pagina di modifica: tutto tranne l'id. */
 export type ModificaSocieta = Omit<Societa, 'id'>;
 

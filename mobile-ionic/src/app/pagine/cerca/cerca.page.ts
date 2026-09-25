@@ -29,11 +29,20 @@ import {
 import { addIcons } from 'ionicons';
 import { globeOutline, searchOutline } from 'ionicons/icons';
 import * as L from 'leaflet';
-import { catchError, debounceTime, distinctUntilChanged, map, of, switchMap } from 'rxjs';
+import {
+  catchError,
+  combineLatest,
+  debounceTime,
+  distinctUntilChanged,
+  map,
+  of,
+  switchMap,
+} from 'rxjs';
 import { Societa, haCoordinate, indirizzoCompleto, nomeCompleto } from '../../modelli/societa';
 import { ZOOM_ICONE, iconaCampo } from '../../mappa/icona-campo';
 import { SITO_FOOTBALLER } from '../../footballer';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
+import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
 import { SocietaService } from '../../servizi/societa.service';
 
 /** Centro dello sfondo: Roma, piazza Venezia. */
@@ -78,6 +87,7 @@ const MASSIMO_SUGGERIMENTI = 6;
 export class CercaPage implements OnDestroy {
   private readonly router = inject(Router);
   private readonly service = inject(SocietaService);
+  private readonly cambiati = inject(CampiCambiatiService);
   private readonly zona = inject(NgZone);
 
   private readonly sfondo = viewChild.required<ElementRef<HTMLElement>>('sfondoMappa');
@@ -98,12 +108,21 @@ export class CercaPage implements OnDestroy {
   constructor() {
     addIcons({ globeOutline, searchOutline });
 
-    toObservable(this.testo)
-      .pipe(
+    // Anche quando chi amministra cambia l'archivio: tornando qui dopo aver
+    // eliminato una scheda, i suggerimenti non devono proporla ancora.
+    combineLatest([
+      toObservable(this.testo).pipe(
         map((testo) => testo.trim()),
         debounceTime(250),
-        distinctUntilChanged(),
-        switchMap((termine) => {
+      ),
+      toObservable(this.cambiati.versione),
+    ])
+      .pipe(
+        distinctUntilChanged(
+          ([termine, versione], [termine2, versione2]) =>
+            termine === termine2 && versione === versione2,
+        ),
+        switchMap(([termine]) => {
           if (termine.length < MINIMO_SUGGERIMENTI) {
             this.caricamentoSuggerimenti.set(false);
             return of(null);

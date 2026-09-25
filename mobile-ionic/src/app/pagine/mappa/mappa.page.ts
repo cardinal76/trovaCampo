@@ -54,6 +54,7 @@ import {
 } from '../../modelli/provincia';
 import { NumeroViciniService } from '../../servizi/numero-vicini.service';
 import { ErrorePosizione, PosizioneService } from '../../servizi/posizione.service';
+import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
 import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
 import { SocietaService } from '../../servizi/societa.service';
 import {
@@ -133,6 +134,9 @@ export class MappaPage implements OnDestroy {
   private readonly numeroVicini = inject(NumeroViciniService);
   private readonly posizioneService = inject(PosizioneService);
   private readonly diagnosi = inject(DiagnosiService);
+  private readonly cambiati = inject(CampiCambiatiService);
+  /** La versione dell'archivio dei campi scaricati: se al rientro è salita, si ricarica. */
+  private versioneCaricata = -1;
 
   private readonly contenitore = viewChild<ElementRef<HTMLElement>>('contenitoreMappa');
   private mappa: L.Map | null = null;
@@ -225,6 +229,11 @@ export class MappaPage implements OnDestroy {
   /** A ogni ingresso: tornando dal login (o dopo l'uscita) il riepilogo si adegua. */
   ionViewWillEnter(): void {
     this.amministratore.set(amministratoreRicordato());
+    // Di ritorno da una scheda eliminata, modificata o creata: il suo
+    // segnaposto deve sparire o spostarsi.
+    if (this.cambiati.versione() !== this.versioneCaricata) {
+      this.carica();
+    }
   }
 
   constructor() {
@@ -309,14 +318,29 @@ export class MappaPage implements OnDestroy {
     return nomeCompleto(campo);
   }
 
+  /**
+   * Scarica i campi. Se la mappa c'è già li sostituisce senza spinner: la
+   * mappa resta dov'era (stessa inquadratura, stessa provincia, stessi
+   * vicini) e cambiano solo i segnaposto. Se il nuovo scaricamento fallisce
+   * restano quelli di prima, e si riprova al prossimo rientro.
+   */
   carica(): void {
-    this.stato.set('caricamento');
+    const giaPronta = this.stato() === 'pronto';
+    this.versioneCaricata = this.cambiati.versione();
+    if (!giaPronta) {
+      this.stato.set('caricamento');
+    }
     this.service.tutti().subscribe({
       next: (campi) => {
         this.campi.set(campi);
         this.stato.set('pronto');
       },
-      error: () => this.stato.set('errore'),
+      error: () => {
+        this.versioneCaricata = -1;
+        if (!giaPronta) {
+          this.stato.set('errore');
+        }
+      },
     });
     // A parte, e senza toccare lo stato della pagina: le partite sono un di
     // più, la mappa non le aspetta.

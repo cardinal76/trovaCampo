@@ -2,12 +2,20 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { ToastController, provideIonicAngular } from '@ionic/angular/standalone';
-import { of } from 'rxjs';
+import {
+  AlertController,
+  NavController,
+  ToastController,
+  provideIonicAngular,
+} from '@ionic/angular/standalone';
+import { of, throwError } from 'rxjs';
 import { Partita } from '../../modelli/partita';
 import { Societa } from '../../modelli/societa';
 import { Squadra } from '../../modelli/squadra';
 import { AmbientePush } from '../../servizi/ambiente-push';
+import { AmministrazioneService } from '../../servizi/amministrazione.service';
+import { ricordaAmministratore } from '../../servizi/amministratore-ricordato';
+import { AutenticazioneService } from '../../servizi/autenticazione.service';
 import { AmbientePushFinto, attendi } from '../../servizi/ambiente-push-finto.spec';
 import { NotificheService } from '../../servizi/notifiche.service';
 import { SocietaService } from '../../servizi/societa.service';
@@ -43,11 +51,30 @@ describe('SchedaPage', () => {
   let fixture: ComponentFixture<SchedaPage>;
 
   let messaggi: string[];
+  /** Le conferme mostrate, e il tasto che chi amministra vi tocca. */
+  let conferme: { header: string; message: string }[];
+  let risposta: 'destructive' | 'cancel';
+  let eliminate: string[];
+  let esitoEliminazione: () => ReturnType<AmministrazioneService['elimina']>;
+  let navigazioni: string[];
+  let accessi: number;
+  let entrato: boolean;
 
-  afterEach(() => localStorage.removeItem('trovacampo.squadreSeguite'));
+  afterEach(() => {
+    localStorage.removeItem('trovacampo.squadreSeguite');
+    ricordaAmministratore(false);
+    sessionStorage.removeItem('trovacampo.eliminaDopoAccesso');
+  });
 
   function apri(societa: Societa, partite: Partita[] = [PARTITA], squadre: Squadra[] = []): HTMLElement {
     messaggi = [];
+    conferme = [];
+    risposta = 'destructive';
+    eliminate = [];
+    esitoEliminazione = () => of(undefined);
+    navigazioni = [];
+    accessi = 0;
+    entrato = true;
     TestBed.configureTestingModule({
       imports: [SchedaPage],
       providers: [
@@ -68,6 +95,46 @@ describe('SchedaPage', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AmbientePush, useValue: new AmbientePushFinto() },
+        {
+          provide: AlertController,
+          useValue: {
+            create: async (opzioni: { header: string; message: string }) => {
+              conferme.push(opzioni);
+              return {
+                present: async () => undefined,
+                onDidDismiss: async () => ({ role: risposta }),
+              };
+            },
+          },
+        },
+        {
+          provide: AmministrazioneService,
+          useValue: {
+            elimina: (id: string) => {
+              eliminate.push(id);
+              return esitoEliminazione();
+            },
+          },
+        },
+        {
+          provide: AutenticazioneService,
+          useValue: {
+            amministratore: () => entrato,
+            accedi: async () => {
+              accessi++;
+              return true;
+            },
+          },
+        },
+        {
+          provide: NavController,
+          useValue: {
+            navigateRoot: async (url: string) => {
+              navigazioni.push(url);
+              return true;
+            },
+          },
+        },
         {
           provide: ToastController,
           useValue: {
@@ -193,6 +260,124 @@ describe('SchedaPage', () => {
       fixture.detectChanges();
       expect(notifiche.segue('7|eccellenza|regionali|')).toBeFalse();
       expect(campanelle(pagina)[0].getAttribute('aria-pressed')).toBe('false');
+    });
+  });
+
+  describe('il cestino di chi amministra', () => {
+    const DOPPIONE: Societa = {
+      ...SOCIETA,
+      id: '6ab3bfa23ae69c1e8dea9774',
+      nomeSocieta: 'POMEZIA CALCIO 1957',
+      nomeImpianto: 'DA DESIGNARE (',
+      anagraficaSocietaId: 40,
+      anagraficaImpiantoId: 900,
+    };
+
+    function cestino(pagina: HTMLElement): HTMLElement | null {
+      return pagina.querySelector('ion-button.elimina');
+    }
+
+    /** Amministrazione e login si caricano al primo tocco, con import dinamici: qualche giro. */
+    async function aspetta(): Promise<void> {
+      for (let i = 0; i < 20; i++) {
+        await attendi();
+      }
+      fixture.detectChanges();
+    }
+
+    async function tocca(pagina: HTMLElement): Promise<void> {
+      cestino(pagina)!.click();
+      await aspetta();
+    }
+
+    it('chi non amministra non lo vede', () => {
+      const pagina = apri(DOPPIONE);
+
+      expect(cestino(pagina)).toBeNull();
+    });
+
+    it('chi amministra lo vede accanto a Modifica, rosso e con un nome per lo screen reader', () => {
+      ricordaAmministratore(true);
+      const pagina = apri(DOPPIONE);
+
+      expect(cestino(pagina)).not.toBeNull();
+      expect(cestino(pagina)!.getAttribute('color')).toBe('danger');
+      expect(cestino(pagina)!.getAttribute('aria-label')).toBe('Elimina società');
+    });
+
+    it('chiede conferma dicendo che un campo di presenze non torna, poi elimina e va all elenco', async () => {
+      ricordaAmministratore(true);
+      const pagina = apri(DOPPIONE);
+
+      await tocca(pagina);
+
+      expect(conferme.length).toBe(1);
+      expect(conferme[0].header).toBe('Eliminare POMEZIA CALCIO 1957 – DA DESIGNARE (?');
+      expect(conferme[0].message).toContain('non ricomparirà con la sincronizzazione');
+      expect(eliminate).toEqual(['6ab3bfa23ae69c1e8dea9774']);
+      expect(messaggi).toContain('Società eliminata.');
+      expect(navigazioni).toEqual(['/campi']);
+    });
+
+    it('per un campo inserito a mano non parla di sincronizzazione', async () => {
+      ricordaAmministratore(true);
+      const pagina = apri({ ...SOCIETA, anagraficaImpiantoId: undefined });
+
+      await tocca(pagina);
+
+      expect(conferme[0].message).not.toContain('sincronizzazione');
+      expect(conferme[0].message).toContain('Non si può annullare');
+    });
+
+    it('con Annulla non elimina niente', async () => {
+      ricordaAmministratore(true);
+      const pagina = apri(DOPPIONE);
+      risposta = 'cancel';
+
+      await tocca(pagina);
+
+      expect(conferme.length).toBe(1);
+      expect(eliminate).toEqual([]);
+      expect(navigazioni).toEqual([]);
+    });
+
+    it('se il server rifiuta lo dice e resta sulla scheda', async () => {
+      ricordaAmministratore(true);
+      const pagina = apri(DOPPIONE);
+      esitoEliminazione = () =>
+        throwError(() => new Error('Il tuo utente non ha il ruolo trovacampo-admin.'));
+
+      await tocca(pagina);
+
+      expect(messaggi).toContain('Il tuo utente non ha il ruolo trovacampo-admin.');
+      expect(navigazioni).toEqual([]);
+      expect(fixture.componentInstance.eliminazione()).toBeFalse();
+    });
+
+    it('senza login fatto in questa pagina passa prima dal login', async () => {
+      ricordaAmministratore(true);
+      const pagina = apri(DOPPIONE);
+      entrato = false;
+
+      await tocca(pagina);
+
+      // Qui il login finto torna subito; quello vero porterebbe via, e al
+      // ritorno la scheda ritroverebbe il segno lasciato in sessionStorage.
+      expect(accessi).toBe(1);
+      expect(sessionStorage.getItem('trovacampo.eliminaDopoAccesso')).toBeNull();
+      expect(eliminate).toEqual(['6ab3bfa23ae69c1e8dea9774']);
+    });
+
+    it('di ritorno dal login finisce l accesso e richiede la conferma', async () => {
+      ricordaAmministratore(true);
+      sessionStorage.setItem('trovacampo.eliminaDopoAccesso', '6ab3bfa23ae69c1e8dea9774');
+      apri(DOPPIONE);
+      await aspetta();
+
+      expect(accessi).toBeGreaterThan(0);
+      expect(conferme.length).toBe(1);
+      expect(eliminate).toEqual(['6ab3bfa23ae69c1e8dea9774']);
+      expect(sessionStorage.getItem('trovacampo.eliminaDopoAccesso')).toBeNull();
     });
   });
 });

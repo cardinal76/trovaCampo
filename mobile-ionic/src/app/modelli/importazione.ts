@@ -14,4 +14,6 @@ export interface EsitoImportazione {
   scartate: Scarto[];
   daGeocodificare: number;
   colonneIgnorate: string[];
+  /** Righe saltate perché il loro campo è stato eliminato da chi amministra. */
+  escluse?: number;
 }

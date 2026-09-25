@@ -1,6 +1,7 @@
 import {
   Component,
   ElementRef,
+  Injector,
   NgZone,
   OnDestroy,
   computed,
@@ -11,6 +12,7 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
+  AlertController,
   IonAccordion,
   IonAccordionGroup,
   IonBackButton,
@@ -28,12 +30,14 @@ import {
   IonSpinner,
   IonTitle,
   IonToolbar,
+  NavController,
   ToastController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
   calendarOutline,
   create,
+  trash,
   notifications,
   notificationsOutline,
   peopleOutline,
@@ -44,6 +48,7 @@ import * as L from 'leaflet';
 import {
   Societa,
   SocietaGeolocalizzata,
+  daPresenze,
   haCoordinate,
   indirizzoCompleto,
   nomeCompleto,
@@ -64,6 +69,13 @@ import { NotificheService } from '../../servizi/notifiche.service';
 import { SocietaService } from '../../servizi/societa.service';
 
 type Stato = 'caricamento' | 'completata' | 'errore';
+
+/**
+ * La scheda da eliminare quando si torna dal login di Keycloak. Il login
+ * porta via dalla pagina, e al ritorno l'eliminazione chiesta prima non c'è
+ * più: la si ricorda qui, per chiedere di nuovo la conferma appena rientrati.
+ */
+const CHIAVE_ELIMINA_DOPO_ACCESSO = 'trovacampo.eliminaDopoAccesso';
 
 /**
  * Zoom della mappa della scheda: abbastanza vicino da riconoscere le vie
@@ -113,6 +125,9 @@ export class SchedaPage implements OnDestroy {
   private readonly notifiche = inject(NotificheService);
   private readonly avvisi = inject(ToastController);
   private readonly router = inject(Router);
+  private readonly conferme = inject(AlertController);
+  private readonly navigazione = inject(NavController);
+  private readonly iniettore = inject(Injector);
 
   private readonly contenitoreMappa = viewChild<ElementRef<HTMLDivElement>>('contenitoreMappa');
   private mappa: L.Map | null = null;
@@ -138,6 +153,8 @@ export class SchedaPage implements OnDestroy {
   readonly dataPartita = (partita: Partita) => dataPartita(partita);
   /** Il pulsante "Modifica": solo se su questo browser è entrato un amministratore. */
   readonly amministratore = signal(amministratoreRicordato());
+  /** Mentre l'eliminazione è in corso il pulsante è spento: niente doppi tocchi. */
+  readonly eliminazione = signal(false);
 
   readonly indirizzoCampo = computed(() => {
     const societa = this.societa();
@@ -224,6 +241,7 @@ export class SchedaPage implements OnDestroy {
       calendarOutline,
       create,
       notifications,
+      trash,
       notificationsOutline,
       peopleOutline,
       timeOutline,
@@ -318,15 +336,124 @@ export class SchedaPage implements OnDestroy {
    */
   ionViewWillEnter(): void {
     this.amministratore.set(amministratoreRicordato());
+    const eliminaDopoAccesso = leggiEliminaDopoAccesso() === this.id;
+    if (eliminaDopoAccesso) {
+      scriviEliminaDopoAccesso(null);
+    }
     this.service.perId(this.id).subscribe({
       next: (dati) => {
         this.societa.set(dati);
         this.stato.set('completata');
         this.caricaSquadre(dati);
         this.caricaPartite(dati);
+        if (eliminaDopoAccesso) {
+          void this.riprendiEliminazione();
+        }
       },
       error: () => this.stato.set('errore'),
     });
+  }
+
+  /**
+   * Il pulsante cestino, per chi amministra: chiede conferma, elimina la
+   * scheda e torna all'elenco. Una scheda che viene da presenze il backend
+   * la mette fra le escluse, così la sincronizzazione non la ricrea: la
+   * conferma lo dice, perché è la differenza con il solo "sparisce".
+   */
+  async elimina(): Promise<void> {
+    const societa = this.societa();
+    if (!societa || this.eliminazione()) {
+      return;
+    }
+    if (!(await this.conferma(societa))) {
+      return;
+    }
+
+    this.eliminazione.set(true);
+    try {
+      const { amministrazione, autenticazione } = await this.serviziAmministrazione();
+      if (!autenticazione.amministratore()) {
+        // Keycloak non è ancora partito in questa pagina (si arriva dalla
+        // ricerca, non dalla modifica): il login porta via e riporta qui.
+        // Se non torna indietro (utente già entrato ma senza ruolo) si
+        // prosegue e il server risponde 403 con il suo messaggio.
+        scriviEliminaDopoAccesso(this.id);
+        await autenticazione.accedi();
+        scriviEliminaDopoAccesso(null);
+      }
+      amministrazione.elimina(this.id).subscribe({
+        next: async () => {
+          this.eliminazione.set(false);
+          await this.avvisaEsito('Società eliminata.', 'success');
+          // All'elenco, ripartendo da capo: tornando indietro si finirebbe
+          // sulla scheda, che non esiste più.
+          await this.navigazione.navigateRoot('/campi');
+        },
+        error: async (errore: Error) => {
+          this.eliminazione.set(false);
+          await this.avvisaEsito(errore.message, 'danger');
+        },
+      });
+    } catch {
+      scriviEliminaDopoAccesso(null);
+      this.eliminazione.set(false);
+      await this.avvisaEsito('Il login non risponde. Riprova tra poco.', 'danger');
+    }
+  }
+
+  /** Di ritorno dal login chiesto dal cestino: si finisce il login e si richiede la conferma. */
+  private async riprendiEliminazione(): Promise<void> {
+    try {
+      const { autenticazione } = await this.serviziAmministrazione();
+      await autenticazione.accedi();
+    } catch {
+      await this.avvisaEsito('Il login non risponde. Riprova tra poco.', 'danger');
+      return;
+    }
+    await this.elimina();
+  }
+
+  private async conferma(societa: Societa): Promise<boolean> {
+    const avviso = await this.conferme.create({
+      header: `Eliminare ${nomeCompleto(societa)} – ${societa.nomeImpianto}?`,
+      message: daPresenze(societa)
+        ? 'Sparirà da ricerca, elenco e mappa, e non ricomparirà con la sincronizzazione ' +
+          "con presenze. L'esclusione si annulla da Importa campi."
+        : 'Sparirà da ricerca, elenco e mappa. Non si può annullare.',
+      buttons: [
+        { text: 'Annulla', role: 'cancel' },
+        { text: 'Elimina', role: 'destructive' },
+      ],
+    });
+    await avviso.present();
+    const { role } = await avviso.onDidDismiss();
+    return role === 'destructive';
+  }
+
+  /**
+   * Amministrazione e login caricati solo al primo tocco del cestino: la
+   * scheda è una pagina pubblica, e chi cerca un campo non deve scaricare
+   * keycloak-js (vedi AutenticazioneService).
+   */
+  private async serviziAmministrazione() {
+    const [{ AmministrazioneService }, { AutenticazioneService }] = await Promise.all([
+      import('../../servizi/amministrazione.service'),
+      import('../../servizi/autenticazione.service'),
+    ]);
+    return {
+      amministrazione: this.iniettore.get(AmministrazioneService),
+      autenticazione: this.iniettore.get(AutenticazioneService),
+    };
+  }
+
+  private async avvisaEsito(messaggio: string, colore: 'success' | 'danger'): Promise<void> {
+    const avviso = await this.avvisi.create({
+      message: messaggio,
+      duration: colore === 'success' ? 2000 : 4000,
+      color: colore,
+      position: 'bottom',
+    });
+    await avviso.present();
   }
 
   /**
@@ -407,5 +534,26 @@ export class SchedaPage implements OnDestroy {
       },
       error: () => this.statoPartite.set('errore'),
     });
+  }
+}
+
+function leggiEliminaDopoAccesso(): string | null {
+  try {
+    return sessionStorage.getItem(CHIAVE_ELIMINA_DOPO_ACCESSO);
+  } catch {
+    // Archivio bloccato: dopo il login si tocca di nuovo il cestino.
+    return null;
+  }
+}
+
+function scriviEliminaDopoAccesso(id: string | null): void {
+  try {
+    if (id) {
+      sessionStorage.setItem(CHIAVE_ELIMINA_DOPO_ACCESSO, id);
+    } else {
+      sessionStorage.removeItem(CHIAVE_ELIMINA_DOPO_ACCESSO);
+    }
+  } catch {
+    // Come sopra.
   }
 }
