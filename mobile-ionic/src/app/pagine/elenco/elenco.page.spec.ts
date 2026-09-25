@@ -42,7 +42,7 @@ describe('ElencoPage', () => {
   }
 
   function interruttore(): HTMLElement | null {
-    return fixture.nativeElement.querySelector('ion-toggle.filtro-posizione');
+    return fixture.nativeElement.querySelector('.filtro-posizione');
   }
 
   function nomi(): string[] {
@@ -93,6 +93,28 @@ describe('ElencoPage', () => {
     pagina.cambiaSoloSenzaPosizione(false);
 
     expect(nomi().length).toBe(CAMPI.length);
+  });
+
+  it('la pillola si accende al tocco e lo dice anche a chi usa lo screen reader', () => {
+    ricordaAmministratore(true);
+    crea();
+    const pillola = interruttore() as HTMLButtonElement;
+
+    expect(pillola.getAttribute('aria-pressed')).toBe('false');
+    pillola.click();
+    fixture.detectChanges();
+
+    expect(pagina.soloSenzaPosizione()).toBeTrue();
+    expect(pillola.getAttribute('aria-pressed')).toBe('true');
+    expect(pillola.classList).toContain('attivo');
+  });
+
+  it('la provincia chiusa dice di cosa si parla', () => {
+    crea();
+
+    expect(pagina.testoProvincia()).toBe('Tutte le province');
+    pagina.cambiaProvincia('LT');
+    expect(pagina.testoProvincia()).toBe('Latina');
   });
 
   it('si combina con la ricerca per nome', () => {

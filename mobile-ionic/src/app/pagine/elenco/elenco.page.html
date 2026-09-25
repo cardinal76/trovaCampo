@@ -5,40 +5,63 @@
       <menu-utente></menu-utente>
     </ion-buttons>
   </ion-toolbar>
-  <ion-toolbar>
-    <ion-searchbar
-      placeholder="Filtra per società, campo o indirizzo"
-      [debounce]="150"
-      [value]="filtro()"
-      (ionInput)="cambiaFiltro($any($event.target).value)"
-      (ionClear)="cambiaFiltro('')"
-    ></ion-searchbar>
+  <ion-toolbar class="barra-ricerca">
+    <div class="contenuto-largo">
+      <ion-searchbar
+        placeholder="Filtra per società, campo o indirizzo"
+        [debounce]="150"
+        [value]="filtro()"
+        (ionInput)="cambiaFiltro($any($event.target).value)"
+        (ionClear)="cambiaFiltro('')"
+      ></ion-searchbar>
+    </div>
   </ion-toolbar>
   @if (stato() === 'pronto') {
-    <ion-toolbar>
-      <ion-select
-        class="filtro-provincia"
-        label="Provincia"
-        interface="popover"
-        justify="space-between"
-        [value]="provincia()"
-        (ionChange)="cambiaProvincia($event.detail.value)"
-      >
-        @for (opzione of opzioniProvincia(); track opzione.valore) {
-          <ion-select-option [value]="opzione.valore">{{ opzione.etichetta }}</ion-select-option>
+    <!--
+      I filtri su una riga sola, come pillole: la provincia per tutti, e per
+      chi amministra "senza posizione precisa". Da interruttori a tutta
+      larghezza erano due righe di testata, e l'interruttore usciva dal bordo.
+    -->
+    <ion-toolbar class="barra-filtri">
+      <div class="contenuto-largo filtri">
+        <ion-select
+          class="filtro-provincia"
+          aria-label="Provincia"
+          interface="popover"
+          fill="outline"
+          shape="round"
+          [value]="provincia()"
+          [selectedText]="testoProvincia()"
+          (ionChange)="cambiaProvincia($event.detail.value)"
+        >
+          <ion-icon slot="start" name="location-outline" aria-hidden="true"></ion-icon>
+          @for (opzione of opzioniProvincia(); track opzione.valore) {
+            <ion-select-option [value]="opzione.valore">{{ opzione.etichetta }}</ion-select-option>
+          }
+        </ion-select>
+        @if (amministratore()) {
+          <button
+            type="button"
+            class="filtro-posizione"
+            [class.attivo]="soloSenzaPosizione()"
+            [attr.aria-pressed]="soloSenzaPosizione()"
+            (click)="cambiaSoloSenzaPosizione(!soloSenzaPosizione())"
+          >
+            <ion-icon
+              [name]="soloSenzaPosizione() ? 'checkmark-circle' : 'navigate-circle-outline'"
+              aria-hidden="true"
+            ></ion-icon>
+            Senza posizione precisa
+          </button>
         }
-      </ion-select>
-    </ion-toolbar>
-  }
-  @if (amministratore()) {
-    <ion-toolbar>
-      <ion-toggle
-        class="filtro-posizione"
-        justify="space-between"
-        [checked]="soloSenzaPosizione()"
-        (ionChange)="cambiaSoloSenzaPosizione($event.detail.checked)"
-        >Solo senza posizione precisa</ion-toggle
-      >
+        <span class="conteggio" aria-live="polite">
+          @if (filtrato()) {
+            {{ filtrati().length }} di {{ campi().length }} campi
+          } @else {
+            {{ campi().length === 1 ? '1 campo' : campi().length + ' campi' }}
+          }
+        </span>
+      </div>
     </ion-toolbar>
   }
 </ion-header>
@@ -58,29 +81,22 @@
     }
     @case ('pronto') {
       <div class="contenuto-largo">
-        <ion-list>
-          <ion-list-header>
-            <ion-label>
-              @if (filtrato()) {
-                {{ filtrati().length }} di {{ campi().length }} campi
-              } @else {
-                {{ campi().length === 1 ? '1 campo' : campi().length + ' campi' }}
-              }
-            </ion-label>
-          </ion-list-header>
-
+        <ion-list class="elenco" lines="full">
           @for (campo of visibili(); track campo.id) {
             <ion-item button [routerLink]="['/societa', campo.id]" detail>
-              <ion-label>
-                <h2>{{ nomeCompleto(campo) }}</h2>
-                <p>{{ campo.nomeImpianto }}</p>
-                <p>{{ indirizzoCompleto(campo) }}</p>
+              <ion-label class="ion-text-wrap">
+                <h2 class="societa">{{ nomeCompleto(campo) }}</h2>
+                <p class="impianto">
+                  <ion-icon name="football-outline" aria-hidden="true"></ion-icon>
+                  {{ campo.nomeImpianto }}
+                </p>
+                <p class="indirizzo">{{ indirizzoCompleto(campo) }}</p>
+                @if (!haCoordinate(campo)) {
+                  <span class="etichetta mancante">senza posizione</span>
+                } @else if (amministratore() && campo.posizioneApprossimata) {
+                  <span class="etichetta approssimata">posizione approssimata</span>
+                }
               </ion-label>
-              @if (!haCoordinate(campo)) {
-                <ion-note slot="end">senza posizione</ion-note>
-              } @else if (amministratore() && campo.posizioneApprossimata) {
-                <ion-note slot="end">posizione approssimata</ion-note>
-              }
             </ion-item>
           } @empty {
             <ion-item lines="none">
