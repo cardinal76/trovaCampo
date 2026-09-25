@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import it.trovacampo.api.dominio.Societa;
+import it.trovacampo.api.repository.EsclusioniRepository;
 import it.trovacampo.api.repository.SocietaRepository;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +23,8 @@ class ImportazioneServiceTest {
             riga("Società", "Impianto", "Indirizzo", "Comune", "Provincia", "Lat", "Lng");
 
     private final SocietaRepository repository = mock(SocietaRepository.class);
-    private final ImportazioneService service = new ImportazioneService(repository);
+    private final EsclusioniRepository esclusioni = mock(EsclusioniRepository.class);
+    private final ImportazioneService service = new ImportazioneService(repository, esclusioni);
 
     private List<Societa> salvate() {
         @SuppressWarnings("unchecked")

@@ -12,7 +12,9 @@ import static org.mockito.Mockito.when;
 import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.repository.SocietaRepository;
 import it.trovacampo.api.dominio.Campionato;
+import it.trovacampo.api.dominio.Esclusione;
 import it.trovacampo.api.dominio.TipoCampionato;
+import it.trovacampo.api.repository.EsclusioniRepository;
 import it.trovacampo.api.web.DatiNonValidiException;
 import it.trovacampo.api.web.ModificaSocietaRequest;
 import it.trovacampo.api.web.NuovoCampoRequest;
@@ -24,9 +26,10 @@ import org.mockito.ArgumentCaptor;
 class SocietaServiceTest {
 
     private final SocietaRepository repository = mock(SocietaRepository.class);
+    private final EsclusioniRepository esclusioni = mock(EsclusioniRepository.class);
 
     private SocietaService serviceCon(Geocoding geocoding) {
-        return new SocietaService(repository, geocoding);
+        return new SocietaService(repository, geocoding, esclusioni);
     }
 
     private SocietaService service() {
@@ -278,12 +281,65 @@ class SocietaServiceTest {
 
     @Test
     void eliminaSoloUnaSocietaCheEsiste() {
-        when(repository.existsById("1")).thenReturn(true);
-        when(repository.existsById("x")).thenReturn(false);
+        when(repository.findById("x")).thenReturn(Optional.empty());
 
-        assertThat(service().elimina("1")).isTrue();
-        assertThat(service().elimina("x")).isFalse();
-        verify(repository).deleteById("1");
+        assertThat(service().elimina("x", "mario")).isEmpty();
         verify(repository, never()).deleteById("x");
+        verify(esclusioni, never()).save(any());
+    }
+
+    @Test
+    void unCampoInseritoAManoSiEliminaEBasta() {
+        Societa aMano =
+                new Societa().setId("1").setNomeSocieta("Certosa Calcio").setNomeImpianto("Campo Certosa");
+        when(repository.findById("1")).thenReturn(Optional.of(aMano));
+
+        SocietaService.Eliminazione eliminata = service().elimina("1", "mario").orElseThrow();
+
+        assertThat(eliminata.esclusa()).isFalse();
+        verify(repository).deleteById("1");
+        verify(esclusioni, never()).save(any());
+    }
+
+    @Test
+    void unCampoDiPresenzeEliminatoLasciaUnEsclusione() {
+        Societa doppione =
+                new Societa()
+                        .setId("6ab3bfa23ae69c1e8dea9774")
+                        .setNomeSocieta("POMEZIA CALCIO 1957")
+                        .setNomeImpianto("DA DESIGNARE                     (")
+                        .setIndirizzoImpianto("XXXXXXXXX")
+                        .setAnagraficaSocietaId(40L)
+                        .setAnagraficaImpiantoId(900L);
+        when(repository.findById("6ab3bfa23ae69c1e8dea9774")).thenReturn(Optional.of(doppione));
+
+        SocietaService.Eliminazione eliminata =
+                service().elimina("6ab3bfa23ae69c1e8dea9774", "mario").orElseThrow();
+
+        assertThat(eliminata.esclusa()).isTrue();
+        verify(repository).deleteById("6ab3bfa23ae69c1e8dea9774");
+        ArgumentCaptor<Esclusione> captor = ArgumentCaptor.forClass(Esclusione.class);
+        verify(esclusioni).save(captor.capture());
+        Esclusione esclusione = captor.getValue();
+        assertThat(esclusione.chiave()).isEqualTo("pomeziacalcio1957|dadesignare");
+        assertThat(esclusione.anagraficaSocietaId()).isEqualTo(40L);
+        assertThat(esclusione.anagraficaImpiantoId()).isEqualTo(900L);
+        assertThat(esclusione.nomeSocieta()).isEqualTo("POMEZIA CALCIO 1957");
+        assertThat(esclusione.indirizzoImpianto()).isEqualTo("XXXXXXXXX");
+        assertThat(esclusione.esclusaDa()).isEqualTo("mario");
+        assertThat(esclusione.esclusaIl()).isNotNull();
+    }
+
+    @Test
+    void annullareUnEsclusioneLaToglie() {
+        Esclusione esclusione =
+                new Esclusione("e1", "a|b", 1L, 2L, "A", "B", "Via C", "mario", java.time.Instant.EPOCH);
+        when(esclusioni.findById("e1")).thenReturn(Optional.of(esclusione));
+        when(esclusioni.findById("x")).thenReturn(Optional.empty());
+
+        assertThat(service().annullaEsclusione("e1")).contains(esclusione);
+        assertThat(service().annullaEsclusione("x")).isEmpty();
+        verify(esclusioni).deleteById("e1");
+        verify(esclusioni, never()).deleteById("x");
     }
 }
