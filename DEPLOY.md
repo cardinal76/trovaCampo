@@ -349,10 +349,22 @@ Le coordinate: se cambi l'indirizzo lasciandole com'erano, o le svuoti, le
 ricalcola la geocodifica automatica; se le correggi a mano, valgono quelle.
 
 In home, all'amministratore, c'è anche **Nuova società**: lo stesso modulo,
-vuoto. In fondo al modulo di modifica c'è **Elimina società**, con una
-conferma: la società sparisce da ricerca, elenco e mappa e non si recupera
+vuoto. Per eliminare una società c'è il cestino rosso accanto a **Modifica**
+nella scheda, e **Elimina società** in fondo al modulo di modifica, sempre con
+una conferma: la società sparisce da ricerca, elenco e mappa e non si recupera
 (se non da un backup di Mongo). Creazioni ed eliminazioni finiscono nel log
 del backend con il nome di chi le ha fatte.
+
+Una scheda che viene dall'anagrafica di presenze (ha `anagraficaSocietaId` o
+`anagraficaImpiantoId`) tornerebbe alla sincronizzazione dopo: eliminandola
+resta un'**esclusione** nella collezione Mongo `societa_escluse` (nome della
+società e del campo compattati, come la chiave dell'importazione, più la
+coppia di id di presenze, chi e quando). Importazione e sincronizzazione
+saltano le righe escluse e le contano nell'esito. Un campo inserito a mano o
+da un file si elimina e basta. In `/admin/importazione`, sotto, c'è l'elenco
+dei **Campi esclusi** con **Riammetti** (`GET` e `DELETE
+/api/admin/esclusioni/{id}`): il campo torna alla sincronizzazione
+successiva, se presenze lo manda ancora.
 
 ## Memoria
 
