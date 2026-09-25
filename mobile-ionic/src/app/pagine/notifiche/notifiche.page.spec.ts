@@ -150,6 +150,28 @@ describe('NotifichePage', () => {
     expect(pagina.querySelector('.aggiorna-posizione')?.textContent).toContain('Usa la mia posizione');
   });
 
+  it('il raggio si sceglie con tre pillole, e quella scelta è accesa', async () => {
+    const pagina = apri();
+    const pillole = () =>
+      Array.from(pagina.querySelectorAll<HTMLButtonElement>('.scelta-raggio')).map((p) => [
+        p.textContent?.trim(),
+        p.getAttribute('aria-checked'),
+      ]);
+
+    expect(pillole()).toEqual([
+      ['5 km', 'false'],
+      ['10 km', 'true'],
+      ['20 km', 'false'],
+    ]);
+
+    pagina.querySelectorAll<HTMLButtonElement>('.scelta-raggio')[2].click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(pillole()[2]).toEqual(['20 km', 'true']);
+    expect(pillole()[1]).toEqual(['10 km', 'false']);
+  });
+
   it('nel browser interno di WhatsApp dice di aprire la pagina in Chrome', async () => {
     const pagina = apri((a, s) => {
       a.supportoAttuale = 'browser-in-app';

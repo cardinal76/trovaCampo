@@ -64,3 +64,13 @@ export function nellaProvincia(campo: Societa, provincia: string): boolean {
   }
   return siglaDi(campo) === (provincia === SCONOSCIUTA ? '' : provincia);
 }
+
+/**
+ * Il testo della pillola della provincia da chiusa: "Tutte" da solo non
+ * direbbe di cosa, quindi "Tutte le province"; altrimenti il nome.
+ */
+export function testoProvincia(scelta: string, opzioni: OpzioneProvincia[]): string {
+  return scelta === TUTTE
+    ? 'Tutte le province'
+    : (opzioni.find((opzione) => opzione.valore === scelta)?.etichetta ?? scelta);
+}

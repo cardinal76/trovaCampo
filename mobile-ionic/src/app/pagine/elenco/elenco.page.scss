@@ -8,9 +8,85 @@
   text-align: center;
 }
 
-/* Nella barra come la ricerca, con lo stesso rientro ai lati. */
-.filtro-posizione,
-.filtro-provincia {
-  width: 100%;
-  padding: 0 1rem;
+/* Ricerca e filtri allineati alla lista, che sul computer sta al centro. */
+.barra-ricerca,
+.barra-filtri {
+  --padding-start: 0.5rem;
+  --padding-end: 0.5rem;
+}
+
+.barra-ricerca ion-searchbar {
+  padding-bottom: 0.25rem;
+}
+
+.filtri {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0 0.5rem 0.6rem;
+}
+
+/* Il giallo dei campi da sistemare, sulla pillola condivisa (styles.scss). */
+.filtro-posizione {
+  --pillola-colore: var(--ion-color-warning, #ffc409);
+  --pillola-sfondo: rgba(var(--ion-color-warning-rgb, 255, 196, 9), 0.18);
+}
+
+.conteggio {
+  margin-inline-start: auto;
+  color: var(--ion-color-medium, #666);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+/* Le righe: il nome in evidenza, il campo con la sua icona, l'indirizzo più piccolo. */
+.elenco {
+  padding-top: 0.25rem;
+
+  ion-item {
+    --padding-start: 1rem;
+    --inner-padding-end: 0.5rem;
+  }
+
+  .societa {
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .impianto {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+    margin-top: 0.15rem;
+    color: var(--ion-text-color, #222);
+
+    ion-icon {
+      flex: none;
+      color: var(--ion-color-success-shade, #28ba62);
+    }
+  }
+
+  .indirizzo {
+    font-size: 0.85rem;
+  }
+}
+
+.etichetta {
+  display: inline-block;
+  margin-top: 0.35rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+
+  &.mancante {
+    background: rgba(var(--ion-color-danger-rgb, 197, 0, 15), 0.12);
+    color: var(--ion-color-danger-shade, #ad000d);
+  }
+
+  &.approssimata {
+    background: rgba(var(--ion-color-warning-rgb, 255, 196, 9), 0.2);
+    color: #8a6100;
+  }
 }

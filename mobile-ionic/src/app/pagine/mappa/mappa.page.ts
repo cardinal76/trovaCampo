@@ -20,11 +20,10 @@ import {
   IonSelectOption,
   IonSpinner,
   IonTitle,
-  IonToggle,
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { close, locate } from 'ionicons/icons';
+import { calendarOutline, checkmarkCircle, close, locate, locationOutline } from 'ionicons/icons';
 import * as L from 'leaflet';
 import {
   Societa,
@@ -47,7 +46,12 @@ import { amministratoreRicordato } from '../../servizi/amministratore-ricordato'
 import { RiquadroDiagnosiComponent } from '../../componenti/riquadro-diagnosi/riquadro-diagnosi.component';
 import { DiagnosiService } from '../../servizi/diagnosi.service';
 import { istruzioniPosizione } from '../../servizi/istruzioni';
-import { nellaProvincia, opzioniProvincia, provinciaValida } from '../../modelli/provincia';
+import {
+  nellaProvincia,
+  opzioniProvincia,
+  provinciaValida,
+  testoProvincia,
+} from '../../modelli/provincia';
 import { NumeroViciniService } from '../../servizi/numero-vicini.service';
 import { ErrorePosizione, PosizioneService } from '../../servizi/posizione.service';
 import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
@@ -116,7 +120,6 @@ const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
     IonSelectOption,
     IonSpinner,
     IonTitle,
-    IonToggle,
     IonToolbar,
   ],
   templateUrl: './mappa.page.html',
@@ -162,6 +165,7 @@ export class MappaPage implements OnDestroy {
 
   /** Le province dei campi scaricati, con "Tutte" in testa. */
   readonly opzioniProvincia = computed(() => opzioniProvincia(this.campi()));
+  readonly testoProvincia = computed(() => testoProvincia(this.provincia(), this.opzioniProvincia()));
   readonly provincia = computed(() =>
     provinciaValida(this.provinciaScelta.scelta(), this.opzioniProvincia()),
   );
@@ -224,7 +228,7 @@ export class MappaPage implements OnDestroy {
   }
 
   constructor() {
-    addIcons({ close, locate });
+    addIcons({ calendarOutline, checkmarkCircle, close, locate, locationOutline });
     this.carica();
 
     // Il contenitore esiste solo dopo che i dati sono arrivati: la mappa si

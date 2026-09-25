@@ -25,10 +25,19 @@
   text-align: center;
 }
 
-/* Come nell'elenco: nella barra, con lo stesso rientro ai lati della ricerca. */
-.filtro-provincia {
-  width: 100%;
-  padding: 0 1rem;
+/* Le pillole dei filtri (stile in styles.scss), come nell'Elenco. */
+.filtri {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.6rem 1rem 0;
+}
+
+/* Il verde delle partite, sulla pillola condivisa. */
+.filtro-partite {
+  --pillola-colore: var(--ion-color-success, #2dd36f);
+  --pillola-sfondo: rgba(var(--ion-color-success-rgb, 45, 211, 111), 0.14);
 }
 
 /* "Vicino a me" e quanti campi: su una riga anche sul telefono. */
@@ -51,11 +60,6 @@
   height: 1rem;
 }
 
-/* L'interruttore delle partite: una riga sua, allineata ai comandi sopra. */
-.filtro-partite {
-  padding: 0.5rem 1rem 0;
-  font-size: 0.9rem;
-}
 
 /*
  * Il riquadro "come sbloccare la posizione": sopra la mappa, senza

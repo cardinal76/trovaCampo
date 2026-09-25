@@ -11,22 +11,23 @@ import {
   IonItem,
   IonLabel,
   IonList,
-  IonListHeader,
-  IonNote,
+  IonIcon,
   IonSearchbar,
   IonSelect,
   IonSelectOption,
   IonSpinner,
   IonTitle,
-  IonToggle,
   IonToolbar,
 } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';
+import { checkmarkCircle, footballOutline, locationOutline, navigateCircleOutline } from 'ionicons/icons';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
 import {
   TUTTE,
   nellaProvincia,
   opzioniProvincia,
   provinciaValida,
+  testoProvincia,
 } from '../../modelli/provincia';
 import {
   Societa,
@@ -74,20 +75,18 @@ function normalizza(testo: string): string {
     IonButton,
     IonButtons,
     IonContent,
+    IonIcon,
     IonHeader,
     IonInfiniteScroll,
     IonInfiniteScrollContent,
     IonItem,
     IonLabel,
     IonList,
-    IonListHeader,
-    IonNote,
     IonSearchbar,
     IonSelect,
     IonSelectOption,
     IonSpinner,
     IonTitle,
-    IonToggle,
     IonToolbar,
   ],
   templateUrl: './elenco.page.html',
@@ -120,6 +119,8 @@ export class ElencoPage {
 
   /** Le province dei campi scaricati, con "Tutte" in testa. */
   readonly opzioniProvincia = computed(() => opzioniProvincia(this.campi()));
+  /** Sulla pillola chiusa: "Tutte" da solo non direbbe di cosa. */
+  readonly testoProvincia = computed(() => testoProvincia(this.provincia(), this.opzioniProvincia()));
   readonly provincia = computed(() =>
     provinciaValida(this.provinciaScelta.scelta(), this.opzioniProvincia()),
   );
@@ -153,6 +154,7 @@ export class ElencoPage {
   readonly visibili = computed(() => this.filtrati().slice(0, this.mostrati()));
 
   constructor() {
+    addIcons({ checkmarkCircle, footballOutline, locationOutline, navigateCircleOutline });
     this.carica();
   }
 

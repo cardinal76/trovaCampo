@@ -5,22 +5,6 @@
       <menu-utente></menu-utente>
     </ion-buttons>
   </ion-toolbar>
-  @if (stato() === 'pronto') {
-    <ion-toolbar>
-      <ion-select
-        class="filtro-provincia"
-        label="Provincia"
-        interface="popover"
-        justify="space-between"
-        [value]="provincia()"
-        (ionChange)="cambiaProvincia($event.detail.value)"
-      >
-        @for (opzione of opzioniProvincia(); track opzione.valore) {
-          <ion-select-option [value]="opzione.valore">{{ opzione.etichetta }}</ion-select-option>
-        }
-      </ion-select>
-    </ion-toolbar>
-  }
 </ion-header>
 
 <ion-content [scrollY]="false">
@@ -38,15 +22,52 @@
     }
     @case ('pronto') {
       <div class="pagina">
+        <!--
+          I filtri come nell'Elenco: pillole su una riga, la provincia per
+          prima. La scelta della provincia è la stessa delle due pagine.
+        -->
+        <div class="filtri">
+          <ion-select
+            class="filtro-provincia pillola"
+            aria-label="Provincia"
+            interface="popover"
+            fill="outline"
+            shape="round"
+            [value]="provincia()"
+            [selectedText]="testoProvincia()"
+            (ionChange)="cambiaProvincia($event.detail.value)"
+          >
+            <ion-icon slot="start" name="location-outline" aria-hidden="true"></ion-icon>
+            @for (opzione of opzioniProvincia(); track opzione.valore) {
+              <ion-select-option [value]="opzione.valore">{{ opzione.etichetta }}</ion-select-option>
+            }
+          </ion-select>
+          @if (ciSonoPartite()) {
+            <button
+              type="button"
+              class="filtro-partite pillola"
+              [class.attivo]="soloConPartite()"
+              [attr.aria-pressed]="soloConPartite()"
+              (click)="cambiaSoloConPartite(!soloConPartite())"
+            >
+              <ion-icon
+                [name]="soloConPartite() ? 'checkmark-circle' : 'calendar-outline'"
+                aria-hidden="true"
+              ></ion-icon>
+              Si gioca entro {{ giorniPartite }} giorni
+            </button>
+          }
+        </div>
         <div class="vicini-comandi">
           @if (posizione()) {
-            <ion-button size="small" fill="outline" (click)="tornaAllaMappa()">
+            <ion-button size="small" fill="outline" shape="round" (click)="tornaAllaMappa()">
               <ion-icon slot="start" name="close"></ion-icon>
               Tutti i campi
             </ion-button>
           } @else {
             <ion-button
               size="small"
+              shape="round"
               class="vicino-a-me"
               [disabled]="cercoPosizione()"
               (click)="vicinoAMe()"
@@ -74,17 +95,6 @@
             }
           </ion-select>
         </div>
-        @if (ciSonoPartite()) {
-          <ion-toggle
-            class="filtro-partite"
-            justify="start"
-            labelPlacement="end"
-            [checked]="soloConPartite()"
-            (ionChange)="cambiaSoloConPartite($event.detail.checked)"
-          >
-            Solo campi con partite nei prossimi {{ giorniPartite }} giorni
-          </ion-toggle>
-        }
         @if (riquadroVicini(); as istruzioni) {
           <riquadro-diagnosi
             class="errore-vicini diagnosi-vicini"
