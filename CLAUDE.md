@@ -34,3 +34,15 @@ campi.
 
   Configurazione completa nel DEPLOY.md di presenze, "Scorciatoie: tunnel-kc
   e tunnel-db".
+
+## Rilascio: lo fa una sola sessione
+
+Le pull request si uniscono in `master`; il push su `produzione`, che fa
+partire il deploy, lo fa **una sola sessione**, quella che coordina merge e
+rilasci di TrovaCampo e presenze, e solo quando Marco lo chiede. Le altre
+uniscono in `master`, dicono a Marco che il lavoro e' pronto e si fermano.
+Lo fa rispettare il hook `.claude/hooks/blocca-deploy.sh`: rifiuta ogni
+`git push` verso `produzione`, tranne nel contenitore che ha il file
+`~/.deploy-produzione-autorizzato`, cioe' quello della sessione che
+coordina. Il file non va creato da nessun'altra sessione. Il hook e' un
+accordo, non una difesa: tutte le sessioni usano lo stesso account GitHub.
