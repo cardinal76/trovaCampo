@@ -11,6 +11,7 @@ import { SONDE_BROWSER } from '../../servizi/sonde-browser';
 import { AGENTI, SondeFinte } from '../../servizi/sonde-finte.spec';
 import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
 import { SocietaService } from '../../servizi/societa.service';
+import { ZOOM_STEMMI } from '../../mappa/icona-campo';
 import { MappaPage } from './mappa.page';
 
 function campo(id: string, provinciaImpianto: string, valori: Partial<Societa> = {}): Societa {
@@ -52,6 +53,8 @@ describe('MappaPage', () => {
   let posizione: jasmine.Spy;
   /** Quello che risponde il backend per le partite: di default nessuna. */
   let partiteSuiCampi: Observable<PartitePerCampo>;
+  /** I campi che manda il backend: di default CAMPI. */
+  let campiDalServer: Societa[];
 
   function crea(): void {
     fixture = TestBed.createComponent(MappaPage);
@@ -68,6 +71,7 @@ describe('MappaPage', () => {
   beforeEach(() => {
     sonde = SondeFinte.androidChrome();
     partiteSuiCampi = of({});
+    campiDalServer = CAMPI;
     // Chi guarda sta a Roma: dal campo 1 poche centinaia di metri.
     posizione = jasmine.createSpy('attuale').and.resolveTo({ lat: 41.892, lng: 12.482 });
     TestBed.configureTestingModule({
@@ -77,7 +81,7 @@ describe('MappaPage', () => {
         provideRouter([]),
         {
           provide: SocietaService,
-          useValue: { tutti: () => of(CAMPI), partiteSuiCampi: () => partiteSuiCampi },
+          useValue: { tutti: () => of(campiDalServer), partiteSuiCampi: () => partiteSuiCampi },
         },
         { provide: PosizioneService, useValue: { attuale: posizione } },
         { provide: SONDE_BROWSER, useValue: sonde },
@@ -548,6 +552,98 @@ describe('MappaPage', () => {
       const campo = { ...pagina['mostrati'][0], nomeImpianto: '<img src=x onerror=alert(1)>' };
 
       expect(pagina['popup'](campo)).not.toContain('<img');
+    });
+  });
+
+  /**
+   * Da ZOOM_STEMMI il campo di una società con lo stemma lo mostra al posto
+   * dell'icona del campo. I controlli sono subito dopo setView (senza
+   * animazione Leaflet aggiorna tutto nella stessa chiamata): l'immagine,
+   * che nei test non si scarica, non ha ancora avuto il tempo di fallire.
+   */
+  describe('stemmi da vicino', () => {
+    const STEMMA = 'https://play.lnd.it/lndimg/1/1-web.png';
+
+    beforeEach(() => {
+      campiDalServer = [
+        campo('1', 'RM', { lat: 41.89, lng: 12.48, logoUrl: STEMMA }),
+        // Poco lontano, senza stemma: da vicino resta l'icona del campo.
+        campo('5', 'RM', { lat: 41.891, lng: 12.481 }),
+      ];
+    });
+
+    function icona(id: string): HTMLElement | null {
+      return pagina['segnaposto'].get(id)?.getElement() ?? null;
+    }
+
+    it('da lontano solo il canvas, da vicino lo stemma per chi ce l ha', async () => {
+      crea();
+      await disegnata();
+      const mappa = pagina['mappa']!;
+
+      mappa.setView([41.89, 12.48], ZOOM_STEMMI - 3, { animate: false });
+      // Da lontano nessuno stemma sulla mappa.
+      expect(mappa.getContainer().querySelector('img[data-stemma]')).toBeNull();
+      expect(mappa.getContainer().querySelector('.leaflet-marker-icon')).toBeNull();
+
+      mappa.setView([41.89, 12.48], ZOOM_STEMMI + 2, { animate: false });
+      expect(icona('1')!.classList).toContain('icona-stemma');
+      expect(icona('1')!.querySelector('img')!.getAttribute('src')).toBe(STEMMA);
+      expect(icona('5')!.classList).not.toContain('icona-stemma');
+      expect(icona('5')!.querySelector('svg')).not.toBeNull();
+      // La mappa è la stessa, il segnaposto si riusa tornando indietro.
+      expect(pagina['mappa']).toBe(mappa);
+      const segnaposto = pagina['segnaposto'].get('1');
+      mappa.setView([41.89, 12.48], ZOOM_STEMMI - 3, { animate: false });
+      mappa.setView([41.89, 12.48], ZOOM_STEMMI, { animate: false });
+      expect(pagina['segnaposto'].get('1')).toBe(segnaposto);
+      await disegnata();
+    });
+
+    it('il tocco sullo stemma apre il popup del campo', async () => {
+      crea();
+      await disegnata();
+      pagina['mappa']!.setView([41.89, 12.48], ZOOM_STEMMI + 2, { animate: false });
+
+      icona('1')!.click();
+
+      expect(pagina['segnaposto'].get('1')!.isPopupOpen()).toBeTrue();
+      await disegnata();
+    });
+
+    it('con "Vicino a me" l anello arancione passa sul tondo dello stemma', async () => {
+      crea();
+      await pagina.vicinoAMe();
+      await disegnata();
+      const mappa = pagina['mappa']!;
+      const anello = (id: string) => pagina['anelli'].get(id)!.options.opacity;
+
+      mappa.setView([41.89, 12.48], ZOOM_STEMMI + 2, { animate: false });
+      expect(icona('1')!.classList).toContain('stemma-vicino');
+      expect(anello('1')).toBe(0);
+      // Il campo senza stemma tiene l'anello attorno al punto.
+      expect(anello('5')).toBe(1);
+
+      mappa.setView([41.89, 12.48], ZOOM_STEMMI - 3, { animate: false });
+      expect(anello('1')).toBe(1);
+      await disegnata();
+    });
+
+    it('uno stemma che non si carica lascia il posto all icona del campo', async () => {
+      crea();
+      await disegnata();
+      const mappa = pagina['mappa']!;
+      mappa.setView([41.89, 12.48], ZOOM_STEMMI + 2, { animate: false });
+
+      icona('1')!.querySelector('img')!.dispatchEvent(new Event('error'));
+
+      expect(icona('1')!.classList).not.toContain('icona-stemma');
+      expect(icona('1')!.querySelector('svg')).not.toBeNull();
+      // Allontanandosi e tornando vicino non lo si richiede.
+      mappa.setView([41.89, 12.48], ZOOM_STEMMI - 3, { animate: false });
+      mappa.setView([41.89, 12.48], ZOOM_STEMMI + 2, { animate: false });
+      expect(icona('1')!.querySelector('img')).toBeNull();
+      await disegnata();
     });
   });
 
