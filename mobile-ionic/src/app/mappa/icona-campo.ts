@@ -11,6 +11,18 @@ export const ZOOM_ICONE = 14;
 /** Da questo zoom in su accanto all'icona compare il nome della società. */
 export const ZOOM_NOMI = 18;
 
+/**
+ * Da questo zoom in su, nella pagina Mappa, il campo di una società con lo
+ * stemma si mostra con lo stemma al posto dell'icona del campo. A 14 un
+ * segnaposto di 36 pixel copre circa 350 metri: due campi così vicini sono
+ * rari, e gli stemmi si leggono senza coprirsi. Non può stare sotto
+ * ZOOM_ICONE: sul canvas si disegna solo l'icona del campo, e uno stemma
+ * sul canvas lo "sporcherebbe" (immagine di un altro sito) oltre a doverli
+ * scaricare tutti all'apertura. Stando sopra, gli stemmi si scaricano solo
+ * per i campi dentro la vista, e solo quando ci si avvicina.
+ */
+export const ZOOM_STEMMI = 14;
+
 /** Campo da calcio visto dall'alto, disegnato in SVG per non dipendere da immagini. */
 const SVG_CAMPO = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 20" width="35" height="25" aria-hidden="true">
@@ -42,6 +54,78 @@ export function iconaCampo(campo: SocietaGeolocalizzata): L.DivIcon {
     popupAnchor: [0, -12],
     tooltipAnchor: [18, 0],
   });
+}
+
+/**
+ * Come si mostra un campo sulla mappa a questo zoom: sul canvas da lontano,
+ * poi con lo stemma della società se ce l'ha (e se non ha già dato errore),
+ * altrimenti con l'icona del campo. Senza stemma resta l'icona del campo e
+ * non il cerchio con l'iniziale dell'elenco: sulla mappa dice subito "qui
+ * c'è un campo", mentre un cerchio con una lettera sembrerebbe uno stemma
+ * che non si è caricato.
+ */
+export type TipoSegnaposto = 'canvas' | 'campo' | 'stemma';
+
+export function tipoSegnaposto(
+  campo: SocietaGeolocalizzata,
+  zoom: number,
+  stemmiFalliti: ReadonlySet<string> = new Set(),
+): TipoSegnaposto {
+  if (zoom < ZOOM_ICONE) {
+    return 'canvas';
+  }
+  const stemma = stemmaDi(campo);
+  return zoom >= ZOOM_STEMMI && stemma && !stemmiFalliti.has(stemma) ? 'stemma' : 'campo';
+}
+
+/** L'indirizzo dello stemma, se c'è ed è https (come in stemma-societa). */
+export function stemmaDi(campo: SocietaGeolocalizzata): string | null {
+  const indirizzo = campo.logoUrl?.trim();
+  return indirizzo && indirizzo.startsWith('https://') ? indirizzo : null;
+}
+
+/** Diametro del tondo dello stemma e altezza della punta sotto, in pixel. */
+const DIAMETRO_STEMMA = 36;
+const PUNTA_STEMMA = 8;
+
+/**
+ * Lo stemma come segnaposto: un tondo bianco con ombra e una punta sotto,
+ * che tocca il punto esatto del campo (l'ancora di Leaflet). L'area che si
+ * tocca è tutto il tondo, più grande dell'icona del campo.
+ *
+ * È un <img> nell'HTML del segnaposto e non un disegno sul canvas: così
+ * l'immagine del portale LND non passa per un canvas (che si "sporcherebbe"
+ * con un'immagine di un altro sito) e si scarica solo quando il segnaposto
+ * entra nella mappa. `data-stemma` porta l'id del campo: se l'immagine dà
+ * errore, la pagina Mappa rimette l'icona del campo (vedi mappa.page.ts).
+ *
+ * `vicino` è per "Vicino a me": l'anello arancione dei campi vicini sta
+ * attorno al punto del campo, cioè alla punta, e con lo stemma sopra
+ * sembrerebbe un altro segnaposto. Per questi l'anello lo porta il tondo.
+ */
+export function iconaStemma(campo: SocietaGeolocalizzata, vicino = false): L.DivIcon {
+  const altezza = DIAMETRO_STEMMA + PUNTA_STEMMA;
+  return L.divIcon({
+    className: `icona-campo icona-stemma${vicino ? ' stemma-vicino' : ''}`,
+    html:
+      `<span class="tondo-stemma"><img src="${testoSicuro(stemmaDi(campo) ?? '')}" alt=""` +
+      ` data-stemma="${testoSicuro(campo.id)}" referrerpolicy="no-referrer" decoding="async"` +
+      ` draggable="false" width="${DIAMETRO_STEMMA - 8}" height="${DIAMETRO_STEMMA - 8}" /></span>` +
+      `<span class="nome-campo">${testoSicuro(nomeCompleto(campo))}</span>`,
+    iconSize: [DIAMETRO_STEMMA, altezza],
+    iconAnchor: [DIAMETRO_STEMMA / 2, altezza],
+    popupAnchor: [0, -altezza],
+    tooltipAnchor: [DIAMETRO_STEMMA / 2, -altezza / 2 - PUNTA_STEMMA / 2],
+  });
+}
+
+/** L'icona che corrisponde al tipo scelto da {@link tipoSegnaposto}. */
+export function iconaPerTipo(
+  campo: SocietaGeolocalizzata,
+  tipo: TipoSegnaposto,
+  vicino = false,
+): L.DivIcon {
+  return tipo === 'stemma' ? iconaStemma(campo, vicino) : iconaCampo(campo);
 }
 
 /** Accende i nomi dei campi (vedi styles.scss) quando lo zoom è abbastanza alto. */

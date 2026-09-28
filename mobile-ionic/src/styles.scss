@@ -41,6 +41,65 @@
   display: block;
 }
 
+/*
+ * Lo stemma della società al posto del campo, nella pagina Mappa dallo zoom
+ * 14 (ZOOM_STEMMI): un tondo bianco con ombra e, sotto, una punta che tocca
+ * il punto esatto del campo. Lo sfondo bianco serve agli stemmi con le parti
+ * trasparenti, che sulla mappa si confonderebbero con le strade.
+ */
+.icona-stemma {
+  .tondo-stemma {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 36px;
+    height: 36px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 50%);
+
+    /* La punta: un triangolo bianco sotto il tondo, con la sua ombra. */
+    &::after {
+      content: '';
+      position: absolute;
+      top: calc(100% - 1px);
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 9px 6px 0;
+      border-style: solid;
+      border-color: #fff transparent transparent;
+      filter: drop-shadow(0 2px 1px rgb(0 0 0 / 35%));
+    }
+  }
+
+  /* Con .leaflet-container davanti: Leaflet dà width: auto alle immagini
+     dei segnaposto, e uno stemma largo uscirebbe dal tondo. */
+  .leaflet-container & .tondo-stemma img {
+    display: block;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  /* Uno dei campi di "Vicino a me": l'anello arancione, lo stesso che le
+     icone del campo hanno attorno al punto, qui sta attorno al tondo. */
+  &.stemma-vicino .tondo-stemma {
+    box-shadow:
+      0 0 0 3px #e8590c,
+      0 1px 6px 3px rgb(0 0 0 / 35%);
+  }
+
+  /* Il nome accanto al tondo, non a metà del tondo e della punta. */
+  .nome-campo {
+    top: 18px;
+  }
+}
+
 .collegamento-scheda {
   margin-top: 0.4rem;
   padding: 0;

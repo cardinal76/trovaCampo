@@ -65,11 +65,15 @@ import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
 import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
 import { SocietaService } from '../../servizi/societa.service';
 import {
+  TipoSegnaposto,
   ZOOM_ICONE,
   aggiornaNomiCampi,
   campoSuCanvas,
   iconaCampo,
+  iconaPerTipo,
   immagineCampo,
+  stemmaDi,
+  tipoSegnaposto,
 } from '../../mappa/icona-campo';
 import {
   CampoVicino,
@@ -110,7 +114,10 @@ function tieniDentro(elemento: HTMLElement, mappa: L.Map): void {
  *
  * Da vicino (da ZOOM_ICONE) la stessa icona diventa un elemento HTML, solo
  * per i campi dentro la porzione visibile: a quello zoom sono pochi, e da
- * ZOOM_NOMI in su l'icona mostra anche il nome della società.
+ * ZOOM_NOMI in su l'icona mostra anche il nome della società. Da
+ * ZOOM_STEMMI, per le società che ce l'hanno, al posto dell'icona del campo
+ * c'è lo stemma (vedi {@link tipoSegnaposto}): le immagini si scaricano così
+ * solo per i campi visibili da vicino, mai tutte all'apertura.
  *
  * Il filtro per provincia è lo stesso dell'elenco (stessa scelta, vedi
  * {@link ProvinciaSceltaService}): cambia i campi sulla mappa e la vista si
@@ -167,12 +174,18 @@ export class MappaPage implements OnDestroy {
   private sulCanvas: L.LayerGroup | null = null;
   private icone: L.LayerGroup | null = null;
   private readonly segnaposto = new Map<string, L.Marker>();
+  /** L'icona che ha adesso ciascun segnaposto HTML: cambia con lo zoom. */
+  private readonly tipoIcona = new Map<string, TipoSegnaposto>();
+  /** Gli stemmi che hanno dato errore: per quei campi torna l'icona del campo. */
+  private readonly stemmiFalliti = new Set<string>();
   /** I campi sulla mappa adesso, quelli che guarda {@link aggiornaSegnaposto}. */
   private mostrati: SocietaGeolocalizzata[] = [];
   /** Le distanze dei campi vicini, per i popup; vuota fuori da "Vicino a me". */
   private distanze = new Map<string, number>();
   /** Il segnaposto di chi guarda e gli anelli attorno ai vicini. */
   private livelloVicini: L.LayerGroup | null = null;
+  /** Gli anelli dei vicini per id del campo: con lo stemma li porta il tondo. */
+  private readonly anelli = new Map<string, L.CircleMarker>();
   private distrutta = false;
 
   readonly stato = signal<'caricamento' | 'pronto' | 'errore'>('caricamento');
@@ -361,9 +374,11 @@ export class MappaPage implements OnDestroy {
   ngOnDestroy(): void {
     this.distrutta = true;
     this.livelloVicini = null;
+    this.anelli.clear();
     this.mappa?.remove();
     this.mappa = null;
     this.segnaposto.clear();
+    this.tipoIcona.clear();
   }
 
   private creaMappa(contenitore: HTMLElement): void {
@@ -380,6 +395,20 @@ export class MappaPage implements OnDestroy {
       }).addTo(mappa);
 
       mappa.on('zoomend moveend', () => this.aggiornaSegnaposto(mappa));
+
+      // Uno stemma che non si carica (un 404 del portale, la rete che salta)
+      // lascia il posto all'icona del campo. L'errore di un'immagine non
+      // risale il DOM: lo si prende nella fase di cattura.
+      contenitore.addEventListener(
+        'error',
+        (evento) => {
+          const immagine = evento.target;
+          if (immagine instanceof HTMLImageElement && immagine.dataset['stemma']) {
+            this.stemmaFallito(immagine.dataset['stemma']);
+          }
+        },
+        true,
+      );
 
       mappa.on('popupopen', (evento: L.PopupEvent) => {
         const elemento = evento.popup.getElement();
@@ -425,6 +454,7 @@ export class MappaPage implements OnDestroy {
       this.icone?.remove();
       this.livelloVicini?.remove();
       this.livelloVicini = null;
+      this.anelli.clear();
       // I popup si creano con le distanze: vanno pronte prima dei segnaposto.
       this.distanze = new Map(vicini?.vicini.map((v) => [v.campo.id, v.distanzaKm]) ?? []);
 
@@ -435,6 +465,7 @@ export class MappaPage implements OnDestroy {
       this.sulCanvas = sulCanvas;
       this.icone = L.layerGroup();
       this.segnaposto.clear();
+      this.tipoIcona.clear();
       this.mostrati = campi;
 
       const punti = campi.map((c) => L.latLng(c.lat, c.lng));
@@ -466,7 +497,7 @@ export class MappaPage implements OnDestroy {
     // livello loro restano sopra le icone, che si ridisegnano a ogni zoom.
     const renderer = L.svg();
     for (const campo of campi) {
-      L.circleMarker([campo.lat, campo.lng], {
+      const anello = L.circleMarker([campo.lat, campo.lng], {
         renderer,
         radius: 22,
         color: '#e8590c',
@@ -474,6 +505,7 @@ export class MappaPage implements OnDestroy {
         fill: false,
         interactive: false,
       }).addTo(livello);
+      this.anelli.set(campo.id, anello);
     }
     L.circleMarker([posizione.lat, posizione.lng], {
       renderer,
@@ -491,7 +523,9 @@ export class MappaPage implements OnDestroy {
   /**
    * Icone sul canvas da lontano, icone HTML da vicino. Queste ultime si
    * creano solo per i campi visibili (con un po' di margine) e si riusano
-   * tra uno spostamento e l'altro.
+   * tra uno spostamento e l'altro; se allo zoom nuovo il campo va mostrato
+   * in un altro modo (lo stemma invece del campo) cambia solo l'icona, con
+   * setIcon, e il segnaposto resta lo stesso, popup compreso.
    */
   private aggiornaSegnaposto(mappa: L.Map): void {
     const sulCanvas = this.sulCanvas;
@@ -501,7 +535,15 @@ export class MappaPage implements OnDestroy {
     }
 
     aggiornaNomiCampi(mappa);
-    if (mappa.getZoom() < ZOOM_ICONE) {
+    const zoom = mappa.getZoom();
+    // L'anello attorno al punto resta per le icone del campo; attorno allo
+    // stemma lo disegna il tondo (vedi iconaStemma).
+    for (const [id, anello] of this.anelli) {
+      const campo = this.mostrati.find((c) => c.id === id);
+      const conStemma = !!campo && tipoSegnaposto(campo, zoom, this.stemmiFalliti) === 'stemma';
+      anello.setStyle({ opacity: conStemma ? 0 : 1 });
+    }
+    if (zoom < ZOOM_ICONE) {
       icone.remove();
       sulCanvas.addTo(mappa);
       return;
@@ -513,22 +555,52 @@ export class MappaPage implements OnDestroy {
     for (const campo of this.mostrati) {
       const dentro = visibili.contains([campo.lat, campo.lng]);
       let segnaposto = this.segnaposto.get(campo.id);
+      const tipo = tipoSegnaposto(campo, zoom, this.stemmiFalliti);
       if (dentro && !segnaposto) {
         segnaposto = this.conDettagli(
-          L.marker([campo.lat, campo.lng], { icon: iconaCampo(campo) }),
+          L.marker([campo.lat, campo.lng], { icon: this.icona(campo, tipo) }),
           campo,
         );
         this.segnaposto.set(campo.id, segnaposto);
+        this.tipoIcona.set(campo.id, tipo);
       }
       if (!segnaposto) {
         continue;
       }
       if (dentro) {
+        if (this.tipoIcona.get(campo.id) !== tipo) {
+          segnaposto.setIcon(this.icona(campo, tipo));
+          this.tipoIcona.set(campo.id, tipo);
+        }
         icone.addLayer(segnaposto);
       } else if (!segnaposto.isPopupOpen()) {
         icone.removeLayer(segnaposto);
       }
     }
+  }
+
+  /** Lo stemma di questo campo non si carica: al suo posto l'icona del campo. */
+  private stemmaFallito(id: string): void {
+    const campo = this.mostrati.find((c) => c.id === id);
+    const indirizzo = campo && stemmaDi(campo);
+    if (!campo || !indirizzo) {
+      return;
+    }
+    // Per indirizzo e non per campo: lo stesso stemma sta su tutti i campi
+    // della società, ed è inutile richiederlo per ciascuno.
+    this.stemmiFalliti.add(indirizzo);
+    const segnaposto = this.segnaposto.get(id);
+    if (segnaposto && this.tipoIcona.get(id) === 'stemma') {
+      segnaposto.setIcon(iconaCampo(campo));
+      this.tipoIcona.set(id, 'campo');
+    }
+    // Senza stemma torna l'anello attorno al punto.
+    this.anelli.get(id)?.setStyle({ opacity: 1 });
+  }
+
+  /** L'icona HTML del campo, con l'anello sul tondo se è uno dei vicini. */
+  private icona(campo: SocietaGeolocalizzata, tipo: TipoSegnaposto): L.DivIcon {
+    return iconaPerTipo(campo, tipo, this.distanze.has(campo.id));
   }
 
   private conDettagli<T extends L.Layer>(livello: T, campo: SocietaGeolocalizzata): T {
