@@ -79,6 +79,34 @@ class AnagraficaPresenzeTest {
                                 "ECCELLENZA", "Regionali", "2026/2027", "A", "", false, 190L));
     }
 
+    /**
+     * Mentre il portale LND non risponde, presenze dice a quale comunicato
+     * sono aggiornati i risultati di ogni girone.
+     */
+    @Test
+    void leggeAQualeComunicatoSonoAggiornatiIRisultati() {
+        server.expect(requestTo("http://presenze-backend:8080/api/pubblico/anagrafica/societa/7"))
+                .andRespond(
+                        withSuccess(
+                                """
+                                {"id":7,"denominazione":"BOREALE","campi":[],
+                                 "squadre":[{"campionatoId":3,"campionato":"ECCELLENZA",
+                                   "ente":"Regionali","stagione":"2026/2027","gironeId":11,
+                                   "girone":"A","squadra":"","fuoriClassifica":false,"campoId":190,
+                                   "risultatiDaComunicato":{"numero":55,"data":"2026-09-24",
+                                     "ente":"Regionali","portaleNonDisponibileDal":"2026-09-26T11:00:00Z"}}]}
+                                """,
+                                MediaType.APPLICATION_JSON));
+
+        assertThat(anagrafica.scheda(7).squadre().getFirst().risultatiDaComunicato())
+                .isEqualTo(
+                        new AnagraficaPresenze.RisultatiDaComunicato(
+                                55,
+                                java.time.LocalDate.of(2026, 9, 24),
+                                "Regionali",
+                                java.time.Instant.parse("2026-09-26T11:00:00Z")));
+    }
+
     @Test
     void cercaUnaSocietaPerNome() {
         server.expect(

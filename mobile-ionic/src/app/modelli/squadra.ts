@@ -21,6 +21,43 @@ export interface Squadra {
    * backend vecchio, e allora la squadra non si può seguire.
    */
   chiave?: string;
+  /**
+   * A quale Comunicato Ufficiale sono aggiornati i risultati del girone. Lo
+   * manda presenze solo mentre il portale LND non gli risponde: allora i
+   * risultati arrivano soltanto col comunicato del giovedì o del venerdì, e
+   * nel fine settimana restano fermi. Manca con il portale disponibile, e da
+   * un presenze che non lo manda ancora: in entrambi i casi nessun avviso.
+   */
+  risultatiDaComunicato?: RisultatiDaComunicato | null;
+}
+
+export interface RisultatiDaComunicato {
+  /** Assente se nessun comunicato ha ancora portato risultati nel girone. */
+  numero?: number | null;
+  /** "2026-09-24" */
+  data?: string | null;
+  /** Chi l'ha pubblicato: i numeri ripartono per ogni ente. */
+  ente?: string | null;
+  portaleNonDisponibileDal?: string | null;
+}
+
+/** "Risultati aggiornati al Comunicato Ufficiale n. 55 del 24/09"; null se non c'è niente da dire. */
+export function aggiornamentoRisultati(squadra: Squadra): string | null {
+  const avviso = squadra.risultatiDaComunicato;
+  if (!avviso || avviso.numero === undefined || avviso.numero === null) {
+    return null;
+  }
+  const [, mese, giorno] = (avviso.data ?? '').split('-');
+  const quando = giorno && mese ? ` del ${giorno}/${mese}` : '';
+  return `Risultati aggiornati al Comunicato Ufficiale n. ${avviso.numero}${quando}`;
+}
+
+/**
+ * Se presenze avvisa che il portale LND non risponde, per almeno una
+ * squadra: la scheda lo dice una volta, in cima ai campionati.
+ */
+export function portaleNonRaggiungibile(squadre: Squadra[]): boolean {
+  return squadre.some((squadra) => Boolean(squadra.risultatiDaComunicato));
 }
 
 /** "Girone A · Regionali · squadra B, fuori classifica" */

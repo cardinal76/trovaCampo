@@ -104,4 +104,30 @@ class SquadreSocietaTest {
                                 "UNDER 17 REGIONALE", "Regionali", "2026/2027", null, "B", true, null,
                                 "7|under 17 regionale|regionali|b"));
     }
+
+    /** L'avviso sui risultati passa così com'è: se il portale risponde lo sa presenze. */
+    @Test
+    void lAvvisoSuiRisultatiPassaComE() {
+        AnagraficaPresenze.RisultatiDaComunicato avviso =
+                new AnagraficaPresenze.RisultatiDaComunicato(
+                        55,
+                        java.time.LocalDate.of(2026, 9, 24),
+                        "Regionali",
+                        java.time.Instant.parse("2026-09-26T11:00:00Z"));
+        when(anagrafica.scheda(7))
+                .thenReturn(
+                        new AnagraficaPresenze.Scheda(
+                                7L,
+                                "BOREALE",
+                                List.of(),
+                                List.of(
+                                        new AnagraficaPresenze.Squadra(
+                                                "ECCELLENZA", "Regionali", "2026/2027", "A", "", false,
+                                                null, avviso))));
+
+        assertThat(squadre.di(new Societa().setAnagraficaSocietaId(7L)))
+                .singleElement()
+                .extracting(SquadreSocieta.Squadra::risultatiDaComunicato)
+                .isEqualTo(avviso);
+    }
 }

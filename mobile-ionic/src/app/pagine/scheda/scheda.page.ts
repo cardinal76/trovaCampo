@@ -61,7 +61,12 @@ import {
   quandoPartita,
   squadrePartita,
 } from '../../modelli/partita';
-import { Squadra, dettaglioSquadra } from '../../modelli/squadra';
+import {
+  Squadra,
+  aggiornamentoRisultati,
+  dettaglioSquadra,
+  portaleNonRaggiungibile,
+} from '../../modelli/squadra';
 import { PercorsoCampoComponent } from '../../componenti/percorso-campo/percorso-campo.component';
 import { StemmaComponent } from '../../componenti/stemma/stemma.component';
 import { iconaCampo } from '../../mappa/icona-campo';
@@ -142,6 +147,13 @@ export class SchedaPage implements OnDestroy {
   readonly squadre = signal<Squadra[]>([]);
   readonly statoSquadre = signal<Stato>('caricamento');
   readonly dettaglioSquadra = dettaglioSquadra;
+  readonly aggiornamentoRisultati = aggiornamentoRisultati;
+  /**
+   * Il portale LND non risponde a presenze: i risultati arrivano solo dai
+   * Comunicati Ufficiali, e chi guarda nel fine settimana deve sapere perché
+   * sono fermi.
+   */
+  readonly portaleNonRaggiungibile = computed(() => portaleNonRaggiungibile(this.squadre()));
   /**
    * Le prossime partite su questo campo, dal calendario di presenze: anche
    * loro a parte, e solo per un campo che viene da lì.
