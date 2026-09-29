@@ -180,6 +180,32 @@ class SocietaControllerTest {
     }
 
     @Test
+    void leSquadreDiconoAQualeComunicatoSonoAggiornatiIRisultati() throws Exception {
+        Societa certosa = certosa().setAnagraficaSocietaId(42L);
+        when(service.perId("1")).thenReturn(Optional.of(certosa));
+        when(squadre.di(certosa))
+                .thenReturn(
+                        List.of(
+                                new SquadreSocieta.Squadra(
+                                        "ECCELLENZA", "Regionali", "2026/2027", "A", "", false,
+                                        "Campo Certosa", "42|eccellenza|regionali|",
+                                        new it.trovacampo.api.anagrafica.AnagraficaPresenze
+                                                .RisultatiDaComunicato(
+                                                55,
+                                                java.time.LocalDate.of(2026, 9, 24),
+                                                "Regionali",
+                                                java.time.Instant.parse("2026-09-26T11:00:00Z")))));
+
+        mockMvc.perform(get("/api/societa/1/squadre"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].risultatiDaComunicato.numero").value(55))
+                .andExpect(jsonPath("$[0].risultatiDaComunicato.data").value("2026-09-24"))
+                .andExpect(
+                        jsonPath("$[0].risultatiDaComunicato.portaleNonDisponibileDal")
+                                .value("2026-09-26T11:00:00Z"));
+    }
+
+    @Test
     void leSquadreDiUnaSocietaCheNonCeRispondono404() throws Exception {
         when(service.perId("9")).thenReturn(Optional.empty());
 

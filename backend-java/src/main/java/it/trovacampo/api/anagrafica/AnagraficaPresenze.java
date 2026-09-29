@@ -2,6 +2,7 @@ package it.trovacampo.api.anagrafica;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -127,6 +128,9 @@ public class AnagraficaPresenze {
      * @param ente "Regionali" per il Comitato, il nome della delegazione per i provinciali
      * @param girone vuoto finché i gironi non escono
      * @param squadra vuota per la prima squadra, "B" per la seconda
+     * @param risultatiDaComunicato a quale Comunicato Ufficiale sono aggiornati i
+     *     risultati del girone, solo mentre il portale LND non risponde a presenze;
+     *     nullo con il portale disponibile, e da un presenze che non lo manda ancora
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Squadra(
@@ -136,7 +140,36 @@ public class AnagraficaPresenze {
             String girone,
             String squadra,
             boolean fuoriClassifica,
-            Long campoId) {}
+            Long campoId,
+            RisultatiDaComunicato risultatiDaComunicato) {
+
+        /** Senza l'avviso sui risultati: com'era prima che presenze lo mandasse. */
+        public Squadra(
+                String campionato,
+                String ente,
+                String stagione,
+                String girone,
+                String squadra,
+                boolean fuoriClassifica,
+                Long campoId) {
+            this(campionato, ente, stagione, girone, squadra, fuoriClassifica, campoId, null);
+        }
+    }
+
+    /**
+     * Da dove vengono i risultati di un girone mentre il portale LND non
+     * risponde a presenze: solo dal Comunicato Ufficiale del giovedì o del
+     * venerdì, e nel fine settimana classifica e risultati restano fermi.
+     *
+     * @param numero l'ultimo comunicato che ha portato risultati nel girone;
+     *     nullo se nessuno ne ha ancora portati
+     * @param data quando è uscito
+     * @param ente chi l'ha pubblicato: i numeri ripartono per ogni ente
+     * @param portaleNonDisponibileDal da quando il portale non risponde
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record RisultatiDaComunicato(
+            Integer numero, LocalDate data, String ente, Instant portaleNonDisponibileDal) {}
 
     /**
      * Una partita in calendario, sul campo di casa di chi ospita.

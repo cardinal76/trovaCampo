@@ -258,3 +258,24 @@
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/*
+  Il portale LND non risponde a presenze: i risultati arrivano solo col
+  comunicato del giovedì o del venerdì. Un avviso e non un errore: il fondo
+  ambra tenue, lo stesso tono dell'avviso di presenze, e nessun rosso.
+*/
+.avviso-risultati {
+  margin: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid #c99a2e;
+  background: #fdf1e3;
+  color: #7a3c06;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.aggiornamento-risultati {
+  color: #7a3c06;
+  font-size: 0.8125rem;
+}
+

@@ -33,6 +33,9 @@ public class SquadreSocieta {
      * @param squadra vuota per la prima squadra, "B" per la seconda
      * @param campo dove gioca in casa, se si sa
      * @param chiave come la riconoscono le notifiche di chi la segue: vedi {@link ChiaveSquadra}
+     * @param risultatiDaComunicato presente solo mentre il portale LND non risponde a
+     *     presenze: la scheda avvisa che i risultati sono fermi a quel comunicato.
+     *     Passa così com'è: lo decide presenze, che sa se il portale risponde
      */
     public record Squadra(
             String campionato,
@@ -42,7 +45,22 @@ public class SquadreSocieta {
             String squadra,
             boolean fuoriClassifica,
             String campo,
-            String chiave) {}
+            String chiave,
+            AnagraficaPresenze.RisultatiDaComunicato risultatiDaComunicato) {
+
+        /** Senza l'avviso sui risultati, per chi non ne ha. */
+        public Squadra(
+                String campionato,
+                String ente,
+                String stagione,
+                String girone,
+                String squadra,
+                boolean fuoriClassifica,
+                String campo,
+                String chiave) {
+            this(campionato, ente, stagione, girone, squadra, fuoriClassifica, campo, chiave, null);
+        }
+    }
 
     private final AnagraficaPresenze anagrafica;
     private final SocietaRepository repository;
@@ -90,7 +108,8 @@ public class SquadreSocieta {
                                                 societaPresenze,
                                                 squadra.campionato(),
                                                 squadra.ente(),
-                                                squadra.squadra())))
+                                                squadra.squadra()),
+                                        squadra.risultatiDaComunicato()))
                 .toList();
     }
 

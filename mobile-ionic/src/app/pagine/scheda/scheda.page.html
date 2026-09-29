@@ -248,11 +248,20 @@
               <p class="vuoto">I campionati non sono disponibili in questo momento: riprova tra poco.</p>
             }
             @default {
+              @if (portaleNonRaggiungibile()) {
+                <p class="avviso-risultati" role="note">
+                  Il portale LND non è raggiungibile: i risultati sono aggiornati ai Comunicati Ufficiali.
+                </p>
+              }
               @for (squadra of squadre(); track $index) {
                 <ion-item>
                   <ion-label class="ion-text-wrap">
                     <h3>{{ squadra.campionato }}</h3>
                     <p>{{ dettaglioSquadra(squadra) }}</p>
+                    @let aggiornamento = aggiornamentoRisultati(squadra);
+                    @if (aggiornamento) {
+                      <p class="aggiornamento-risultati">{{ aggiornamento }}</p>
+                    }
                     @if (squadra.campo && squadra.campo !== societa()!.nomeImpianto) {
                       <p>Gioca in casa a {{ squadra.campo }}</p>
                     }

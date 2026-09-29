@@ -263,6 +263,49 @@ describe('SchedaPage', () => {
     });
   });
 
+  describe('l avviso sui risultati', () => {
+    const ECCELLENZA: Squadra = {
+      campionato: 'ECCELLENZA',
+      ente: 'Regionali',
+      stagione: '2026/2027',
+      girone: 'A',
+      squadra: '',
+      fuoriClassifica: false,
+    };
+
+    function campionati(pagina: HTMLElement): HTMLElement {
+      return pagina.querySelector('ion-accordion[value=campionati]') as HTMLElement;
+    }
+
+    it('con il portale LND fermo dice a quale comunicato sono aggiornati i risultati', () => {
+      const pagina = apri(SOCIETA, [], [
+        {
+          ...ECCELLENZA,
+          risultatiDaComunicato: {
+            numero: 55,
+            data: '2026-09-24',
+            ente: 'Regionali',
+            portaleNonDisponibileDal: '2026-09-26T11:00:00Z',
+          },
+        },
+      ]);
+
+      expect(campionati(pagina).querySelector('.avviso-risultati')?.textContent).toContain(
+        'Il portale LND non è raggiungibile',
+      );
+      expect(campionati(pagina).querySelector('.aggiornamento-risultati')?.textContent?.trim()).toBe(
+        'Risultati aggiornati al Comunicato Ufficiale n. 55 del 24/09',
+      );
+    });
+
+    it('con il portale che risponde, o da un presenze che non lo dice, nessun avviso', () => {
+      const pagina = apri(SOCIETA, [], [ECCELLENZA, { ...ECCELLENZA, risultatiDaComunicato: null }]);
+
+      expect(campionati(pagina).querySelector('.avviso-risultati')).toBeNull();
+      expect(campionati(pagina).querySelector('.aggiornamento-risultati')).toBeNull();
+    });
+  });
+
   describe('il cestino di chi amministra', () => {
     const DOPPIONE: Societa = {
       ...SOCIETA,
