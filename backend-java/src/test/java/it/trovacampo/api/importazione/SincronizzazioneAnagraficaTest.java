@@ -234,4 +234,74 @@ class SincronizzazioneAnagraficaTest {
                             assertThat(giusto.getAnagraficaImpiantoId()).isEqualTo(78L);
                         });
     }
+    /**
+     * Un campo con le coordinate, spesso messe a mano, non si sposta: ne'
+     * l'indirizzo dei Comunicati ne' le coordinate di presenze lo toccano.
+     * Il legame con l'anagrafica invece si prende.
+     */
+    @Test
+    void unCampoConLeCoordinateNonSiSposta() {
+        Societa corretta =
+                new Societa()
+                        .setId("m1")
+                        .setNomeSocieta("BOREALE")
+                        .setNomeImpianto("DON ORIONE")
+                        .setIndirizzoImpianto("VIA DELLA CAMILLUCCIA 112")
+                        .setLocalitaImpianto("ROMA")
+                        .setProvinciaImpianto("RM")
+                        .setLat(41.95)
+                        .setLng(12.45);
+        when(repository.findAll()).thenReturn(List.of(corretta));
+        when(anagrafica.impianti())
+                .thenReturn(
+                        List.of(
+                                new AnagraficaPresenze.Impianto(
+                                        190L, "DON ORIONE", "VIA CAMILLUCCIA 120", "ROMA SUD", 41.9,
+                                        12.4, List.of(societa(7, "BOREALE")))));
+
+        EsitoImportazione esito = sincronizzazione.sincronizza(false);
+
+        assertThat(esito.aggiornate()).isEqualTo(1);
+        assertThat(salvate())
+                .singleElement()
+                .satisfies(
+                        s -> {
+                            assertThat(s.getIndirizzoImpianto()).isEqualTo("VIA DELLA CAMILLUCCIA 112");
+                            assertThat(s.getLocalitaImpianto()).isEqualTo("ROMA");
+                            assertThat(s.getLat()).isEqualTo(41.95);
+                            assertThat(s.getLng()).isEqualTo(12.45);
+                            assertThat(s.getAnagraficaSocietaId()).isEqualTo(7L);
+                            assertThat(s.getAnagraficaImpiantoId()).isEqualTo(190L);
+                        });
+    }
+
+    /** Senza coordinate invece l'indirizzo dei Comunicati si prende, come prima. */
+    @Test
+    void unCampoSenzaCoordinatePrendeIndirizzoEPosizioneDaPresenze() {
+        Societa senzaPosizione =
+                new Societa()
+                        .setId("m1")
+                        .setNomeSocieta("BOREALE")
+                        .setNomeImpianto("DON ORIONE")
+                        .setIndirizzoImpianto("VIA VECCHIA 1")
+                        .setLocalitaImpianto("ROMA")
+                        .setProvinciaImpianto("RM");
+        when(repository.findAll()).thenReturn(List.of(senzaPosizione));
+        when(anagrafica.impianti())
+                .thenReturn(
+                        List.of(
+                                new AnagraficaPresenze.Impianto(
+                                        190L, "DON ORIONE", "VIA CAMILLUCCIA 120", "ROMA", 41.9, 12.4,
+                                        List.of(societa(7, "BOREALE")))));
+
+        sincronizzazione.sincronizza(false);
+
+        assertThat(salvate())
+                .singleElement()
+                .satisfies(
+                        s -> {
+                            assertThat(s.getIndirizzoImpianto()).isEqualTo("VIA CAMILLUCCIA 120");
+                            assertThat(s.getLat()).isEqualTo(41.9);
+                        });
+    }
 }
