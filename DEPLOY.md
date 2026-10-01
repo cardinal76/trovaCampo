@@ -136,12 +136,16 @@ TrovaCampo la legge dall'API pubblica di presenze, per la rete Docker
 condivisa (`ANAGRAFICA_URL=http://presenze-backend:8080` in
 `docker-compose.prod.yml`), senza passare da Caddy.
 
-- **I campi** arrivano da soli alle 7:45, 13:45 e 19:45, mezz'ora dopo i giri
-  di lettura di presenze (`ANAGRAFICA_SINCRONIZZAZIONE`). Ogni coppia
-  società–campo è una riga, con le stesse regole di un file importato: stessa
-  chiave, niente cancellazioni, coordinate di presenze se ci sono, altrimenti
-  la geocodifica di TrovaCampo. Da `/admin/importazione`, «Controlla
-  l'anagrafica di presenze» fa lo stesso subito, con prima il controllo.
+- **I campi** si importano a mano, quando serve: da `/admin/importazione`,
+  «Controlla l'anagrafica di presenze», con prima il controllo. Non c'è un
+  giro automatico, perché i campi di una stagione non cambiano durante
+  l'anno. Ogni coppia società–campo è una riga, con la stessa chiave di un
+  file importato e niente cancellazioni. **Un campo che ha già le coordinate
+  non si sposta**: indirizzo, località e posizione restano quelli di
+  TrovaCampo, spesso corretti a mano, e dall'anagrafica prende solo il legame
+  e lo stemma. Per un campo nuovo o senza posizione valgono le coordinate di
+  presenze se ci sono, altrimenti la geocodifica di TrovaCampo. Un file Excel
+  o PDF caricato a mano invece aggiorna anche indirizzo e coordinate.
 - **I campionati** di una società non si copiano: la scheda li chiede a
   presenze quando si apre (`GET /api/societa/{id}/squadre`), una riga per
   squadra. Una società non ancora legata all'anagrafica (arrivata da un file

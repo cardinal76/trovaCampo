@@ -46,9 +46,6 @@ trovacampo:
   # produzione lo stesso dalla rete Docker condivisa.
   anagrafica:
     url: ${ANAGRAFICA_URL:http://localhost:8080}
-    # Tre volte al giorno porta i campi nuovi in TrovaCampo. Spenta in
-    # sviluppo; in produzione la accende docker-compose.prod.yml.
-    sincronizzazione: ${ANAGRAFICA_SINCRONIZZAZIONE:false}
 
   # Notifiche push (Web Push) per chi segue una squadra o vuole le partite
   # vicine. Le chiavi VAPID, se VAPID_PUBBLICA e VAPID_PRIVATA non ci sono,

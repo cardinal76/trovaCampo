@@ -16,9 +16,14 @@ import org.springframework.stereotype.Service;
  * la scheda legge squadre e campionati; una nuova si inserisce. Niente si
  * cancella: i campi inseriti a mano o da un file restano.
  *
- * <p>Le coordinate di presenze, quando ci sono, valgono come quelle di un
- * file; quando mancano restano quelle che TrovaCampo aveva già, se il campo
- * non si è spostato, altrimenti le cerca la geocodifica automatica.
+ * <p>Un campo che in TrovaCampo ha già le coordinate non si tocca: indirizzo,
+ * località e posizione restano i suoi, perché spesso sono stati corretti a
+ * mano e l'anagrafica, che li ricava dai Comunicati, li riporterebbe indietro.
+ * Per un campo nuovo, o ancora senza posizione, valgono le coordinate di
+ * presenze se ci sono, altrimenti le cerca la geocodifica automatica.
+ *
+ * <p>Parte solo a mano, da /admin/importazione: i campi di una stagione non
+ * cambiano per tutto l'anno.
  *
  * <p>Lo stemma della società arriva con lei: si prende se è un indirizzo
  * https, e uno che presenze non manda non cancella quello che c'è.
@@ -73,7 +78,8 @@ public class SincronizzazioneAnagrafica {
         }
 
         EsitoImportazione esito =
-                importazione.importaRighe(new LettoreExcel.Lettura(righe, scarti, List.of()), prova);
+                importazione.importaRighe(
+                        new LettoreExcel.Lettura(righe, scarti, List.of()), prova, true);
         if (!prova) {
             log.info(
                     "Anagrafica di presenze: {} inserite, {} aggiornate, {} già uguali",

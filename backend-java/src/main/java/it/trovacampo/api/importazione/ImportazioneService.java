@@ -35,6 +35,12 @@ import org.springframework.stereotype.Service;
  * <p>Una cella vuota non cancella un valore già presente: un file con meno
  * colonne non deve impoverire quello che c'è.
  *
+ * <p>Con la sincronizzazione dall'anagrafica di presenze un campo che ha già
+ * le coordinate non si sposta: indirizzo, località, provincia e posizione
+ * restano quelli di TrovaCampo, spesso corretti a mano, e dall'anagrafica si
+ * prendono solo il legame e lo stemma. Un file caricato da chi amministra
+ * invece li aggiorna: è una scelta esplicita.
+ *
  * <p>Le righe che corrispondono a un campo eliminato da chi amministra (una
  * {@link Esclusione}) si saltano: altrimenti la sincronizzazione con presenze
  * lo ricreerebbe al giro dopo.
@@ -56,14 +62,18 @@ public class ImportazioneService {
     }
 
     public EsitoImportazione importa(InputStream file, boolean prova) {
-        return importaRighe(leggi(file), prova);
+        return importaRighe(leggi(file), prova, false);
     }
 
     /**
      * Le righe già lette, da un file o dall'anagrafica di presenze: stessa
      * chiave (società e impianto), stesse regole su indirizzi e coordinate.
+     *
+     * @param rispettaPosizioni se vero, un campo che ha già le coordinate
+     *     tiene indirizzo e posizione che ha
      */
-    EsitoImportazione importaRighe(LettoreExcel.Lettura lettura, boolean prova) {
+    EsitoImportazione importaRighe(
+            LettoreExcel.Lettura lettura, boolean prova, boolean rispettaPosizioni) {
         List<Scarto> scarti = new ArrayList<>(lettura.scarti());
 
         Map<String, Societa> esistenti = new HashMap<>();
@@ -101,9 +111,9 @@ public class ImportazioneService {
             Societa societa = esistenti.get(chiave);
             if (societa == null) {
                 societa = new Societa().setSiglaSocieta("").setComitatoRegionale("");
-                applica(societa, riga);
+                applica(societa, riga, rispettaPosizioni);
                 inserite++;
-            } else if (applica(societa, riga)) {
+            } else if (applica(societa, riga, rispettaPosizioni)) {
                 aggiornate++;
             } else {
                 invariate++;
@@ -154,9 +164,12 @@ public class ImportazioneService {
      * vengono tolte: indicherebbero il posto sbagliato. Le ricalcola la
      * geocodifica automatica.
      */
-    private static boolean applica(Societa societa, RigaExcel riga) {
+    private static boolean applica(Societa societa, RigaExcel riga, boolean rispettaPosizioni) {
         boolean cambiata = false;
         boolean spostata = false;
+        // Un campo con le coordinate e' gia' al suo posto: l'anagrafica non lo
+        // sposta, ne' riscrivendo l'indirizzo ne' con coordinate sue.
+        boolean fermo = rispettaPosizioni && societa.getLat() != null && societa.getLng() != null;
 
         if (!riga.nomeSocieta().equals(societa.getNomeSocieta())) {
             societa.setNomeSocieta(riga.nomeSocieta());
@@ -166,15 +179,15 @@ public class ImportazioneService {
             societa.setNomeImpianto(riga.nomeImpianto());
             cambiata = true;
         }
-        if (!riga.indirizzo().equals(societa.getIndirizzoImpianto())) {
+        if (!fermo && !riga.indirizzo().equals(societa.getIndirizzoImpianto())) {
             societa.setIndirizzoImpianto(riga.indirizzo());
             cambiata = spostata = true;
         }
-        if (!riga.localita().isEmpty() && !riga.localita().equals(societa.getLocalitaImpianto())) {
+        if (!fermo && !riga.localita().isEmpty() && !riga.localita().equals(societa.getLocalitaImpianto())) {
             societa.setLocalitaImpianto(riga.localita());
             cambiata = spostata = true;
         }
-        if (!riga.provincia().isEmpty() && !riga.provincia().equals(societa.getProvinciaImpianto())) {
+        if (!fermo && !riga.provincia().isEmpty() && !riga.provincia().equals(societa.getProvinciaImpianto())) {
             societa.setProvinciaImpianto(riga.provincia());
             cambiata = spostata = true;
         }
@@ -212,7 +225,9 @@ public class ImportazioneService {
             }
         }
 
-        if (riga.lat() != null) {
+        if (fermo) {
+            // Posizione gia' fissata: resta com'e'.
+        } else if (riga.lat() != null) {
             if (!Objects.equals(riga.lat(), societa.getLat())
                     || !Objects.equals(riga.lng(), societa.getLng())) {
                 societa.setLat(riga.lat())
