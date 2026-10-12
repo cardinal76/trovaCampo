@@ -1,6 +1,7 @@
 package it.trovacampo.api.web;
 
 import it.trovacampo.api.anagrafica.PartiteSuiCampi;
+import it.trovacampo.api.anagrafica.RisultatiSocieta;
 import it.trovacampo.api.anagrafica.SquadreSocieta;
 import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.service.SocietaService;
@@ -25,12 +26,17 @@ public class SocietaController {
     private final SocietaService service;
     private final SquadreSocieta squadre;
     private final PartiteSuiCampi partite;
+    private final RisultatiSocieta risultati;
 
     public SocietaController(
-            SocietaService service, SquadreSocieta squadre, PartiteSuiCampi partite) {
+            SocietaService service,
+            SquadreSocieta squadre,
+            PartiteSuiCampi partite,
+            RisultatiSocieta risultati) {
         this.service = service;
         this.squadre = squadre;
         this.partite = partite;
+        this.risultati = risultati;
     }
 
     @GetMapping("/societa")
@@ -77,6 +83,17 @@ public class SocietaController {
     @GetMapping("/societa/{id}/partite")
     public List<PartiteSuiCampi.Partita> partite(@PathVariable String id) {
         return partite.sulCampo(service.perId(id).orElseThrow(SocietaNonTrovataException::new));
+    }
+
+    /**
+     * Gli ultimi risultati della società, dal calendario di presenze. Risponde
+     * sempre 200: lo {@code stato} dice se i risultati ci sono, se presenze non
+     * li ha (anche perché non ha ancora l'endpoint) o se non ha risposto, e la
+     * scheda lo racconta a parole invece di rompersi.
+     */
+    @GetMapping("/societa/{id}/risultati")
+    public RisultatiSocieta.Risultati risultati(@PathVariable String id) {
+        return risultati.di(service.perId(id).orElseThrow(SocietaNonTrovataException::new));
     }
 
     @PostMapping("/societa")

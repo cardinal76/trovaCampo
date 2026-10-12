@@ -77,6 +77,30 @@ public class AnagraficaPresenze {
     }
 
     /**
+     * Gli ultimi risultati di una società, dal più recente, al massimo
+     * {@code limite}.
+     *
+     * <p>Questo metodo e {@link Risultati} sono l'unico posto dove sta scritta
+     * la forma della risposta di presenze: un campo che lì cambia nome si
+     * corregge qui, e non si va a caccia nel resto del backend o nell'app.
+     *
+     * <p>Da un presenze che non ha ancora l'endpoint, o che non conosce questa
+     * società, solleva {@code HttpClientErrorException.NotFound}: chi chiama
+     * lo distingue da un guasto, perché le due cose si raccontano in modo
+     * diverso a chi guarda.
+     */
+    public Risultati risultati(long societaId, int limite) {
+        return client.get()
+                .uri(
+                        uri ->
+                                uri.path("/api/pubblico/anagrafica/societa/{id}/risultati")
+                                        .queryParam("limite", limite)
+                                        .build(societaId))
+                .retrieve()
+                .body(Risultati.class);
+    }
+
+    /**
      * Le partite fra {@code dal} e {@code al} (estremi compresi, al massimo
      * 31 giorni) su tutti i campi, ognuna con l'id del campo dove si gioca:
      * una chiamata sola per tutta la mappa.
@@ -155,6 +179,55 @@ public class AnagraficaPresenze {
             this(campionato, ente, stagione, girone, squadra, fuoriClassifica, campoId, null);
         }
     }
+
+    /**
+     * Gli ultimi risultati di una società, come li manda presenze.
+     *
+     * @param societa la società chiesta: il punto di vista da cui è scritto
+     *     ogni {@link Risultato#esito()}
+     * @param risultati dal più recente al più vecchio, già in quest'ordine;
+     *     vuoto a inizio stagione, e non è un errore
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Risultati(Riferimento societa, List<Risultato> risultati) {}
+
+    /**
+     * Una partita giocata dalla società, col suo esito.
+     *
+     * <p>Ci sono solo le partite davvero giocate, con entrambi i gol: una
+     * sospesa o una ancora da giocare non arriva. Niente marcatori: il
+     * tabellino individuale dei campionati giovanili non esce dall'area
+     * autenticata di presenze, perché i calciatori sono minorenni, e una
+     * scheda di risultati non ha bisogno di nomi di ragazzi.
+     *
+     * @param data nulla per una partita di cui presenze non sa ancora l'ora
+     * @param ente "Regionali" per il Comitato, il nome della delegazione per i provinciali;
+     *     può mancare
+     * @param girone può mancare finché i gironi non escono
+     * @param squadra vuota per la prima squadra, "B" per la seconda
+     * @param inCasa da che parte giocava la società chiesta
+     * @param esito VITTORIA, PAREGGIO o SCONFITTA, dal punto di vista della società
+     *     chiesta: lo decide presenze, e non si ricalcola confrontando i gol
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Risultato(
+            Long partitaId,
+            OffsetDateTime data,
+            Long campionatoId,
+            String campionato,
+            String ente,
+            String stagione,
+            Long gironeId,
+            String girone,
+            Integer giornata,
+            boolean ritorno,
+            String squadra,
+            String casa,
+            String ospite,
+            Integer golCasa,
+            Integer golOspite,
+            boolean inCasa,
+            String esito) {}
 
     /**
      * Da dove vengono i risultati di un girone mentre il portale LND non

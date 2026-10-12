@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import it.trovacampo.api.anagrafica.PartiteSuiCampi;
+import it.trovacampo.api.anagrafica.RisultatiSocieta;
 import it.trovacampo.api.anagrafica.SquadreSocieta;
 import it.trovacampo.api.config.ConfigurazioneSicurezza;
 import it.trovacampo.api.dominio.Campionato;
@@ -40,6 +41,8 @@ class SocietaControllerTest {
     @MockitoBean private SquadreSocieta squadre;
 
     @MockitoBean private PartiteSuiCampi partite;
+
+    @MockitoBean private RisultatiSocieta risultati;
 
     private Societa certosa() {
         return new Societa()
@@ -254,5 +257,56 @@ class SocietaControllerTest {
         mockMvc.perform(get("/api/campi/partite"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$['190'][0].ospite").value("VIGOR PERCONTI"));
+    }
+
+    @Test
+    void gliUltimiRisultatiSonoPubbliciEPortanoLoStato() throws Exception {
+        when(service.perId("1")).thenReturn(Optional.of(certosa()));
+        when(risultati.di(any()))
+                .thenReturn(
+                        new RisultatiSocieta.Risultati(
+                                RisultatiSocieta.Stato.DISPONIBILI,
+                                List.of(
+                                        new RisultatiSocieta.Risultato(
+                                                OffsetDateTime.of(
+                                                        2026, 10, 11, 10, 30, 0, 0, ZoneOffset.ofHours(2)),
+                                                "UNDER 17 PROVINCIALE",
+                                                "Roma",
+                                                "A",
+                                                3,
+                                                "",
+                                                "A.S.D. ESEMPIO",
+                                                "ALTRA A.S.D.",
+                                                2,
+                                                1,
+                                                true,
+                                                "VITTORIA"))));
+
+        mockMvc.perform(get("/api/societa/1/risultati"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stato").value("DISPONIBILI"))
+                .andExpect(jsonPath("$.risultati[0].data").value("2026-10-11T10:30:00+02:00"))
+                .andExpect(jsonPath("$.risultati[0].esito").value("VITTORIA"))
+                .andExpect(jsonPath("$.risultati[0].golCasa").value(2))
+                .andExpect(jsonPath("$.risultati[0].inCasa").value(true));
+        mockMvc.perform(get("/api/societa/9/risultati")).andExpect(status().isNotFound());
+    }
+
+    /**
+     * Presenze non risponde, ma la scheda dei risultati non e' la pagina: 200
+     * con lo stato, cosi' l'app lo racconta a parole invece di mostrare un
+     * errore al posto di tutto.
+     */
+    @Test
+    void senzaPresenzeIRisultatiRestano200ConLoStato() throws Exception {
+        when(service.perId("1")).thenReturn(Optional.of(certosa()));
+        when(risultati.di(any()))
+                .thenReturn(
+                        new RisultatiSocieta.Risultati(RisultatiSocieta.Stato.ERRORE, List.of()));
+
+        mockMvc.perform(get("/api/societa/1/risultati"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.stato").value("ERRORE"))
+                .andExpect(jsonPath("$.risultati").isEmpty());
     }
 }

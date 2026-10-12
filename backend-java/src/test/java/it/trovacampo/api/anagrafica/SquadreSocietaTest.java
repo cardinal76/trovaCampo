@@ -17,7 +17,8 @@ class SquadreSocietaTest {
 
     private final AnagraficaPresenze anagrafica = mock(AnagraficaPresenze.class);
     private final SocietaRepository repository = mock(SocietaRepository.class);
-    private final SquadreSocieta squadre = new SquadreSocieta(anagrafica, repository);
+    private final SquadreSocieta squadre =
+            new SquadreSocieta(anagrafica, new SocietaInPresenze(anagrafica, repository));
 
     private static AnagraficaPresenze.Scheda boreale() {
         return new AnagraficaPresenze.Scheda(
