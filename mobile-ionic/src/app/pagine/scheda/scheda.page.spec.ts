@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
@@ -8,8 +8,9 @@ import {
   ToastController,
   provideIonicAngular,
 } from '@ionic/angular/standalone';
-import { of, throwError } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { Partita } from '../../modelli/partita';
+import { Risultati, Risultato } from '../../modelli/risultato';
 import { Societa } from '../../modelli/societa';
 import { Squadra } from '../../modelli/squadra';
 import { AmbientePush } from '../../servizi/ambiente-push';
@@ -43,9 +44,39 @@ const PARTITA: Partita = {
   giornata: 1,
 };
 
+const VITTORIA: Risultato = {
+  data: '2026-10-11T10:30:00+02:00',
+  campionato: 'UNDER 17 PROVINCIALE',
+  ente: 'Roma',
+  girone: 'A',
+  giornata: 3,
+  squadra: '',
+  casa: 'BOREALE',
+  ospite: 'ALTRA A.S.D.',
+  golCasa: 2,
+  golOspite: 1,
+  inCasa: true,
+  esito: 'VITTORIA',
+};
+
+const SCONFITTA_FUORI: Risultato = {
+  data: '2026-10-04T11:00:00+02:00',
+  campionato: 'UNDER 17 PROVINCIALE',
+  ente: null,
+  girone: null,
+  giornata: 2,
+  squadra: 'B',
+  casa: 'TERZA A.S.D.',
+  ospite: 'BOREALE',
+  golCasa: 3,
+  golOspite: 0,
+  inCasa: false,
+  esito: 'SCONFITTA',
+};
+
 /**
- * Partite, anagrafica e campionati si piegano: la scheda si apre con le
- * partite in vista, e il resto a portata di un tocco.
+ * Partite, risultati, anagrafica e campionati si piegano: la scheda si apre
+ * con le partite in vista, e il resto a portata di un tocco.
  */
 describe('SchedaPage', () => {
   let fixture: ComponentFixture<SchedaPage>;
@@ -59,6 +90,9 @@ describe('SchedaPage', () => {
   let navigazioni: string[];
   let accessi: number;
   let entrato: boolean;
+  /** Quante volte la scheda ha chiesto i risultati, e cosa le è stato risposto. */
+  let richiesteRisultati: number;
+  let rispostaRisultati: () => Observable<Risultati>;
 
   afterEach(() => {
     localStorage.removeItem('trovacampo.squadreSeguite');
@@ -75,6 +109,8 @@ describe('SchedaPage', () => {
     navigazioni = [];
     accessi = 0;
     entrato = true;
+    richiesteRisultati = 0;
+    rispostaRisultati = () => of({ stato: 'DISPONIBILI', risultati: [VITTORIA, SCONFITTA_FUORI] });
     TestBed.configureTestingModule({
       imports: [SchedaPage],
       providers: [
@@ -90,6 +126,10 @@ describe('SchedaPage', () => {
             perId: () => of(societa),
             squadre: () => of(squadre),
             partite: () => of(partite),
+            risultati: () => {
+              richiesteRisultati++;
+              return rispostaRisultati();
+            },
           },
         },
         provideHttpClient(),
@@ -156,6 +196,17 @@ describe('SchedaPage', () => {
     return Array.from(pagina.querySelectorAll('ion-accordion')).map((a) => a.getAttribute('value'));
   }
 
+  /**
+   * Apre (o chiude) le pieghe, come fa Ionic quando le si tocca: il gruppo
+   * manda ionChange con l'elenco di quelle aperte.
+   */
+  function apriPieghe(pagina: HTMLElement, ...valori: string[]): void {
+    pagina
+      .querySelector('ion-accordion-group')!
+      .dispatchEvent(new CustomEvent('ionChange', { detail: { value: valori } }));
+    fixture.detectChanges();
+  }
+
   it('mette lo stemma accanto al nome in testa', () => {
     const pagina = apri({ ...SOCIETA, logoUrl: 'https://play.lnd.it/lndimg/7/7-web.png' });
     const stemma = pagina.querySelector('.testata stemma-societa') as HTMLElement;
@@ -175,10 +226,10 @@ describe('SchedaPage', () => {
     expect(stemma.querySelector('.segnaposto')!.textContent!.trim()).toBe('B');
   });
 
-  it('mette partite, anagrafica e campionati in tre sezioni pieghevoli', () => {
+  it('mette partite, risultati, anagrafica e campionati in quattro sezioni pieghevoli', () => {
     const pagina = apri(SOCIETA);
 
-    expect(sezioni(pagina)).toEqual(['partite', 'anagrafica', 'campionati']);
+    expect(sezioni(pagina)).toEqual(['partite', 'risultati', 'anagrafica', 'campionati']);
     expect(fixture.componentInstance.sezioniAperte()).toEqual(['partite']);
   });
 
@@ -207,9 +258,168 @@ describe('SchedaPage', () => {
   it('un campo che non viene da presenze non ha la sezione partite, e si apre sui campionati', () => {
     const pagina = apri({ ...SOCIETA, anagraficaImpiantoId: undefined });
 
-    expect(sezioni(pagina)).toEqual(['anagrafica', 'campionati']);
+    expect(sezioni(pagina)).toEqual(['risultati', 'anagrafica', 'campionati']);
     expect(fixture.componentInstance.sezioniAperte()).toEqual(['campionati']);
   });
+  /**
+   * Gli ultimi risultati: l'endpoint di presenze puo' non esserci ancora
+   * (TrovaCampo si rilascia per conto suo), e l'elenco puo' essere vuoto a
+   * inizio stagione. La sezione deve dire a parole quale dei due e', e la
+   * pagina non deve rompersi in nessuno dei due casi.
+   */
+  describe('gli ultimi risultati della societa', () => {
+    function sezione(pagina: HTMLElement): HTMLElement {
+      return pagina.querySelector('ion-accordion[value=risultati]') as HTMLElement;
+    }
+
+    function righe(pagina: HTMLElement): HTMLElement[] {
+      return Array.from(sezione(pagina).querySelectorAll('.risultato'));
+    }
+
+    function testo(pagina: HTMLElement): string {
+      return sezione(pagina).querySelector('.vuoto')?.textContent?.trim() ?? '';
+    }
+
+    it('non li chiede fino a quando la piega non si apre', () => {
+      const pagina = apri(SOCIETA);
+
+      expect(sezione(pagina)).not.toBeNull();
+      expect(richiesteRisultati).toBe(0);
+      expect(righe(pagina).length).toBe(0);
+    });
+
+    it('li chiede all apertura della piega, una volta sola', () => {
+      const pagina = apri(SOCIETA);
+
+      apriPieghe(pagina, 'partite', 'risultati');
+      expect(richiesteRisultati).toBe(1);
+
+      // Chiusa e riaperta: i risultati di domenica non cambiano intanto.
+      apriPieghe(pagina, 'partite');
+      apriPieghe(pagina, 'partite', 'risultati');
+      expect(richiesteRisultati).toBe(1);
+    });
+
+    it('li mostra dal piu recente, col punteggio e il bollino dell esito', () => {
+      const pagina = apri(SOCIETA);
+
+      apriPieghe(pagina, 'risultati');
+
+      expect(righe(pagina).length).toBe(2);
+      // L'ordine e' quello che manda presenze: la piu' recente in cima.
+      const letto = (riga: HTMLElement, classe: string) =>
+        riga.querySelector(classe)!.textContent!.trim();
+      expect(righe(pagina).map((riga) => letto(riga, '.punteggio'))).toEqual(['2 - 1', '3 - 0']);
+      expect(righe(pagina).map((riga) => letto(riga, '.bollino'))).toEqual(['V', 'S']);
+      expect(righe(pagina)[0].querySelector('.bollino')!.classList).toContain('vittoria');
+      expect(righe(pagina)[1].querySelector('.bollino')!.classList).toContain('sconfitta');
+      expect(letto(righe(pagina)[0], '.giorno-giocato')).toBe('dom 11 ott');
+      expect(righe(pagina)[0].querySelector('.nome-campionato')!.textContent!.trim()).toBe(
+        'UNDER 17 PROVINCIALE',
+      );
+      expect(sezione(pagina).querySelector('ion-badge')!.textContent!.trim()).toBe('2');
+    });
+
+    /** Da che parte giocava la societa' di questa scheda, e come lo sente chi non vede. */
+    it('segna la societa della scheda e dice se giocava in trasferta', () => {
+      const pagina = apri(SOCIETA);
+
+      apriPieghe(pagina, 'risultati');
+
+      expect(righe(pagina)[0].querySelector('.casa')!.classList).toContain('nostra');
+      expect(righe(pagina)[0].querySelector('.ospite')!.classList).not.toContain('nostra');
+      expect(righe(pagina)[0].querySelector('.trasferta')).toBeNull();
+      expect(righe(pagina)[1].querySelector('.ospite')!.classList).toContain('nostra');
+      expect(righe(pagina)[1].querySelector('.trasferta')).not.toBeNull();
+      expect(righe(pagina)[0].querySelector('.visually-hidden')!.textContent!.trim()).toBe(
+        'Vittoria in casa 2 - 1 contro ALTRA A.S.D., dom 11 ott',
+      );
+      expect(righe(pagina)[1].querySelector('.visually-hidden')!.textContent!.trim()).toBe(
+        'Sconfitta in trasferta 3 - 0 contro TERZA A.S.D., dom 4 ott',
+      );
+    });
+
+    it('a inizio stagione, con la lista vuota, lo dice a parole', () => {
+      const pagina = apri(SOCIETA);
+      rispostaRisultati = () => of({ stato: 'DISPONIBILI', risultati: [] });
+
+      apriPieghe(pagina, 'risultati');
+
+      expect(righe(pagina).length).toBe(0);
+      expect(testo(pagina)).toContain('Nessuna partita giocata finora');
+      // Niente conteggio su una sezione senza risultati.
+      expect(sezione(pagina).querySelector('ion-badge')).toBeNull();
+    });
+
+    it('se presenze non ha i risultati non promette di riprovare', () => {
+      const pagina = apri(SOCIETA);
+      rispostaRisultati = () => of({ stato: 'NON_DISPONIBILI', risultati: [] });
+
+      apriPieghe(pagina, 'risultati');
+
+      expect(testo(pagina)).toContain('non sono ancora disponibili');
+      expect(testo(pagina)).not.toContain('riprova');
+      expect(righe(pagina).length).toBe(0);
+    });
+
+    it('se presenze non risponde dice di riprovare tra poco', () => {
+      const pagina = apri(SOCIETA);
+      rispostaRisultati = () => of({ stato: 'ERRORE', risultati: [] });
+
+      apriPieghe(pagina, 'risultati');
+
+      expect(testo(pagina)).toContain('riprova tra poco');
+    });
+
+    /**
+     * L'endpoint che non c'e' (404) o la rete che cade: la chiamata fallisce,
+     * e la scheda deve restare in piedi — campo, mappa e le altre sezioni al
+     * loro posto — invece di mostrare un errore al posto di tutto.
+     */
+    it('se la chiamata fallisce la pagina resta in piedi, senza risultati', () => {
+      const pagina = apri(SOCIETA);
+      rispostaRisultati = () =>
+        throwError(() => new HttpErrorResponse({ status: 404, statusText: 'Not Found' }));
+
+      apriPieghe(pagina, 'risultati');
+
+      expect(testo(pagina)).toContain('riprova tra poco');
+      expect(righe(pagina).length).toBe(0);
+      expect(sezione(pagina).querySelector('ion-badge')).toBeNull();
+      // Il resto della scheda non si accorge di niente.
+      expect(pagina.querySelector('.testata h2')!.textContent).toContain('BOREALE');
+      expect(sezioni(pagina)).toEqual(['partite', 'risultati', 'anagrafica', 'campionati']);
+      expect(pagina.querySelector('ion-accordion[value=partite] .partita')).not.toBeNull();
+    });
+
+    it('riaperta dopo un errore riprova', () => {
+      const pagina = apri(SOCIETA);
+      rispostaRisultati = () => throwError(() => new Error('rete giu'));
+
+      apriPieghe(pagina, 'risultati');
+      expect(richiesteRisultati).toBe(1);
+
+      rispostaRisultati = () => of({ stato: 'DISPONIBILI', risultati: [VITTORIA] });
+      apriPieghe(pagina);
+      apriPieghe(pagina, 'risultati');
+
+      expect(richiesteRisultati).toBe(2);
+      expect(righe(pagina).length).toBe(1);
+    });
+
+    /** Tornando dalla modifica la pagina e\u0027 la stessa: i risultati si rileggono. */
+    it('rientrando con la piega aperta li richiede', () => {
+      const pagina = apri(SOCIETA);
+
+      apriPieghe(pagina, 'risultati');
+      fixture.componentInstance.ionViewWillEnter();
+      fixture.detectChanges();
+
+      expect(richiesteRisultati).toBe(2);
+      expect(righe(pagina).length).toBe(2);
+    });
+  });
+
   describe('la campanella delle squadre', () => {
     const PRIMA: Squadra = {
       campionato: 'ECCELLENZA',

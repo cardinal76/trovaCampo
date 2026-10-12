@@ -80,4 +80,14 @@ describe('SocietaService', () => {
 
     http.expectOne(`${base}/abc%201/squadre`).flush([]);
   });
+
+  it('richiede gli ultimi risultati della società', () => {
+    let risposta: unknown;
+    service.risultati('abc 1').subscribe((dati) => (risposta = dati));
+
+    http
+      .expectOne(`${base}/abc%201/risultati`)
+      .flush({ stato: 'DISPONIBILI', risultati: [] });
+    expect(risposta).toEqual({ stato: 'DISPONIBILI', risultati: [] });
+  });
 });

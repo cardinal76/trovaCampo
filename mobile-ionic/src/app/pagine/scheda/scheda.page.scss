@@ -239,6 +239,90 @@
   }
 }
 
+/*
+ * Gli ultimi risultati: le stesse righe delle partite, con il bollino
+ * dell'esito al posto del riquadro da calendario e il punteggio al posto del
+ * "vs". Si appoggiano a .dettagli, .squadre e .campionato delle partite:
+ * cambiando quelle, cambiano insieme.
+ */
+.risultati {
+  margin: 0;
+  padding: 0 0.75rem;
+  list-style: none;
+}
+
+.risultato {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+  padding: 0.8rem 0.25rem;
+
+  & + & {
+    border-top: 1px solid var(--ion-color-light-shade, #e6e6e6);
+  }
+
+  p {
+    margin: 0;
+  }
+
+  /* Il punteggio è il dato della riga: più grande dei nomi delle squadre. */
+  .punteggio {
+    padding: 0.1rem 0.5rem;
+    border-radius: 6px;
+    background: var(--ion-color-light, #f4f5f8);
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* La società di questa scheda in grassetto: si legge da che parte sta. */
+  .nostra {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+
+  .giorno-giocato {
+    font-weight: 600;
+    text-transform: lowercase;
+  }
+
+  .trasferta {
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+  }
+}
+
+/*
+ * V, P, S: verde, grigio, rosso. Il colore non è l'unica differenza — c'è la
+ * lettera — così la riga si legge anche da chi non distingue il verde dal
+ * rosso.
+ */
+.bollino {
+  display: flex;
+  flex: 0 0 2.25rem;
+  align-items: center;
+  justify-content: center;
+  height: 2.25rem;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+
+  &.vittoria {
+    background: var(--ion-color-success, #2dd36f);
+  }
+
+  &.pareggio {
+    background: var(--ion-color-medium, #92949c);
+  }
+
+  &.sconfitta {
+    background: var(--ion-color-danger, #eb445a);
+  }
+}
+
 /* La campanella di una squadra: piena e colorata quando la si segue. */
 .segui {
   --color: var(--ion-color-medium, #666);

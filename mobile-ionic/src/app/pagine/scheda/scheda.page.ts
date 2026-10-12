@@ -37,6 +37,7 @@ import { addIcons } from 'ionicons';
 import {
   calendarOutline,
   create,
+  footballOutline,
   trash,
   notifications,
   notificationsOutline,
@@ -62,6 +63,14 @@ import {
   squadrePartita,
 } from '../../modelli/partita';
 import {
+  Risultato,
+  dettaglioRisultato,
+  giornoRisultato,
+  punteggio,
+  risultatoPerEsteso,
+  siglaEsito,
+} from '../../modelli/risultato';
+import {
   Squadra,
   aggiornamentoRisultati,
   dettaglioSquadra,
@@ -75,6 +84,21 @@ import { NotificheService } from '../../servizi/notifiche.service';
 import { SocietaService } from '../../servizi/societa.service';
 
 type Stato = 'caricamento' | 'completata' | 'errore';
+
+/**
+ * Lo stato della sezione degli ultimi risultati. Ha due stati in più delle
+ * altre perché deve raccontare due cose in più:
+ *
+ * - `chiusa`: nessuno l'ha ancora aperta, e i risultati non sono stati
+ *   chiesti. Si chiedono all'apertura della piega e non all'arrivo sulla
+ *   scheda: questa è la pagina di un campo, e la maggior parte di chi la apre
+ *   vuole sapere dove si gioca, non com'è finita domenica;
+ * - `assenti`: presenze non ha i risultati di questa società. Può essere un
+ *   campo che lì non c'è, o un presenze che non ha ancora l'endpoint, perché
+ *   TrovaCampo si rilascia per conto suo e questa scheda può arrivare sul
+ *   server prima. Riprovare non serve, e la sezione non lo promette.
+ */
+type StatoSezioneRisultati = 'chiusa' | 'caricamento' | 'completata' | 'assenti' | 'errore';
 
 /**
  * La scheda da eliminare quando si torna dal login di Keycloak. Il login
@@ -160,6 +184,24 @@ export class SchedaPage implements OnDestroy {
    */
   readonly partite = signal<Partita[]>([]);
   readonly statoPartite = signal<Stato>('caricamento');
+  /**
+   * Gli ultimi risultati della società, dal più recente: si chiedono solo
+   * quando qualcuno apre la sezione (vedi {@link StatoSezioneRisultati}).
+   */
+  readonly risultati = signal<Risultato[]>([]);
+  readonly statoRisultati = signal<StatoSezioneRisultati>('chiusa');
+  readonly giornoRisultato = giornoRisultato;
+  readonly punteggio = punteggio;
+  readonly siglaEsito = siglaEsito;
+  readonly risultatoPerEsteso = risultatoPerEsteso;
+  readonly dettaglioRisultato = dettaglioRisultato;
+  /**
+   * Se la piega dei risultati è aperta in questo momento. All'arrivo nessuna
+   * lo è, ma tornando qui dalla modifica la pagina è la stessa di prima, con
+   * le pieghe come le aveva lasciate: i risultati vanno richiesti, non
+   * lasciati in attesa per sempre.
+   */
+  private readonly risultatiInVista = signal(false);
   readonly giorniPartite = GIORNI_PARTITE_SCHEDA;
   readonly quandoPartita = quandoPartita;
   readonly squadrePartita = squadrePartita;
@@ -254,6 +296,7 @@ export class SchedaPage implements OnDestroy {
     addIcons({
       calendarOutline,
       create,
+      footballOutline,
       notifications,
       trash,
       notificationsOutline,
@@ -277,6 +320,24 @@ export class SchedaPage implements OnDestroy {
         this.rimuoviMappa();
       }
     });
+  }
+
+  /**
+   * Una piega si è aperta o chiusa. Gli ultimi risultati si chiedono qui, la
+   * prima volta che la loro piega si apre: una chiamata per apertura, non una
+   * per visita alla scheda.
+   *
+   * Riaprendola dopo un errore si riprova, perché la sezione ha appena detto
+   * «riprova tra poco»; dopo una risposta riuscita no, i risultati di una
+   * domenica non cambiano mentre si guarda la pagina.
+   */
+  pieghe(evento: Event): void {
+    const valore = (evento as CustomEvent<{ value?: string | string[] | null }>).detail?.value;
+    const aperte = Array.isArray(valore) ? valore : valore ? [valore] : [];
+    this.risultatiInVista.set(aperte.includes('risultati'));
+    if (this.risultatiInVista() && this.statoRisultati() !== 'completata') {
+      this.caricaRisultati();
+    }
   }
 
   /** Le squadre seguite, lette dal segnale: la campanella cambia appena le si tocca. */
@@ -360,6 +421,7 @@ export class SchedaPage implements OnDestroy {
         this.stato.set('completata');
         this.caricaSquadre(dati);
         this.caricaPartite(dati);
+        this.rileggiRisultati();
         if (eliminaDopoAccesso) {
           void this.riprendiEliminazione();
         }
@@ -547,6 +609,47 @@ export class SchedaPage implements OnDestroy {
         this.statoPartite.set('completata');
       },
       error: () => this.statoPartite.set('errore'),
+    });
+  }
+
+  /**
+   * All'arrivo sulla scheda i risultati di prima non valgono più. Si
+   * richiedono solo se la loro piega è rimasta aperta (si torna dalla
+   * modifica); altrimenti si aspetta che qualcuno la apra.
+   */
+  private rileggiRisultati(): void {
+    this.risultati.set([]);
+    this.statoRisultati.set('chiusa');
+    if (this.risultatiInVista()) {
+      this.caricaRisultati();
+    }
+  }
+
+  /**
+   * Gli ultimi risultati della società. Il backend risponde sempre 200 e dice
+   * nello stato se i risultati ci sono, se presenze non li ha o se non ha
+   * risposto: la sezione lo racconta a parole, e la pagina non si rompe
+   * nemmeno quando l'endpoint di presenze non c'è ancora.
+   */
+  private caricaRisultati(): void {
+    this.statoRisultati.set('caricamento');
+    this.service.risultati(this.id).subscribe({
+      next: (risposta) => {
+        this.risultati.set(risposta.stato === 'DISPONIBILI' ? risposta.risultati : []);
+        this.statoRisultati.set(
+          risposta.stato === 'DISPONIBILI'
+            ? 'completata'
+            : risposta.stato === 'NON_DISPONIBILI'
+              ? 'assenti'
+              : 'errore',
+        );
+      },
+      // Il backend di TrovaCampo non risponde: per chi guarda è lo stesso
+      // caso di presenze giù, e si dice allo stesso modo.
+      error: () => {
+        this.risultati.set([]);
+        this.statoRisultati.set('errore');
+      },
     });
   }
 }

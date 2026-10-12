@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Partita, PartitePerCampo } from '../modelli/partita';
+import { Risultati } from '../modelli/risultato';
 import { NuovoCampo, Societa } from '../modelli/societa';
 import { Squadra } from '../modelli/squadra';
 
@@ -40,6 +41,15 @@ export class SocietaService {
   /** Le prossime partite sul campo della società, dal calendario di presenze. */
   partite(id: string): Observable<Partita[]> {
     return this.http.get<Partita[]>(`${this.base}/${encodeURIComponent(id)}/partite`);
+  }
+
+  /**
+   * Gli ultimi risultati della società, dal più recente. La risposta porta
+   * anche lo stato con cui leggerla: vedi {@link Risultati}. Risponde sempre
+   * 200, anche quando presenze non ha i risultati o non risponde.
+   */
+  risultati(id: string): Observable<Risultati> {
+    return this.http.get<Risultati>(`${this.base}/${encodeURIComponent(id)}/risultati`);
   }
 
   /**

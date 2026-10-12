@@ -80,7 +80,12 @@
       sono qualche schermata di scorrimento fra il campo e quello che si
       cerca. Aperta in partenza la sezione più utile a chi va al campo.
     -->
-    <ion-accordion-group class="sezioni contenuto-largo" [multiple]="true" [value]="sezioniAperte()">
+    <ion-accordion-group
+      class="sezioni contenuto-largo"
+      [multiple]="true"
+      [value]="sezioniAperte()"
+      (ionChange)="pieghe($event)"
+    >
       @if (societa()!.anagraficaImpiantoId) {
         <ion-accordion value="partite">
           <ion-item slot="header" class="testa-sezione">
@@ -163,6 +168,95 @@
           </div>
         </ion-accordion>
       }
+
+      <!--
+        Gli ultimi risultati: dopo le partite che devono ancora giocarsi, e
+        prima dell'anagrafica, perché è la stessa domanda guardata all'indietro.
+        Chiusa in partenza, e chiesta al backend solo quando la si apre.
+      -->
+      <ion-accordion value="risultati">
+        <ion-item slot="header" class="testa-sezione">
+          <ion-icon slot="start" name="football-outline" aria-hidden="true"></ion-icon>
+          <ion-label>Ultimi risultati della società</ion-label>
+          @if (statoRisultati() === 'completata' && risultati().length > 0) {
+            <ion-badge slot="end" class="conteggio">{{ risultati().length }}</ion-badge>
+          }
+        </ion-item>
+        <div slot="content" class="corpo-sezione">
+          @switch (statoRisultati()) {
+            @case ('errore') {
+              <p class="vuoto">
+                I risultati non sono disponibili in questo momento: riprova tra poco.
+              </p>
+            }
+            @case ('assenti') {
+              <!-- Niente "riprova tra poco": qui riprovare non serve. -->
+              <p class="vuoto">
+                Gli ultimi risultati non sono ancora disponibili per questa società.
+              </p>
+            }
+            @case ('completata') {
+              <ol class="risultati">
+                @for (risultato of risultati(); track $index) {
+                  <li class="risultato">
+                    <!--
+                      Il bollino con l'esito: lo manda presenze, non si
+                      ricalcola dai gol. Una "V" da sola non dice niente a chi
+                      legge con lo screen reader, che sente la riga per esteso.
+                    -->
+                    <span
+                      class="bollino"
+                      [class.vittoria]="risultato.esito === 'VITTORIA'"
+                      [class.pareggio]="risultato.esito === 'PAREGGIO'"
+                      [class.sconfitta]="risultato.esito === 'SCONFITTA'"
+                      aria-hidden="true"
+                      >{{ siglaEsito(risultato) }}</span
+                    >
+                    <div class="dettagli">
+                      <p class="quando">
+                        <span class="visually-hidden">{{ risultatoPerEsteso(risultato) }}</span>
+                        @let giorno = giornoRisultato(risultato);
+                        @if (giorno) {
+                          <span class="giorno-giocato" aria-hidden="true">{{ giorno }}</span>
+                        }
+                        @if (!risultato.inCasa) {
+                          <span class="trasferta" aria-hidden="true">In trasferta</span>
+                        }
+                      </p>
+                      <p class="squadre" aria-hidden="true">
+                        <span class="squadra">
+                          <span class="casa" [class.nostra]="risultato.inCasa">{{
+                            risultato.casa
+                          }}</span>
+                        </span>
+                        <span class="punteggio">{{ punteggio(risultato) }}</span>
+                        <span class="squadra">
+                          <span class="ospite" [class.nostra]="!risultato.inCasa">{{
+                            risultato.ospite
+                          }}</span>
+                        </span>
+                      </p>
+                      <p class="campionato">
+                        <span class="nome-campionato">{{ risultato.campionato }}</span>
+                        @let dettaglio = dettaglioRisultato(risultato);
+                        @if (dettaglio) {
+                          <span>{{ dettaglio }}</span>
+                        }
+                      </p>
+                    </div>
+                  </li>
+                } @empty {
+                  <p class="vuoto">Nessuna partita giocata finora in questa stagione.</p>
+                }
+              </ol>
+            }
+            @default {
+              <!-- 'chiusa' dura un attimo: aprendo la piega la chiamata parte subito. -->
+              <div class="attesa"><ion-spinner name="crescent"></ion-spinner></div>
+            }
+          }
+        </div>
+      </ion-accordion>
 
       <ion-accordion value="anagrafica">
         <ion-item slot="header" class="testa-sezione">
