@@ -20,6 +20,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.ResourceAccessException;
 
@@ -198,22 +199,34 @@ class PartiteSuiCampiTest {
         verify(anagrafica, times(2)).partite(any(), any());
     }
 
-    /** Con una partita in diretta il punteggio arriva alla scheda, e presenze si richiama ogni minuto. */
+    /** Con una partita in diretta il punteggio e l'id della partita arrivano alla scheda. */
     @Test
-    void conUnaPartitaInDirettaIlPunteggioArrivaEPresenzeSiRichiamaOgniMinuto() {
+    void conUnaPartitaInDirettaIlPunteggioEIlSuoIdArrivanoAllaScheda() {
         AnagraficaPresenze.Partita base = partita(190, LocalDateTime.of(2026, 9, 4, 9, 30), "BOREALE");
         AnagraficaPresenze.Partita inDiretta = new AnagraficaPresenze.Partita(
-                base.id(), base.dataOra(), base.stato(), base.impiantoId(), base.casa(), base.ospite(),
+                77L, base.dataOra(), base.stato(), base.impiantoId(), base.casa(), base.ospite(),
                 base.campionato(), base.ente(), base.girone(), base.giornata(), null, null, null, null,
                 new AnagraficaPresenze.Live(2, 1));
         when(anagrafica.partite(any(), any())).thenReturn(List.of(inDiretta));
 
-        assertThat(partite.sulCampo(campo(190L)))
-                .extracting(PartiteSuiCampi.Partita::live)
-                .containsExactly(new AnagraficaPresenze.Live(2, 1));
-        orologio.avanti(Duration.ofSeconds(61));
-        partite.sulCampo(campo(190L));
-        verify(anagrafica, times(2)).partite(any(), any());
+        PartiteSuiCampi.Partita vista = partite.sulCampo(campo(190L)).get(0);
+        assertThat(vista.live()).isEqualTo(new AnagraficaPresenze.Live(2, 1));
+        assertThat(vista.id()).isEqualTo(77L);
+    }
+
+    /** Mentre si gioca si chiedono i soli punteggi, con venti secondi di cache per gruppo di partite. */
+    @Test
+    void iPunteggiInDirettaSiChiedonoAPresenzeOgniVentiSecondi() {
+        when(anagrafica.live(List.of(1L, 2L))).thenReturn(Map.of(1L, new AnagraficaPresenze.Live(1, 0)));
+
+        assertThat(partite.live(List.of(2L, 1L))).containsEntry(1L, new AnagraficaPresenze.Live(1, 0));
+        orologio.avanti(Duration.ofSeconds(10));
+        partite.live(List.of(1L, 2L));
+        verify(anagrafica, times(1)).live(List.of(1L, 2L));
+
+        orologio.avanti(Duration.ofSeconds(11));
+        partite.live(List.of(1L, 2L));
+        verify(anagrafica, times(2)).live(List.of(1L, 2L));
     }
 
     @Test

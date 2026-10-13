@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import it.trovacampo.api.anagrafica.AnagraficaPresenze;
 import it.trovacampo.api.anagrafica.PartiteSuiCampi;
 import it.trovacampo.api.anagrafica.RisultatiSocieta;
 import it.trovacampo.api.anagrafica.SquadreSocieta;
@@ -257,6 +258,29 @@ class SocietaControllerTest {
         mockMvc.perform(get("/api/campi/partite"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$['190'][0].ospite").value("VIGOR PERCONTI"));
+    }
+
+    /** I soli punteggi in diretta, pubblici: una partita assente non è in diretta. */
+    @Test
+    void iPunteggiInDirettaSonoPubblici() throws Exception {
+        when(partite.live(List.of(5L, 6L)))
+                .thenReturn(Map.of(5L, new AnagraficaPresenze.Live(2, 1)));
+
+        mockMvc.perform(get("/api/partite/live").param("ids", "5,6"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$['5'].golCasa").value(2))
+                .andExpect(jsonPath("$['6']").doesNotExist());
+    }
+
+    @Test
+    void piuDiCentoPartiteInDirettaNo() throws Exception {
+        String troppe =
+                java.util.stream.LongStream.rangeClosed(1, 101)
+                        .mapToObj(String::valueOf)
+                        .collect(java.util.stream.Collectors.joining(","));
+
+        mockMvc.perform(get("/api/partite/live").param("ids", troppe))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

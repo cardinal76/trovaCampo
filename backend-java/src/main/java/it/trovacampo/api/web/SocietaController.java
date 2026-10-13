@@ -1,5 +1,6 @@
 package it.trovacampo.api.web;
 
+import it.trovacampo.api.anagrafica.AnagraficaPresenze;
 import it.trovacampo.api.anagrafica.PartiteSuiCampi;
 import it.trovacampo.api.anagrafica.RisultatiSocieta;
 import it.trovacampo.api.anagrafica.SquadreSocieta;
@@ -59,6 +60,20 @@ public class SocietaController {
     @GetMapping("/campi/partite")
     public Map<Long, List<PartiteSuiCampi.Partita>> partiteSuiCampi() {
         return partite.perLaMappa();
+    }
+
+    /**
+     * I soli punteggi in diretta di queste partite (gli {@code id} di presenze
+     * delle partite di scheda e mappa): mentre si gioca la pagina chiede questi
+     * e cambia solo quelli. Una partita assente non è in diretta.
+     */
+    @GetMapping("/partite/live")
+    public Map<Long, AnagraficaPresenze.Live> live(@RequestParam List<Long> ids) {
+        if (ids.size() > PartiteSuiCampi.MASSIMO_LIVE) {
+            throw new DatiNonValidiException(
+                    "Al massimo " + PartiteSuiCampi.MASSIMO_LIVE + " partite per richiesta");
+        }
+        return partite.live(ids);
     }
 
     @GetMapping("/societa/{id}")
