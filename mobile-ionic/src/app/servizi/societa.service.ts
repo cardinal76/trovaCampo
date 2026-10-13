@@ -2,7 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Partita, PartitePerCampo } from '../modelli/partita';
+import { Partita, PartitePerCampo, PunteggioLive } from '../modelli/partita';
 import { Risultati } from '../modelli/risultato';
 import { NuovoCampo, Societa } from '../modelli/societa';
 import { Squadra } from '../modelli/squadra';
@@ -58,6 +58,17 @@ export class SocietaService {
    */
   partiteSuiCampi(): Observable<PartitePerCampo> {
     return this.http.get<PartitePerCampo>(`${environment.apiUrl}/api/campi/partite`);
+  }
+
+  /**
+   * I soli punteggi in diretta di queste partite (id di presenze), per id:
+   * mentre si gioca scheda e mappa chiedono questi e cambiano solo quelli.
+   * Una partita assente non è in diretta.
+   */
+  live(ids: number[]): Observable<Record<string, PunteggioLive>> {
+    return this.http.get<Record<string, PunteggioLive>>(`${environment.apiUrl}/api/partite/live`, {
+      params: { ids: ids.join(',') },
+    });
   }
 
   inserisci(campo: NuovoCampo): Observable<Societa> {

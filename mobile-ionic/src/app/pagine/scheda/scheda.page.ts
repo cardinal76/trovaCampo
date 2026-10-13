@@ -59,9 +59,10 @@ import {
   Partita,
   RILETTURA_IN_DIRETTA_MS,
   campionatoPartita,
+  daSeguire,
   dataPartita,
+  fondiLive,
   punteggioLive,
-  qualcunaInDiretta,
   quandoPartita,
   squadrePartita,
 } from '../../modelli/partita';
@@ -211,8 +212,11 @@ export class SchedaPage implements OnDestroy {
   readonly campionatoPartita = campionatoPartita;
   readonly dataPartita = (partita: Partita) => dataPartita(partita);
   readonly punteggioLive = punteggioLive;
-  /** Con una partita in diretta le partite si rileggono da sole, ogni minuto. */
-  private rilettura: ReturnType<typeof setTimeout> | null = null;
+  /**
+   * Ogni minuto, se una partita si può star giocando, si chiedono i soli
+   * punteggi in diretta e cambiano solo quelli: la scheda non si ricarica.
+   */
+  private rilettura: ReturnType<typeof setInterval> | null = null;
   /** Il pulsante "Modifica": solo se su questo browser è entrato un amministratore. */
   readonly amministratore = signal(amministratoreRicordato());
   /** Mentre l'eliminazione è in corso il pulsante è spento: niente doppi tocchi. */
@@ -403,9 +407,22 @@ export class SchedaPage implements OnDestroy {
 
   private fermaRilettura(): void {
     if (this.rilettura !== null) {
-      clearTimeout(this.rilettura);
+      clearInterval(this.rilettura);
       this.rilettura = null;
     }
+  }
+
+  /** I punteggi in diretta delle partite che si possono star giocando, e solo quelli. */
+  private aggiornaPunteggi(): void {
+    const ids = daSeguire(this.partite());
+    if (ids.length === 0 || document.visibilityState === 'hidden') {
+      return;
+    }
+    this.service.live(ids).subscribe({
+      next: (punteggi) => this.partite.update((partite) => fondiLive(partite, ids, punteggi)),
+      // Un errore lascia i punteggi di prima: al minuto dopo si riprova.
+      error: () => undefined,
+    });
   }
 
   private rimuoviMappa(): void {
@@ -618,31 +635,20 @@ export class SchedaPage implements OnDestroy {
       return;
     }
     this.statoPartite.set('caricamento');
-    this.leggiPartite(societa);
-  }
-
-  /**
-   * Chiede le partite, e se una è in diretta torna a chiederle fra un minuto:
-   * il punteggio cambia mentre si guarda. Senza diretta si chiede una volta.
-   */
-  private leggiPartite(societa: Societa): void {
     this.service.partite(societa.id).subscribe({
       next: (partite) => {
         this.partite.set(partite);
         this.statoPartite.set('completata');
-        if (qualcunaInDiretta(partite)) {
-          this.rilettura = setTimeout(() => {
-            this.rilettura = null;
-            this.leggiPartite(societa);
-          }, RILETTURA_IN_DIRETTA_MS);
-        }
+        // Fuori dalla zona di Angular: un timer che gira sempre non deve
+        // tenere la pagina «occupata». Si rientra solo per aggiornare.
+        this.zona.runOutsideAngular(() => {
+          this.rilettura = setInterval(
+            () => this.zona.run(() => this.aggiornaPunteggi()),
+            RILETTURA_IN_DIRETTA_MS,
+          );
+        });
       },
-      error: () => {
-        // Durante una rilettura un errore non toglie le partite già mostrate.
-        if (this.partite().length === 0) {
-          this.statoPartite.set('errore');
-        }
-      },
+      error: () => this.statoPartite.set('errore'),
     });
   }
 
