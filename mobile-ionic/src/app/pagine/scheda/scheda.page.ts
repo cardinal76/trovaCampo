@@ -57,8 +57,11 @@ import {
 import {
   GIORNI_PARTITE_SCHEDA,
   Partita,
+  RILETTURA_IN_DIRETTA_MS,
   campionatoPartita,
   dataPartita,
+  punteggioLive,
+  qualcunaInDiretta,
   quandoPartita,
   squadrePartita,
 } from '../../modelli/partita';
@@ -207,6 +210,9 @@ export class SchedaPage implements OnDestroy {
   readonly squadrePartita = squadrePartita;
   readonly campionatoPartita = campionatoPartita;
   readonly dataPartita = (partita: Partita) => dataPartita(partita);
+  readonly punteggioLive = punteggioLive;
+  /** Con una partita in diretta le partite si rileggono da sole, ogni minuto. */
+  private rilettura: ReturnType<typeof setTimeout> | null = null;
   /** Il pulsante "Modifica": solo se su questo browser è entrato un amministratore. */
   readonly amministratore = signal(amministratoreRicordato());
   /** Mentre l'eliminazione è in corso il pulsante è spento: niente doppi tocchi. */
@@ -391,7 +397,15 @@ export class SchedaPage implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.fermaRilettura();
     this.rimuoviMappa();
+  }
+
+  private fermaRilettura(): void {
+    if (this.rilettura !== null) {
+      clearTimeout(this.rilettura);
+      this.rilettura = null;
+    }
   }
 
   private rimuoviMappa(): void {
@@ -597,18 +611,38 @@ export class SchedaPage implements OnDestroy {
    * resta com'è.
    */
   private caricaPartite(societa: Societa): void {
+    this.fermaRilettura();
     this.partite.set([]);
     if (!societa.anagraficaImpiantoId) {
       this.statoPartite.set('completata');
       return;
     }
     this.statoPartite.set('caricamento');
+    this.leggiPartite(societa);
+  }
+
+  /**
+   * Chiede le partite, e se una è in diretta torna a chiederle fra un minuto:
+   * il punteggio cambia mentre si guarda. Senza diretta si chiede una volta.
+   */
+  private leggiPartite(societa: Societa): void {
     this.service.partite(societa.id).subscribe({
       next: (partite) => {
         this.partite.set(partite);
         this.statoPartite.set('completata');
+        if (qualcunaInDiretta(partite)) {
+          this.rilettura = setTimeout(() => {
+            this.rilettura = null;
+            this.leggiPartite(societa);
+          }, RILETTURA_IN_DIRETTA_MS);
+        }
       },
-      error: () => this.statoPartite.set('errore'),
+      error: () => {
+        // Durante una rilettura un errore non toglie le partite già mostrate.
+        if (this.partite().length === 0) {
+          this.statoPartite.set('errore');
+        }
+      },
     });
   }
 

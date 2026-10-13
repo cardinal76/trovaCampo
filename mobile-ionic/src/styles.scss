@@ -139,6 +139,19 @@
     display: block;
     color: var(--ion-color-medium, #92949c);
   }
+
+  /* La partita che si sta giocando: etichetta rossa col punteggio. */
+  .live {
+    display: inline-block;
+    margin-bottom: 0.15rem;
+    padding: 0.05rem 0.4rem;
+    border-radius: 4px;
+    background: var(--ion-color-danger, #c5000f);
+    color: var(--ion-color-danger-contrast, #fff);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
 }
 
 /*

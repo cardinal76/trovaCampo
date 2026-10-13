@@ -261,6 +261,9 @@ public class AnagraficaPresenze {
      * @param casaSocietaId la società di casa in presenze, come {@link Riferimento#id()}
      * @param casaSquadra vuota per la prima squadra, "B" per la seconda; null da un
      *     presenze che non la manda ancora (vedi {@code ChiaveSquadra})
+     * @param live il punteggio in diretta, se la partita si sta giocando e la
+     *     società lo sta scrivendo; null altrimenti, o da un presenze che non lo
+     *     manda ancora
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Partita(
@@ -277,7 +280,28 @@ public class AnagraficaPresenze {
             Long casaSocietaId,
             Long ospiteSocietaId,
             String casaSquadra,
-            String ospiteSquadra) {
+            String ospiteSquadra,
+            Live live) {
+
+        /** Senza diretta. */
+        public Partita(
+                Long id,
+                OffsetDateTime dataOra,
+                String stato,
+                Long impiantoId,
+                String casa,
+                String ospite,
+                String campionato,
+                String ente,
+                String girone,
+                int giornata,
+                Long casaSocietaId,
+                Long ospiteSocietaId,
+                String casaSquadra,
+                String ospiteSquadra) {
+            this(id, dataOra, stato, impiantoId, casa, ospite, campionato, ente, girone, giornata,
+                    casaSocietaId, ospiteSocietaId, casaSquadra, ospiteSquadra, null);
+        }
 
         /** Senza le squadre: quello che serve a scheda e mappa. */
         public Partita(
@@ -292,7 +316,14 @@ public class AnagraficaPresenze {
                 String girone,
                 int giornata) {
             this(id, dataOra, stato, impiantoId, casa, ospite, campionato, ente, girone, giornata,
-                    null, null, null, null);
+                    null, null, null, null, null);
         }
     }
+
+    /**
+     * Il punteggio di una partita che si sta giocando, scritto dallo staff della
+     * società in presenze: è quello che fa comparire l'etichetta LIVE.
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Live(int golCasa, int golOspite) {}
 }
