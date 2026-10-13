@@ -268,6 +268,7 @@ class SocietaControllerTest {
                                 RisultatiSocieta.Stato.DISPONIBILI,
                                 List.of(
                                         new RisultatiSocieta.Risultato(
+                                                50L,
                                                 OffsetDateTime.of(
                                                         2026, 10, 11, 10, 30, 0, 0, ZoneOffset.ofHours(2)),
                                                 "UNDER 17 PROVINCIALE",

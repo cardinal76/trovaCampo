@@ -77,8 +77,14 @@ public class AnagraficaPresenze {
     }
 
     /**
-     * Gli ultimi risultati di una società, dal più recente, al massimo
-     * {@code limite}.
+     * L'ultima partita giocata da <b>ogni squadra</b> della società, dalla
+     * più recente.
+     *
+     * <p><b>Nessun numero da passare</b>: quante righe tornano lo decidono le
+     * squadre che la società ha in campo. Prima si chiedevano «le ultime
+     * dieci partite» e quel taglio mescolava le categorie -- dieci risultati
+     * potevano essere quattro dell'Under 17 e nessuno della prima squadra,
+     * perché un girone gioca il sabato e un altro la domenica.
      *
      * <p>Questo metodo e {@link Risultati} sono l'unico posto dove sta scritta
      * la forma della risposta di presenze: un campo che lì cambia nome si
@@ -89,13 +95,9 @@ public class AnagraficaPresenze {
      * lo distingue da un guasto, perché le due cose si raccontano in modo
      * diverso a chi guarda.
      */
-    public Risultati risultati(long societaId, int limite) {
+    public Risultati risultati(long societaId) {
         return client.get()
-                .uri(
-                        uri ->
-                                uri.path("/api/pubblico/anagrafica/societa/{id}/risultati")
-                                        .queryParam("limite", limite)
-                                        .build(societaId))
+                .uri(uri -> uri.path("/api/pubblico/anagrafica/societa/{id}/risultati").build(societaId))
                 .retrieve()
                 .body(Risultati.class);
     }
@@ -185,7 +187,8 @@ public class AnagraficaPresenze {
      *
      * @param societa la società chiesta: il punto di vista da cui è scritto
      *     ogni {@link Risultato#esito()}
-     * @param risultati dal più recente al più vecchio, già in quest'ordine;
+     * @param risultati una riga per squadra -- l'ultima partita che ognuna ha
+     *     giocato -- dalla più recente, già in quest'ordine;
      *     vuoto a inizio stagione, e non è un errore
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -205,13 +208,18 @@ public class AnagraficaPresenze {
      *     può mancare
      * @param girone può mancare finché i gironi non escono
      * @param squadra vuota per la prima squadra, "B" per la seconda
-     * @param inCasa da che parte giocava la società chiesta
-     * @param esito VITTORIA, PAREGGIO o SCONFITTA, dal punto di vista della società
-     *     chiesta: lo decide presenze, e non si ricalcola confrontando i gol
+     * @param squadraIscrittaId la squadra della riga. È la chiave della riga,
+     *     perché {@code partitaId} non basta: nel derby fra la prima e la
+     *     squadra B la stessa partita arriva due volte, una per squadra
+     * @param inCasa da che parte giocava la squadra della riga
+     * @param esito VITTORIA, PAREGGIO o SCONFITTA, dal punto di vista della
+     *     squadra della riga: lo decide presenze, e non si ricalcola
+     *     confrontando i gol
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Risultato(
             Long partitaId,
+            Long squadraIscrittaId,
             OffsetDateTime data,
             Long campionatoId,
             String campionato,

@@ -45,6 +45,7 @@ const PARTITA: Partita = {
 };
 
 const VITTORIA: Risultato = {
+  squadraIscrittaId: 50,
   data: '2026-10-11T10:30:00+02:00',
   campionato: 'UNDER 17 PROVINCIALE',
   ente: 'Roma',
@@ -60,6 +61,7 @@ const VITTORIA: Risultato = {
 };
 
 const SCONFITTA_FUORI: Risultato = {
+  squadraIscrittaId: 51,
   data: '2026-10-04T11:00:00+02:00',
   campionato: 'UNDER 17 PROVINCIALE',
   ente: null,
@@ -279,6 +281,32 @@ describe('SchedaPage', () => {
     function testo(pagina: HTMLElement): string {
       return sezione(pagina).querySelector('.vuoto')?.textContent?.trim() ?? '';
     }
+
+    /**
+     * Il derby fra la prima e la squadra B è l'ultima partita di due squadre:
+     * arriva due volte, una per squadra, con i due punti di vista. La chiave
+     * della lista è `squadraIscrittaId` proprio per questo -- con la partita
+     * come chiave le due righe sarebbero la stessa chiave, e con l'indice la
+     * lista si ridisegnerebbe tutta a ogni cambio.
+     */
+    it('il derby fra due squadre della societa mostra due righe', () => {
+      const derbyInCasa: Risultato = {
+        ...VITTORIA, squadraIscrittaId: 50, casa: 'BOREALE', ospite: 'BOREALE B',
+        golCasa: 3, golOspite: 0, inCasa: true, esito: 'VITTORIA', squadra: '',
+      };
+      const derbyFuori: Risultato = {
+        ...derbyInCasa, squadraIscrittaId: 51, inCasa: false, esito: 'SCONFITTA', squadra: 'B',
+      };
+      rispostaRisultati = () => of({ stato: 'DISPONIBILI', risultati: [derbyInCasa, derbyFuori] });
+
+      const pagina = apri(SOCIETA);
+      apriPieghe(pagina, 'partite', 'risultati');
+
+      expect(righe(pagina).length).toBe(2);
+      expect(righe(pagina)[0].textContent).toContain('V');
+      expect(righe(pagina)[1].textContent).toContain('S');
+      expect(righe(pagina)[1].textContent).toContain('squadra B');
+    });
 
     it('non li chiede fino a quando la piega non si apre', () => {
       const pagina = apri(SOCIETA);

@@ -164,19 +164,20 @@ class AnagraficaPresenzeTest {
     void leggeGliUltimiRisultatiDiUnaSocieta() {
         server.expect(
                         requestTo(
-                                "http://presenze-backend:8080/api/pubblico/anagrafica/societa/123/risultati?limite=10"))
+                                "http://presenze-backend:8080/api/pubblico/anagrafica/societa/123/risultati"))
                 .andRespond(
                         withSuccess(
                                 """
                                 {"societa":{"id":123,"denominazione":"A.S.D. ESEMPIO"},
                                  "risultati":[
-                                   {"partitaId":9912,"data":"2026-10-11T10:30:00+02:00",
+                                   {"partitaId":9912,"squadraIscrittaId":50,
+                                    "data":"2026-10-11T10:30:00+02:00",
                                     "campionatoId":44,"campionato":"UNDER 17 PROVINCIALE",
                                     "ente":"Roma","stagione":"2026-2027","gironeId":77,"girone":"A",
                                     "giornata":3,"ritorno":false,"squadra":"",
                                     "casa":"A.S.D. ESEMPIO","ospite":"ALTRA A.S.D.",
                                     "golCasa":2,"golOspite":1,"inCasa":true,"esito":"VITTORIA"},
-                                   {"partitaId":9900,"data":null,
+                                   {"partitaId":9900,"squadraIscrittaId":51,"data":null,
                                     "campionatoId":44,"campionato":"UNDER 17 PROVINCIALE",
                                     "ente":null,"stagione":"2026-2027","gironeId":null,"girone":null,
                                     "giornata":2,"ritorno":false,"squadra":"B",
@@ -185,7 +186,7 @@ class AnagraficaPresenzeTest {
                                 """,
                                 MediaType.APPLICATION_JSON));
 
-        AnagraficaPresenze.Risultati risultati = anagrafica.risultati(123, 10);
+        AnagraficaPresenze.Risultati risultati = anagrafica.risultati(123);
 
         assertThat(risultati.societa())
                 .isEqualTo(new AnagraficaPresenze.Riferimento(123L, "A.S.D. ESEMPIO"));
@@ -194,15 +195,15 @@ class AnagraficaPresenzeTest {
                         // Jackson riporta l'istante a UTC: RisultatiSocieta lo rimette
                         // sul fuso di Roma prima di darlo all'app, come per le partite.
                         new AnagraficaPresenze.Risultato(
-                                9912L,
+                                9912L, 50L,
                                 OffsetDateTime.of(2026, 10, 11, 8, 30, 0, 0, ZoneOffset.UTC),
                                 44L, "UNDER 17 PROVINCIALE", "Roma", "2026-2027", 77L, "A", 3, false,
                                 "", "A.S.D. ESEMPIO", "ALTRA A.S.D.", 2, 1, true, "VITTORIA"),
                         // Data, ente e girone possono mancare: nulli, non vuoti.
                         new AnagraficaPresenze.Risultato(
-                                9900L, null, 44L, "UNDER 17 PROVINCIALE", null, "2026-2027", null,
-                                null, 2, false, "B", "TERZA A.S.D.", "A.S.D. ESEMPIO", 3, 0, false,
-                                "SCONFITTA"));
+                                9900L, 51L, null, 44L, "UNDER 17 PROVINCIALE", null, "2026-2027",
+                                null, null, 2, false, "B", "TERZA A.S.D.", "A.S.D. ESEMPIO", 3, 0,
+                                false, "SCONFITTA"));
         server.verify();
     }
 }

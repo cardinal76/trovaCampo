@@ -177,7 +177,7 @@
       <ion-accordion value="risultati">
         <ion-item slot="header" class="testa-sezione">
           <ion-icon slot="start" name="football-outline" aria-hidden="true"></ion-icon>
-          <ion-label>Ultimi risultati della società</ion-label>
+          <ion-label>Ultima partita di ogni squadra</ion-label>
           @if (statoRisultati() === 'completata' && risultati().length > 0) {
             <ion-badge slot="end" class="conteggio">{{ risultati().length }}</ion-badge>
           }
@@ -192,12 +192,18 @@
             @case ('assenti') {
               <!-- Niente "riprova tra poco": qui riprovare non serve. -->
               <p class="vuoto">
-                Gli ultimi risultati non sono ancora disponibili per questa società.
+                I risultati non sono ancora disponibili per questa società.
               </p>
             }
             @case ('completata') {
               <ol class="risultati">
-                @for (risultato of risultati(); track $index) {
+                <!--
+                  La chiave è la squadra e non l'indice: nel derby la stessa
+                  partita arriva due volte, una per squadra, e una chiave
+                  stabile è quella che tiene le due righe distinte fra un
+                  ridisegno e l'altro.
+                -->
+                @for (risultato of risultati(); track risultato.squadraIscrittaId) {
                   <li class="risultato">
                     <!--
                       Il bollino con l'esito: lo manda presenze, non si
