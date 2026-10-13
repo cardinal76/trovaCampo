@@ -17,6 +17,29 @@ export interface Partita {
   casaLogoUrl?: string | null;
   /** Lo stesso, per gli ospiti. */
   ospiteLogoUrl?: string | null;
+  /**
+   * Il punteggio in diretta, quando la partita si sta giocando e la società lo
+   * scrive in presenze: fa comparire l'etichetta LIVE. Null altrimenti.
+   */
+  live?: PunteggioLive | null;
+}
+
+export interface PunteggioLive {
+  golCasa: number;
+  golOspite: number;
+}
+
+/** Ogni quanto si rileggono le partite quando ce n'è una in diretta. */
+export const RILETTURA_IN_DIRETTA_MS = 60_000;
+
+/** Se fra queste partite ce n'è una in diretta. */
+export function qualcunaInDiretta(partite: Partita[]): boolean {
+  return partite.some((partita) => !!partita.live);
+}
+
+/** "2 – 1", o null se la partita non è in diretta. */
+export function punteggioLive(partita: Partita): string | null {
+  return partita.live ? `${partita.live.golCasa} – ${partita.live.golOspite}` : null;
 }
 
 /** Le prime partite della settimana, per campo: la chiave è l'id del campo in presenze. */

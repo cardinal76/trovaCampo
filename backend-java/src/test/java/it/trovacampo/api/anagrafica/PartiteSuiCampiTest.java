@@ -198,6 +198,24 @@ class PartiteSuiCampiTest {
         verify(anagrafica, times(2)).partite(any(), any());
     }
 
+    /** Con una partita in diretta il punteggio arriva alla scheda, e presenze si richiama ogni minuto. */
+    @Test
+    void conUnaPartitaInDirettaIlPunteggioArrivaEPresenzeSiRichiamaOgniMinuto() {
+        AnagraficaPresenze.Partita base = partita(190, LocalDateTime.of(2026, 9, 4, 9, 30), "BOREALE");
+        AnagraficaPresenze.Partita inDiretta = new AnagraficaPresenze.Partita(
+                base.id(), base.dataOra(), base.stato(), base.impiantoId(), base.casa(), base.ospite(),
+                base.campionato(), base.ente(), base.girone(), base.giornata(), null, null, null, null,
+                new AnagraficaPresenze.Live(2, 1));
+        when(anagrafica.partite(any(), any())).thenReturn(List.of(inDiretta));
+
+        assertThat(partite.sulCampo(campo(190L)))
+                .extracting(PartiteSuiCampi.Partita::live)
+                .containsExactly(new AnagraficaPresenze.Live(2, 1));
+        orologio.avanti(Duration.ofSeconds(61));
+        partite.sulCampo(campo(190L));
+        verify(anagrafica, times(2)).partite(any(), any());
+    }
+
     @Test
     void sePresenzeNonRispondeSiTengonoQuelleDiPrimaESiAspettaUnMinuto() {
         when(anagrafica.partite(any(), any()))

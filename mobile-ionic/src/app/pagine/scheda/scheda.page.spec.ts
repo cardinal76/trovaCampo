@@ -249,6 +249,23 @@ describe('SchedaPage', () => {
     );
   });
 
+  it('una partita in diretta ha l etichetta LIVE rossa e il punteggio al posto del vs', () => {
+    const pagina = apri(SOCIETA, [{ ...PARTITA, live: { golCasa: 2, golOspite: 1 } }]);
+    const partita = pagina.querySelector('.partita')!;
+
+    const live = partita.querySelector('ion-badge.live');
+    expect(live?.textContent?.trim()).toBe('LIVE');
+    expect(live?.getAttribute('color')).toBe('danger');
+    expect(partita.querySelector('.punteggio-live')?.textContent?.trim()).toBe('2 – 1');
+  });
+
+  it('una partita non in diretta non ha l etichetta LIVE', () => {
+    const partita = apri(SOCIETA).querySelector('.partita')!;
+
+    expect(partita.querySelector('.live')).toBeNull();
+    expect(partita.querySelector('.contro')?.textContent?.trim()).toBe('vs');
+  });
+
   it('senza partite in programma lo dice dentro la sezione', () => {
     const pagina = apri(SOCIETA, []);
 

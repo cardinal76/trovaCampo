@@ -115,6 +115,9 @@
                       </div>
                       <div class="dettagli">
                         <p class="quando">
+                          @if (partita.live) {
+                            <ion-badge color="danger" class="live">LIVE</ion-badge>
+                          }
                           @if (data.vicino) {
                             <span class="vicino">{{ data.vicino }}</span>
                           }
@@ -138,7 +141,11 @@
                             ></stemma-societa>
                             <span class="casa">{{ partita.casa }}</span>
                           </span>
-                          <span class="contro">vs</span>
+                          @if (partita.live) {
+                            <span class="contro punteggio-live">{{ punteggioLive(partita) }}</span>
+                          } @else {
+                            <span class="contro">vs</span>
+                          }
                           <span class="squadra">
                             <stemma-societa
                               [nome]="partita.ospite"

@@ -43,8 +43,11 @@ import {
 import {
   GIORNI_PARTITE_MAPPA,
   PartitePerCampo,
+  RILETTURA_IN_DIRETTA_MS,
   campionatoPartita,
   partiteDelCampo,
+  punteggioLive,
+  qualcunaInDiretta,
   quandoPartita,
   squadrePartita,
 } from '../../modelli/partita';
@@ -365,14 +368,34 @@ export class MappaPage implements OnDestroy {
     });
     // A parte, e senza toccare lo stato della pagina: le partite sono un di
     // più, la mappa non le aspetta.
+    this.leggiPartite();
+  }
+
+  /** Con una partita in diretta le partite si rileggono da sole, ogni minuto. */
+  private rilettura: ReturnType<typeof setTimeout> | null = null;
+
+  private leggiPartite(): void {
+    if (this.rilettura !== null) {
+      clearTimeout(this.rilettura);
+      this.rilettura = null;
+    }
     this.service.partiteSuiCampi().subscribe({
-      next: (partite) => this.partite.set(partite ?? {}),
+      next: (partite) => {
+        this.partite.set(partite ?? {});
+        if (!this.distrutta && qualcunaInDiretta(Object.values(partite ?? {}).flat())) {
+          this.rilettura = setTimeout(() => this.leggiPartite(), RILETTURA_IN_DIRETTA_MS);
+        }
+      },
       error: () => this.partite.set({}),
     });
   }
 
   ngOnDestroy(): void {
     this.distrutta = true;
+    if (this.rilettura !== null) {
+      clearTimeout(this.rilettura);
+      this.rilettura = null;
+    }
     this.livelloVicini = null;
     this.anelli.clear();
     this.mappa?.remove();
@@ -738,6 +761,7 @@ export class MappaPage implements OnDestroy {
       .map(
         (partita) => `
           <li>
+            ${partita.live ? `<span class="live">LIVE ${testoSicuro(punteggioLive(partita) ?? '')}</span>` : ''}
             <span class="quando">${testoSicuro(quandoPartita(partita))}</span>
             ${testoSicuro(squadrePartita(partita))}
             <small>${testoSicuro(campionatoPartita(partita))}</small>

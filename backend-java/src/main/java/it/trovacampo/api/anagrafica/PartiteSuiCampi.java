@@ -60,6 +60,11 @@ public class PartiteSuiCampi {
     /** Nel popup ne stanno poche. */
     static final int MASSIMO_MAPPA = 3;
     static final Duration DURATA_CACHE = Duration.ofMinutes(5);
+    /**
+     * Con una partita in diretta la cache dura un minuto: il punteggio cambia,
+     * e chi guarda la scheda del campo lo vuole vedere presto.
+     */
+    static final Duration DURATA_CACHE_IN_DIRETTA = Duration.ofMinutes(1);
     static final Duration PAUSA_DOPO_ERRORE = Duration.ofMinutes(1);
     /**
      * Una partita cominciata da meno di due ore si sta ancora giocando: chi
@@ -75,6 +80,8 @@ public class PartiteSuiCampi {
      * @param casaLogoUrl lo stemma della squadra di casa; nullo sulla mappa e quando
      *     TrovaCampo non ce l'ha
      * @param ospiteLogoUrl lo stesso, per gli ospiti
+     * @param live il punteggio in diretta se la partita si sta giocando; null
+     *     altrimenti
      */
     public record Partita(
             OffsetDateTime dataOra,
@@ -85,7 +92,24 @@ public class PartiteSuiCampi {
             String girone,
             int giornata,
             String casaLogoUrl,
-            String ospiteLogoUrl) {}
+            String ospiteLogoUrl,
+            AnagraficaPresenze.Live live) {
+
+        /** Senza diretta. */
+        public Partita(
+                OffsetDateTime dataOra,
+                String casa,
+                String ospite,
+                String campionato,
+                String ente,
+                String girone,
+                int giornata,
+                String casaLogoUrl,
+                String ospiteLogoUrl) {
+            this(dataOra, casa, ospite, campionato, ente, girone, giornata, casaLogoUrl, ospiteLogoUrl,
+                    null);
+        }
+    }
 
     private final AnagraficaPresenze anagrafica;
     private final SocietaRepository societa;
@@ -200,7 +224,9 @@ public class PartiteSuiCampi {
      */
     private synchronized List<AnagraficaPresenze.Partita> lette() {
         Instant adesso = orologio.instant();
-        Duration validita = ultimoRiuscito ? DURATA_CACHE : PAUSA_DOPO_ERRORE;
+        boolean inDiretta = lette.stream().anyMatch(partita -> partita.live() != null);
+        Duration validita = !ultimoRiuscito ? PAUSA_DOPO_ERRORE
+                : inDiretta ? DURATA_CACHE_IN_DIRETTA : DURATA_CACHE;
         if (ultimoTentativo != null && adesso.isBefore(ultimoTentativo.plus(validita))) {
             return lette;
         }
@@ -228,7 +254,8 @@ public class PartiteSuiCampi {
                 partita.girone(),
                 partita.giornata(),
                 stemma(stemmi, partita.casaSocietaId()),
-                stemma(stemmi, partita.ospiteSocietaId()));
+                stemma(stemmi, partita.ospiteSocietaId()),
+                partita.live());
     }
 
     private static String stemma(Map<Long, String> stemmi, Long societaId) {

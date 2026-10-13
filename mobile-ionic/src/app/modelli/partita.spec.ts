@@ -3,6 +3,8 @@ import {
   campionatoPartita,
   dataPartita,
   partiteDelCampo,
+  punteggioLive,
+  qualcunaInDiretta,
   quandoPartita,
   squadrePartita,
 } from './partita';
@@ -17,6 +19,15 @@ describe('partita', () => {
     girone: 'A',
     giornata: 1,
   };
+
+  it('dice il punteggio in diretta, e se fra le partite ce n e una', () => {
+    const inDiretta: Partita = { ...boreale, live: { golCasa: 0, golOspite: 3 } };
+
+    expect(punteggioLive(inDiretta)).toBe('0 – 3');
+    expect(punteggioLive(boreale)).toBeNull();
+    expect(qualcunaInDiretta([boreale, inDiretta])).toBeTrue();
+    expect(qualcunaInDiretta([boreale])).toBeFalse();
+  });
 
   it('dice giorno e ora con il fuso di Roma, qualunque sia quello del telefono', () => {
     expect(quandoPartita(boreale)).toBe('dom 6 set, 11:00');
