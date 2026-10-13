@@ -9,6 +9,7 @@ import {
 } from './risultato';
 
 const VITTORIA: Risultato = {
+  squadraIscrittaId: 50,
   data: '2026-10-11T10:30:00+02:00',
   campionato: 'UNDER 17 PROVINCIALE',
   ente: 'Roma',

@@ -10,7 +10,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 
 /**
- * Gli ultimi risultati di una società, dal calendario di presenze.
+ * L'ultima partita giocata da ogni squadra di una società, dal calendario di
+ * presenze.
+ *
+ * <p><b>Una riga per squadra, non le ultime N partite.</b> Prima si chiedevano
+ * le ultime dieci, e quel taglio mescolava le categorie: dieci risultati
+ * potevano essere quattro dell'Under 17 e nessuno della prima squadra, perché
+ * un girone gioca il sabato e un altro la domenica. Chi apre questa scheda
+ * chiede «come sono andate le squadre di questa società», e le vuole tutte.
  *
  * <p>La scheda non dice soltanto quali sono i risultati, ma anche perché non
  * ce ne sono: a inizio stagione la società non ha ancora giocato, presenze
@@ -28,13 +35,6 @@ public class RisultatiSocieta {
 
     private static final Logger log = LoggerFactory.getLogger(RisultatiSocieta.class);
 
-    /**
-     * Quanti risultati chiede la scheda: le ultime due o tre giornate, cioè
-     * quello che si guarda prima di andare al campo. Di più diventa una
-     * classifica, e la classifica non è questa scheda.
-     */
-    static final int LIMITE_SCHEDA = 10;
-
     /** Come va letto l'elenco dei risultati. */
     public enum Stato {
         /** Presenze ha risposto: l'elenco è quello che ha, anche se vuoto. */
@@ -49,7 +49,10 @@ public class RisultatiSocieta {
         ERRORE
     }
 
-    /** @param risultati dal più recente al più vecchio; vuoto se non ce ne sono */
+    /**
+     * @param risultati una riga per squadra -- l'ultima che ognuna ha giocato
+     *     -- dalla più recente; vuoto se la società non ha ancora giocato
+     */
     public record Risultati(Stato stato, List<Risultato> risultati) {}
 
     /**
@@ -60,11 +63,15 @@ public class RisultatiSocieta {
      * @param ente "Regionali" per il Comitato, il nome della delegazione per i provinciali
      * @param girone vuoto finché i gironi non escono
      * @param squadra vuota per la prima squadra, "B" per la seconda
-     * @param inCasa da che parte giocava questa società
+     * @param squadraIscrittaId la squadra della riga: è la chiave con cui
+     *     l'elenco si disegna, perché nel derby fra la prima e la squadra B la
+     *     stessa partita arriva due volte, una per squadra
+     * @param inCasa da che parte giocava la squadra della riga
      * @param esito VITTORIA, PAREGGIO o SCONFITTA dal suo punto di vista: lo
      *     decide presenze e passa così com'è, senza riconfrontare i gol
      */
     public record Risultato(
+            Long squadraIscrittaId,
             OffsetDateTime data,
             String campionato,
             String ente,
@@ -94,7 +101,7 @@ public class RisultatiSocieta {
             return new Risultati(Stato.NON_DISPONIBILI, List.of());
         }
         try {
-            AnagraficaPresenze.Risultati letti = anagrafica.risultati(id.get(), LIMITE_SCHEDA);
+            AnagraficaPresenze.Risultati letti = anagrafica.risultati(id.get());
             if (letti == null || letti.risultati() == null) {
                 return new Risultati(Stato.DISPONIBILI, List.of());
             }
@@ -113,6 +120,7 @@ public class RisultatiSocieta {
 
     private static Risultato perChiGuarda(AnagraficaPresenze.Risultato risultato) {
         return new Risultato(
+                risultato.squadraIscrittaId(),
                 risultato.data() == null
                         ? null
                         : risultato.data().atZoneSameInstant(PartiteSuiCampi.ROMA).toOffsetDateTime(),

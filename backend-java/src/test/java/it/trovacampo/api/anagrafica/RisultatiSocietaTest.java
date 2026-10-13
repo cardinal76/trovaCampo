@@ -1,7 +1,6 @@
 package it.trovacampo.api.anagrafica;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -35,6 +34,7 @@ class RisultatiSocietaTest {
     private static AnagraficaPresenze.Risultato vittoria() {
         return new AnagraficaPresenze.Risultato(
                 9912L,
+                50L,
                 OffsetDateTime.parse("2026-10-11T10:30:00+02:00"),
                 44L,
                 "UNDER 17 PROVINCIALE",
@@ -56,6 +56,7 @@ class RisultatiSocietaTest {
     private static AnagraficaPresenze.Risultato sconfittaFuoriCasa() {
         return new AnagraficaPresenze.Risultato(
                 9900L,
+                51L,
                 OffsetDateTime.parse("2026-10-04T11:00:00+02:00"),
                 44L,
                 "UNDER 17 PROVINCIALE",
@@ -76,7 +77,7 @@ class RisultatiSocietaTest {
 
     @Test
     void iRisultatiArrivanoNellOrdineDiPresenzeDalPiuRecente() {
-        when(anagrafica.risultati(7L, RisultatiSocieta.LIMITE_SCHEDA))
+        when(anagrafica.risultati(7L))
                 .thenReturn(
                         new AnagraficaPresenze.Risultati(
                                 new AnagraficaPresenze.Riferimento(7L, "A.S.D. ESEMPIO"),
@@ -93,7 +94,7 @@ class RisultatiSocietaTest {
     /** L'esito lo decide presenze: qui non si riconfrontano i gol. */
     @Test
     void esitoSquadraEDaCheParteGiocavaPassanoComeSono() {
-        when(anagrafica.risultati(anyLong(), anyInt()))
+        when(anagrafica.risultati(anyLong()))
                 .thenReturn(
                         new AnagraficaPresenze.Risultati(
                                 new AnagraficaPresenze.Riferimento(7L, "A.S.D. ESEMPIO"),
@@ -117,7 +118,7 @@ class RisultatiSocietaTest {
     /** A inizio stagione non c'è niente da mostrare, ma non è un guasto. */
     @Test
     void unElencoVuotoRestaDisponibile() {
-        when(anagrafica.risultati(anyLong(), anyInt()))
+        when(anagrafica.risultati(anyLong()))
                 .thenReturn(
                         new AnagraficaPresenze.Risultati(
                                 new AnagraficaPresenze.Riferimento(7L, "A.S.D. ESEMPIO"), List.of()));
@@ -135,7 +136,7 @@ class RisultatiSocietaTest {
      */
     @Test
     void unPresenzeSenzaLEndpointNonEUnGuasto() {
-        when(anagrafica.risultati(anyLong(), anyInt()))
+        when(anagrafica.risultati(anyLong()))
                 .thenThrow(HttpClientErrorException.create(HttpStatus.NOT_FOUND, "Not Found", null, null, null));
 
         RisultatiSocieta.Risultati letti = risultati.di(BOREALE);
@@ -146,7 +147,7 @@ class RisultatiSocietaTest {
 
     @Test
     void unPresenzeGiuSiDistingueDaUnaSocietaSenzaRisultati() {
-        when(anagrafica.risultati(anyLong(), anyInt()))
+        when(anagrafica.risultati(anyLong()))
                 .thenThrow(
                         HttpServerErrorException.create(
                                 HttpStatus.INTERNAL_SERVER_ERROR, "Boom", null, null, null));
@@ -156,7 +157,7 @@ class RisultatiSocietaTest {
 
     @Test
     void ancheUnTimeoutEUnErrore() {
-        when(anagrafica.risultati(anyLong(), anyInt()))
+        when(anagrafica.risultati(anyLong()))
                 .thenThrow(new ResourceAccessException("timeout"));
 
         assertThat(risultati.di(BOREALE).stato()).isEqualTo(RisultatiSocieta.Stato.ERRORE);
@@ -171,7 +172,7 @@ class RisultatiSocietaTest {
                 risultati.di(new Societa().setNomeSocieta("Campetto del quartiere"));
 
         assertThat(letti.stato()).isEqualTo(RisultatiSocieta.Stato.NON_DISPONIBILI);
-        verify(anagrafica, never()).risultati(anyLong(), anyInt());
+        verify(anagrafica, never()).risultati(anyLong());
     }
 
     /** Una società non ancora legata si cerca per nome, come per le squadre. */
@@ -180,7 +181,7 @@ class RisultatiSocietaTest {
         Societa daFile = new Societa().setId("m2").setNomeSocieta("A.S.D. Esempio");
         when(anagrafica.cerca("A.S.D. Esempio"))
                 .thenReturn(List.of(new AnagraficaPresenze.Riferimento(7L, "A.S.D. ESEMPIO")));
-        when(anagrafica.risultati(7L, RisultatiSocieta.LIMITE_SCHEDA))
+        when(anagrafica.risultati(7L))
                 .thenReturn(
                         new AnagraficaPresenze.Risultati(
                                 new AnagraficaPresenze.Riferimento(7L, "A.S.D. ESEMPIO"),
@@ -197,13 +198,14 @@ class RisultatiSocietaTest {
      */
     @Test
     void laDataTornaSulFusoDiRoma() {
-        when(anagrafica.risultati(anyLong(), anyInt()))
+        when(anagrafica.risultati(anyLong()))
                 .thenReturn(
                         new AnagraficaPresenze.Risultati(
                                 new AnagraficaPresenze.Riferimento(7L, "A.S.D. ESEMPIO"),
                                 List.of(
                                         new AnagraficaPresenze.Risultato(
                                                 9912L,
+                                                50L,
                                                 OffsetDateTime.parse("2026-10-11T08:30:00Z"),
                                                 44L, "UNDER 17 PROVINCIALE", "Roma", "2026-2027", 77L,
                                                 "A", 3, false, "", "A.S.D. ESEMPIO", "ALTRA A.S.D.",
@@ -219,9 +221,9 @@ class RisultatiSocietaTest {
     void unaDataMancanteRestaMancante() {
         AnagraficaPresenze.Risultato senzaData =
                 new AnagraficaPresenze.Risultato(
-                        9800L, null, 44L, "UNDER 17 PROVINCIALE", "Roma", "2026-2027", 77L, "A", 1,
+                        9800L, 52L, null, 44L, "UNDER 17 PROVINCIALE", "Roma", "2026-2027", 77L, "A", 1,
                         false, "", "A.S.D. ESEMPIO", "QUARTA A.S.D.", 1, 1, true, "PAREGGIO");
-        when(anagrafica.risultati(anyLong(), anyInt()))
+        when(anagrafica.risultati(anyLong()))
                 .thenReturn(
                         new AnagraficaPresenze.Risultati(
                                 new AnagraficaPresenze.Riferimento(7L, "A.S.D. ESEMPIO"),

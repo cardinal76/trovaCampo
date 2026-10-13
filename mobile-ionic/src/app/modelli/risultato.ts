@@ -7,7 +7,7 @@
  * la forma della risposta: un campo che cambia nome si corregge qui.
  */
 
-/** Dal punto di vista della società chiesta: lo decide presenze. */
+/** Dal punto di vista della squadra della riga: lo decide presenze. */
 export type Esito = 'VITTORIA' | 'PAREGGIO' | 'SCONFITTA';
 
 /**
@@ -22,13 +22,20 @@ export type Esito = 'VITTORIA' | 'PAREGGIO' | 'SCONFITTA';
 export type StatoRisultati = 'DISPONIBILI' | 'NON_DISPONIBILI' | 'ERRORE';
 
 /**
- * Una partita giocata dalla società.
+ * L'ultima partita giocata da una squadra della società: **una riga per
+ * squadra**, non una delle ultime N partite.
  *
  * Niente marcatori: il tabellino individuale dei campionati giovanili non
  * esce dall'area autenticata di presenze, perché i calciatori sono
  * minorenni, e una scheda di risultati non ha bisogno di nomi di ragazzi.
  */
 export interface Risultato {
+  /**
+   * La squadra della riga: è la chiave con cui si disegna l'elenco, perché nel
+   * derby fra la prima e la squadra B la stessa partita arriva due volte, una
+   * per squadra.
+   */
+  squadraIscrittaId: number;
   /** ISO 8601 con il fuso, "2026-10-11T10:30:00+02:00"; manca se presenze non sa l'ora. */
   data?: string | null;
   campionato: string;
@@ -43,7 +50,7 @@ export interface Risultato {
   ospite: string;
   golCasa: number;
   golOspite: number;
-  /** Da che parte giocava questa società. */
+  /** Da che parte giocava la squadra della riga. */
   inCasa: boolean;
   /** Non si ricalcola confrontando i gol: arriva già deciso da presenze. */
   esito: Esito;
@@ -51,7 +58,10 @@ export interface Risultato {
 
 export interface Risultati {
   stato: StatoRisultati;
-  /** Dal più recente al più vecchio, già in quest'ordine. */
+  /**
+   * Una riga per squadra -- l'ultima che ognuna ha giocato -- dalla più
+   * recente, già in quest'ordine.
+   */
   risultati: Risultato[];
 }
 
