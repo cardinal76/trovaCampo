@@ -57,9 +57,9 @@ jobs:
       # manca il browser, dice "No binary for ChromeHeadless browser on your
       # platform", che manda a cercare nel posto sbagliato.
       #
-      # Se qui non lo trova, il messaggio dice cosa installare: meglio un job
-      # rosso con un'istruzione che un job verde senza test.
+      # Se non ce n'e' nessuno il job se lo scarica da se', col passo dopo.
       - name: Trova il browser per i test
+        id: browser
         run: |
           for candidato in \
             "$CHROME_BIN" \
@@ -68,6 +68,7 @@ jobs:
             /usr/bin/google-chrome \
             /usr/bin/google-chrome-stable \
             /snap/bin/chromium \
+            "$(ls -d "$HOME"/.cache/ms-playwright/chromium-*/chrome-linux/chrome 2>/dev/null | head -1)" \
             "$(ls -d /opt/pw-browsers/chromium-*/chrome-linux/chrome 2>/dev/null | head -1)"
           do
             if [ -n "$candidato" ] && [ -x "$candidato" ]; then
@@ -76,9 +77,36 @@ jobs:
               exit 0
             fi
           done
-          echo "::error::Nessun Chrome sulla macchina: i test del frontend girano su Chrome headless." >&2
-          echo "Installalo sul runner con: sudo apt-get install -y chromium" >&2
-          exit 1
+          echo "Nessun browser sulla macchina: lo scarica il passo dopo."
+          echo "manca=si" >> "$GITHUB_OUTPUT"
+
+      # Se la macchina un Chrome non ce l'ha, se lo porta il job. Sul runner
+      # self-hosted la cache di Playwright sta nella home e sopravvive fra un
+      # job e l'altro: si scarica una volta, non a ogni giro. Senza sudo,
+      # cosi' non serve che qualcuno si ricordi di installare un pacchetto --
+      # ed era questo il punto: una CI che dipende da una macchina preparata a
+      # mano si rompe di nuovo il giorno in cui la macchina cambia.
+      #
+      # Chi preferisce il browser di sistema lo installi pure
+      # ("sudo apt-get install -y chromium"): il passo qui sopra lo trova per
+      # primo e questo non parte nemmeno.
+      - name: Scarica un browser, se manca
+        if: steps.browser.outputs.manca == 'si'
+        working-directory: mobile-ionic
+        run: |
+          # La cartella si impone invece di indovinarla: una
+          # PLAYWRIGHT_BROWSERS_PATH gia' impostata sulla macchina manderebbe
+          # il browser altrove, e il passo dopo non lo troverebbe.
+          export PLAYWRIGHT_BROWSERS_PATH="$HOME/.cache/ms-playwright"
+          npx --yes playwright@1.56.1 install chromium
+          trovato="$(ls -d "$PLAYWRIGHT_BROWSERS_PATH"/chromium-*/chrome-linux/chrome 2>/dev/null | head -1)"
+          if [ -z "$trovato" ]; then
+            echo "::error::Il browser non si e' scaricato: installane uno sul runner" >&2
+            echo "con: sudo apt-get install -y chromium" >&2
+            exit 1
+          fi
+          echo "CHROME_BIN=$trovato" >> "$GITHUB_ENV"
+          echo "Browser scaricato: $trovato"
 
       # "npm ci" e non "npm install": installa esattamente il lockfile, che e'
       # quello che gira in locale e nell'immagine di produzione.
