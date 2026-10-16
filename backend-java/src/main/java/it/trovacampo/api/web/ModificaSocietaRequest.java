@@ -14,9 +14,9 @@ import java.util.List;
  * pagina di modifica. Sostituisce quella salvata: un campo lasciato vuoto
  * viene cancellato, perché nel modulo si vedono tutti.
  *
- * <p>Latitudine e longitudine sono facoltative e vanno insieme: se mancano o
- * restano quelle di prima mentre l'indirizzo cambia, le ricalcola la
- * geocodifica automatica.
+ * <p>Latitudine e longitudine sono facoltative e vanno insieme: se mancano le
+ * ricalcola la geocodifica automatica. Se restano quelle di prima mentre
+ * l'indirizzo cambia, restano: le coordinate hanno la precedenza.
  *
  * <p>Lo stemma è l'eccezione alla regola del modulo completo: se manca
  * ({@code null}, come da un'app di prima che il campo esistesse) resta quello

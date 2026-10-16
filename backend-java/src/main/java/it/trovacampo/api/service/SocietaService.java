@@ -157,8 +157,10 @@ public class SocietaService {
      *
      * <p>Le coordinate seguono tre regole: se il modulo ne porta di diverse
      * dalle attuali, valgono quelle (correzione a mano del segnaposto); se le
-     * svuota, o se cambia l'indirizzo lasciandole com'erano, si tolgono e le
-     * ricalcola la geocodifica automatica; altrimenti restano. Per una
+     * svuota si tolgono e le ricalcola la geocodifica automatica; altrimenti
+     * restano, <b>anche se cambia l'indirizzo</b>: le coordinate hanno la
+     * precedenza sull'indirizzo (regola di Marco), e chi vuole che il campo
+     * si sposti con l'indirizzo nuovo svuota le coordinate. Per una
      * società nuova "le attuali" sono nessuna: le coordinate del modulo, se
      * ci sono, valgono, altrimenti ci pensa la geocodifica.
      */
@@ -166,10 +168,6 @@ public class SocietaService {
         String indirizzo = richiesta.indirizzoImpianto().strip();
         String localita = oVuoto(richiesta.localitaImpianto());
         String provincia = oVuoto(richiesta.provinciaImpianto()).toUpperCase(Locale.ITALIAN);
-        boolean spostata =
-                !indirizzo.equals(societa.getIndirizzoImpianto())
-                        || !localita.equals(Objects.toString(societa.getLocalitaImpianto(), ""))
-                        || !provincia.equals(Objects.toString(societa.getProvinciaImpianto(), ""));
         boolean coordinateCorrette =
                 richiesta.lat() != null
                         && (!richiesta.lat().equals(societa.getLat())
@@ -177,7 +175,7 @@ public class SocietaService {
 
         if (coordinateCorrette) {
             societa.setLat(richiesta.lat()).setLng(richiesta.lng());
-        } else if (richiesta.lat() == null || spostata) {
+        } else if (richiesta.lat() == null) {
             societa.setLat(null).setLng(null);
         }
         if (provincia.isEmpty()) {

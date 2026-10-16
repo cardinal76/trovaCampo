@@ -80,8 +80,8 @@ class ImportazioneServiceTest {
         Societa aggiornata = salvate().getFirst();
         assertThat(aggiornata.getId()).isEqualTo("1");
         assertThat(aggiornata.getIndirizzoImpianto()).isEqualTo("Via della Certosa 14");
-        // Le coordinate vecchie indicherebbero il posto sbagliato.
-        assertThat(aggiornata.getLat()).isNull();
+        // Le coordinate hanno la precedenza sull'indirizzo: restano.
+        assertThat(aggiornata.getLat()).isEqualTo(esistente.getLat());
         // Quello che il file non porta resta com'era.
         assertThat(aggiornata.getPresidente()).isEqualTo("Mario Rossi");
         assertThat(aggiornata.getSiglaSocieta()).isEqualTo("A.S.D.");
@@ -122,6 +122,24 @@ class ImportazioneServiceTest {
                 false);
 
         assertThat(salvate().getFirst().getPosizioneApprossimata()).isNull();
+    }
+
+    /**
+     * Le coordinate hanno la precedenza sull'indirizzo: un file che riscrive
+     * l'indirizzo senza portare coordinate lascia il campo dov'e'.
+     */
+    @Test
+    void unIndirizzoNuovoNelFileNonToglieLeCoordinate() {
+        when(repository.findAll()).thenReturn(List.of(certosa()));
+
+        service.importa(
+                flusso(INTESTAZIONE, riga("Certosa Calcio", "Campo Certosa", "Via Certosa 99", "Roma", "RM")),
+                false);
+
+        Societa salvata = salvate().getFirst();
+        assertThat(salvata.getIndirizzoImpianto()).isEqualTo("Via Certosa 99");
+        assertThat(salvata.getLat()).isEqualTo(certosa().getLat());
+        assertThat(salvata.getLng()).isEqualTo(certosa().getLng());
     }
 
     @Test
