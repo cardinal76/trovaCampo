@@ -8,9 +8,16 @@ export interface Partita {
   dataOra: string;
   casa: string;
   ospite: string;
+  /** Il campionato in presenze: serve al collegamento, non si mostra. */
+  campionatoId?: number | null;
   campionato: string;
   /** "Regionali" per il Comitato, il nome della delegazione per i provinciali. */
   ente?: string;
+  /**
+   * Il girone in presenze: e' la pagina con la classifica e il calendario,
+   * cioe' quella che si cerca davvero leggendo «Girone B».
+   */
+  gironeId?: number | null;
   girone?: string;
   giornata: number;
   /** Lo stemma della squadra di casa, solo nella scheda e solo se TrovaCampo lo conosce. */

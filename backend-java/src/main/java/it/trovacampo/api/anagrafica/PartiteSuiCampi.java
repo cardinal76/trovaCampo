@@ -72,6 +72,11 @@ public class PartiteSuiCampi {
      *
      * @param dataOra con il fuso di Roma, come la scrive il comunicato
      * @param ente "Regionali" per il Comitato, il nome della delegazione per i provinciali
+     * @param campionatoId il campionato in presenze, per il collegamento alla sua
+     *     pagina pubblica; nullo da un presenze che non lo manda ancora
+     * @param gironeId il girone in presenze, per lo stesso motivo: e' la pagina
+     *     che porta la classifica e il calendario, cioe' quella che si cerca
+     *     davvero leggendo «Girone B»
      * @param casaLogoUrl lo stemma della squadra di casa; nullo sulla mappa e quando
      *     TrovaCampo non ce l'ha
      * @param ospiteLogoUrl lo stesso, per gli ospiti
@@ -80,8 +85,10 @@ public class PartiteSuiCampi {
             OffsetDateTime dataOra,
             String casa,
             String ospite,
+            Long campionatoId,
             String campionato,
             String ente,
+            Long gironeId,
             String girone,
             int giornata,
             String casaLogoUrl,
@@ -223,8 +230,10 @@ public class PartiteSuiCampi {
                 partita.dataOra().atZoneSameInstant(ROMA).toOffsetDateTime(),
                 partita.casa(),
                 partita.ospite(),
+                partita.campionatoId(),
                 partita.campionato(),
                 partita.ente(),
+                partita.gironeId(),
                 partita.girone(),
                 partita.giornata(),
                 stemma(stemmi, partita.casaSocietaId()),

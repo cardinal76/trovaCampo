@@ -117,8 +117,10 @@ class PartiteSuiCampiTest {
                 190L,
                 "BOREALE",
                 "VIGOR PERCONTI",
+                7L,
                 "ECCELLENZA",
                 "Regionali",
+                31L,
                 "A",
                 1,
                 10L,
@@ -137,6 +139,12 @@ class PartiteSuiCampiTest {
 
         assertThat(partita.casaLogoUrl()).isEqualTo("https://lnd.it/boreale.png");
         assertThat(partita.ospiteLogoUrl()).isNull();
+        // Gli id di campionato e girone arrivano fino alla scheda: sono quello
+        // che rende il nome del campionato e «Girone A» due collegamenti alle
+        // pagine del Comitato su presenze. Prima questo rimappaggio li
+        // buttava via, e la scheda poteva solo scrivere i nomi.
+        assertThat(partita.campionatoId()).isEqualTo(7L);
+        assertThat(partita.gironeId()).isEqualTo(31L);
         // La mappa gli stemmi non li mostra e non li cerca.
         assertThat(partite.perLaMappa().get(190L).get(0).casaLogoUrl()).isNull();
         verify(societa, times(1)).stemmiDi(any());

@@ -270,8 +270,10 @@ public class AnagraficaPresenze {
             Long impiantoId,
             String casa,
             String ospite,
+            Long campionatoId,
             String campionato,
             String ente,
+            Long gironeId,
             String girone,
             int giornata,
             Long casaSocietaId,
@@ -291,7 +293,7 @@ public class AnagraficaPresenze {
                 String ente,
                 String girone,
                 int giornata) {
-            this(id, dataOra, stato, impiantoId, casa, ospite, campionato, ente, girone, giornata,
+            this(id, dataOra, stato, impiantoId, casa, ospite, null, campionato, ente, null, girone, giornata,
                     null, null, null, null);
         }
     }

@@ -62,6 +62,7 @@ import {
   quandoPartita,
   squadrePartita,
 } from '../../modelli/partita';
+import { paginaCampionato, paginaGirone } from '../../presenze';
 import {
   Risultato,
   dettaglioRisultato,
@@ -195,6 +196,9 @@ export class SchedaPage implements OnDestroy {
   readonly siglaEsito = siglaEsito;
   readonly risultatoPerEsteso = risultatoPerEsteso;
   readonly dettaglioRisultato = dettaglioRisultato;
+  // Le pagine del Comitato su presenze, dove portano campionato e girone.
+  readonly paginaCampionato = paginaCampionato;
+  readonly paginaGirone = paginaGirone;
   /**
    * Se la piega dei risultati è aperta in questo momento. All'arrivo nessuna
    * lo è, ma tornando qui dalla modifica la pagina è la stessa di prima, con

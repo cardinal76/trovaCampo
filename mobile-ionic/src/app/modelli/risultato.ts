@@ -38,9 +38,16 @@ export interface Risultato {
   squadraIscrittaId: number;
   /** ISO 8601 con il fuso, "2026-10-11T10:30:00+02:00"; manca se presenze non sa l'ora. */
   data?: string | null;
+  /** Il campionato in presenze: serve al collegamento, non si mostra. */
+  campionatoId?: number | null;
   campionato: string;
   /** "Regionali" per il Comitato, il nome della delegazione per i provinciali. */
   ente?: string | null;
+  /**
+   * Il girone in presenze: e' la pagina con la classifica e il calendario,
+   * cioe' quella che si cerca davvero leggendo «Girone B».
+   */
+  gironeId?: number | null;
   /** Assente finché i gironi non escono. */
   girone?: string | null;
   giornata?: number | null;
@@ -110,14 +117,18 @@ export function risultatoPerEsteso(risultato: Risultato): string {
   );
 }
 
-/** "3ª giornata · Girone A · Roma · squadra B"; le parti che mancano si saltano. */
+/**
+ * "3ª giornata · Roma · squadra B"; le parti che mancano si saltano.
+ *
+ * Il girone non c'è più, e non è una dimenticanza: ha preso un posto suo
+ * accanto al campionato perché è diventato un collegamento alla sua pagina su
+ * presenze, e dentro una stringa già unita non si può rendere cliccabile un
+ * pezzo solo.
+ */
 export function dettaglioRisultato(risultato: Risultato): string {
   const parti: string[] = [];
   if (risultato.giornata) {
     parti.push(`${risultato.giornata}ª giornata`);
-  }
-  if (risultato.girone) {
-    parti.push(`Girone ${risultato.girone}`);
   }
   if (risultato.ente) {
     parti.push(risultato.ente);

@@ -61,6 +61,10 @@ public class RisultatiSocieta {
      * @param data con il fuso di Roma, come la scrive il comunicato; nulla se
      *     presenze non sa l'ora della partita
      * @param ente "Regionali" per il Comitato, il nome della delegazione per i provinciali
+     * @param campionatoId il campionato in presenze, per il collegamento alla sua
+     *     pagina pubblica; nullo da un presenze che non lo manda ancora
+     * @param gironeId il girone in presenze: e' la pagina con la classifica e il
+     *     calendario, cioe' quella che si cerca davvero leggendo «Girone B»
      * @param girone vuoto finché i gironi non escono
      * @param squadra vuota per la prima squadra, "B" per la seconda
      * @param squadraIscrittaId la squadra della riga: è la chiave con cui
@@ -73,8 +77,10 @@ public class RisultatiSocieta {
     public record Risultato(
             Long squadraIscrittaId,
             OffsetDateTime data,
+            Long campionatoId,
             String campionato,
             String ente,
+            Long gironeId,
             String girone,
             Integer giornata,
             String squadra,
@@ -124,8 +130,10 @@ public class RisultatiSocieta {
                 risultato.data() == null
                         ? null
                         : risultato.data().atZoneSameInstant(PartiteSuiCampi.ROMA).toOffsetDateTime(),
+                risultato.campionatoId(),
                 risultato.campionato(),
                 risultato.ente(),
+                risultato.gironeId(),
                 risultato.girone(),
                 risultato.giornata(),
                 risultato.squadra(),
