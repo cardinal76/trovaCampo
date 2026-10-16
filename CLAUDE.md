@@ -35,6 +35,29 @@ campi.
   Configurazione completa nel DEPLOY.md di presenze, "Scorciatoie: tunnel-kc
   e tunnel-db".
 
+## I test girano su ogni pull request
+
+`.github/workflows/ci.yml` fa partire, a ogni pull request verso `master`, i
+test del backend (`backend-java`, Maven) e quelli del frontend piu' la build
+di produzione (`mobile-ionic`, Karma su Chrome headless). **Girano da soli**,
+senza l'etichetta `test` che chiede presenze: li' la suite dura una mezz'ora
+e teneva occupati i runner, qui i due giri insieme stanno sotto il minuto, e
+una regola che non serve e' una regola che qualcuno dimentica.
+
+Quindi «CI verde» qui vuol dire davvero che i test sono passati, e una pull
+request si unisce quando lo e'.
+
+Due cose da sapere:
+
+- **i test del backend non usano Testcontainers** -- TrovaCampo parla con
+  Mongo e i suoi test non accendono container -- quindi questo workflow gira
+  anche su una macchina senza Docker. Il deploy invece Docker lo vuole;
+- **Karma ha bisogno di un Chrome vero.** Il workflow lo cerca nei posti
+  soliti e, se non lo trova, muore dicendo cosa installare: meglio un job
+  rosso con un'istruzione che un job verde senza test. In locale si passa
+  `CHROME_BIN`, per esempio
+  `CHROME_BIN=/usr/bin/chromium npm test -- --watch=false --browsers=ChromeHeadlessCI`.
+
 ## Rilascio: lo fa una sola sessione
 
 Le pull request si uniscono in `master`; il push su `produzione`, che fa

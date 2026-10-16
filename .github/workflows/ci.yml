@@ -1,0 +1,98 @@
+name: Controlli
+
+# I test su ogni pull request verso master.
+#
+# Qui girano da soli, senza l'etichetta "test" che presenze chiede: li' la
+# suite del backend dura una mezz'ora e teneva occupati i runner, qui i due
+# giri insieme stanno sotto il minuto. Una regola che non serve e' una regola
+# che qualcuno dimentica di seguire, e una pull request senza test e' verde
+# per finta.
+#
+# Niente Docker: i test del backend non usano Testcontainers (TrovaCampo
+# parla con Mongo, e i suoi test non accendono container), quindi questo
+# workflow gira anche su una macchina che il daemon non ce l'ha.
+on:
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Test backend
+    # Etichetta propria e non "presenze-build": un runner self-hosted di un
+    # account personale e' registrato su un solo repository, quindi per
+    # TrovaCampo ne serve uno suo (vedi produzione.yml).
+    runs-on: [self-hosted, trovacampo-build]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      # "./mvnw" e non "mvn": setup-java porta il JDK ma non Maven, e la
+      # versione la decide il wrapper versionato nel repository.
+      - name: Esegue i test
+        working-directory: backend-java
+        run: ./mvnw -B -ntp test
+
+  frontend:
+    name: Test e build frontend
+    runs-on: [self-hosted, trovacampo-build]
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: mobile-ionic/package-lock.json
+
+      # Karma ha bisogno di un Chrome vero, e sulla macchina puo' stare in
+      # posti diversi a seconda di come ci e' arrivato. Si cerca invece di
+      # darlo per scontato: con "CHROME_BIN" sbagliato Karma non dice che
+      # manca il browser, dice "No binary for ChromeHeadless browser on your
+      # platform", che manda a cercare nel posto sbagliato.
+      #
+      # Se qui non lo trova, il messaggio dice cosa installare: meglio un job
+      # rosso con un'istruzione che un job verde senza test.
+      - name: Trova il browser per i test
+        run: |
+          for candidato in \
+            "$CHROME_BIN" \
+            /usr/bin/chromium \
+            /usr/bin/chromium-browser \
+            /usr/bin/google-chrome \
+            /usr/bin/google-chrome-stable \
+            /snap/bin/chromium \
+            "$(ls -d /opt/pw-browsers/chromium-*/chrome-linux/chrome 2>/dev/null | head -1)"
+          do
+            if [ -n "$candidato" ] && [ -x "$candidato" ]; then
+              echo "CHROME_BIN=$candidato" >> "$GITHUB_ENV"
+              echo "Browser: $candidato"
+              exit 0
+            fi
+          done
+          echo "::error::Nessun Chrome sulla macchina: i test del frontend girano su Chrome headless." >&2
+          echo "Installalo sul runner con: sudo apt-get install -y chromium" >&2
+          exit 1
+
+      # "npm ci" e non "npm install": installa esattamente il lockfile, che e'
+      # quello che gira in locale e nell'immagine di produzione.
+      - name: Installa le dipendenze
+        working-directory: mobile-ionic
+        run: npm ci
+
+      - name: Esegue i test
+        working-directory: mobile-ionic
+        run: npm test -- --watch=false --browsers=ChromeHeadlessCI
+
+      # La build di produzione e' un controllo a se': un template che non
+      # compila passa i test -- che montano i componenti uno per uno -- e si
+      # rompe solo qui, cioe' al rilascio se nessuno la prova prima.
+      - name: Costruisce per la produzione
+        working-directory: mobile-ionic
+        run: npm run build -- --configuration production
