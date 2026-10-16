@@ -147,14 +147,17 @@ class PianificatoreNotificheTest {
                         IMPIANTO,
                         "LODIGIANI CALCIO 1972",
                         "VIS SEZZE",
+                        7L,
                         "ECCELLENZA",
                         "Regionali",
+                        32L,
                         "B",
                         3,
                         LODIGIANI,
                         VIS_SEZZE,
                         squadraCasa,
-                        "B");
+                        "B",
+                        null);
         calendario.add(partita);
         return partita;
     }
@@ -307,9 +310,10 @@ class PianificatoreNotificheTest {
         calendario.add(
                 new Partita(
                         alle15.id(), alle15.dataOra().plusMinutes(30), alle15.stato(), alle15.impiantoId(),
-                        alle15.casa(), alle15.ospite(), alle15.campionato(), alle15.ente(), alle15.girone(),
-                        alle15.giornata(), alle15.casaSocietaId(), alle15.ospiteSocietaId(), alle15.casaSquadra(),
-                        alle15.ospiteSquadra()));
+                        alle15.casa(), alle15.ospite(), alle15.campionatoId(), alle15.campionato(),
+                        alle15.ente(), alle15.gironeId(), alle15.girone(), alle15.giornata(),
+                        alle15.casaSocietaId(), alle15.ospiteSocietaId(), alle15.casaSquadra(),
+                        alle15.ospiteSquadra(), alle15.live()));
         orologio.avanti(Duration.ofMinutes(30));
         pianificatore().giro();
 

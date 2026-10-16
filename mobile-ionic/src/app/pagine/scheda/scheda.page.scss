@@ -251,6 +251,24 @@
       content: none;
     }
   }
+
+  /*
+   * Campionato e girone portano alle pagine del Comitato su presenze. Il
+   * campionato il colore ce l'ha già dal suo fondino e non va sottolineato:
+   * è un'etichetta, e due decorazioni sullo stesso riquadro lo fanno
+   * sembrare rotto. Il girone invece è testo grigio come il resto della
+   * riga, e senza la sottolineatura nessuno capirebbe che si tocca.
+   */
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  span:not(.nome-campionato) > a {
+    text-decoration: underline;
+    text-underline-offset: 0.15em;
+  }
+
 }
 
 /*

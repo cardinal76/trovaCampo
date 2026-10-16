@@ -118,14 +118,17 @@ class PartiteSuiCampiTest {
                 190L,
                 "BOREALE",
                 "VIGOR PERCONTI",
+                7L,
                 "ECCELLENZA",
                 "Regionali",
+                31L,
                 "A",
                 1,
                 10L,
                 20L,
                 "",
-                "");
+                "",
+                null);
         when(anagrafica.partite(any(), any())).thenReturn(List.of(conSocieta));
         // La Boreale ha due campi, quindi due righe; la Vigor uno stemma non ce l'ha.
         when(societa.stemmiDi(any()))
@@ -138,6 +141,12 @@ class PartiteSuiCampiTest {
 
         assertThat(partita.casaLogoUrl()).isEqualTo("https://lnd.it/boreale.png");
         assertThat(partita.ospiteLogoUrl()).isNull();
+        // Gli id di campionato e girone arrivano fino alla scheda: sono quello
+        // che rende il nome del campionato e «Girone A» due collegamenti alle
+        // pagine del Comitato su presenze. Prima questo rimappaggio li
+        // buttava via, e la scheda poteva solo scrivere i nomi.
+        assertThat(partita.campionatoId()).isEqualTo(7L);
+        assertThat(partita.gironeId()).isEqualTo(31L);
         // La mappa gli stemmi non li mostra e non li cerca.
         assertThat(partite.perLaMappa().get(190L).get(0).casaLogoUrl()).isNull();
         verify(societa, times(1)).stemmiDi(any());
@@ -205,7 +214,8 @@ class PartiteSuiCampiTest {
         AnagraficaPresenze.Partita base = partita(190, LocalDateTime.of(2026, 9, 4, 9, 30), "BOREALE");
         AnagraficaPresenze.Partita inDiretta = new AnagraficaPresenze.Partita(
                 77L, base.dataOra(), base.stato(), base.impiantoId(), base.casa(), base.ospite(),
-                base.campionato(), base.ente(), base.girone(), base.giornata(), null, null, null, null,
+                base.campionatoId(), base.campionato(), base.ente(), base.gironeId(), base.girone(),
+                base.giornata(), null, null, null, null,
                 new AnagraficaPresenze.Live(2, 1));
         when(anagrafica.partite(any(), any())).thenReturn(List.of(inDiretta));
 

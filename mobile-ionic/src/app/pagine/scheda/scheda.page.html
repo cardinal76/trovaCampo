@@ -155,10 +155,38 @@
                             <span class="ospite">{{ partita.ospite }}</span>
                           </span>
                         </p>
+                        <!--
+                          Campionato e girone portano alle pagine pubbliche del
+                          Comitato su presenze: qui si legge che partita e',
+                          li' si vedono classifica e calendario. Il link sta
+                          DENTRO lo span e non al posto suo, perche' i puntini
+                          di separazione li disegna «span + span» nel foglio
+                          di stile: scambiando il tag sparirebbero.
+                          Senza l'id — un presenze che non lo manda ancora —
+                          resta il testo di prima, senza collegamento morto.
+                        -->
                         <p class="campionato">
-                          <span class="nome-campionato">{{ partita.campionato }}</span>
+                          <span class="nome-campionato">
+                            @let vaiAlCampionato = paginaCampionato(partita.campionatoId);
+                            @if (vaiAlCampionato) {
+                              <a [href]="vaiAlCampionato" target="_blank" rel="noopener">{{
+                                partita.campionato
+                              }}</a>
+                            } @else {
+                              {{ partita.campionato }}
+                            }
+                          </span>
                           @if (partita.girone) {
-                            <span>Girone {{ partita.girone }}</span>
+                            <span>
+                              @let vaiAlGirone = paginaGirone(partita.gironeId);
+                              @if (vaiAlGirone) {
+                                <a [href]="vaiAlGirone" target="_blank" rel="noopener"
+                                  >Girone {{ partita.girone }}</a
+                                >
+                              } @else {
+                                Girone {{ partita.girone }}
+                              }
+                            </span>
                           }
                           @if (partita.ente) {
                             <span>{{ partita.ente }}</span>
@@ -249,8 +277,31 @@
                           }}</span>
                         </span>
                       </p>
+                      <!-- Come nelle partite qui sopra: campionato e girone
+                           portano alle pagine del Comitato su presenze. -->
                       <p class="campionato">
-                        <span class="nome-campionato">{{ risultato.campionato }}</span>
+                        <span class="nome-campionato">
+                          @let vaiAlCampionatoGiocato = paginaCampionato(risultato.campionatoId);
+                          @if (vaiAlCampionatoGiocato) {
+                            <a [href]="vaiAlCampionatoGiocato" target="_blank" rel="noopener">{{
+                              risultato.campionato
+                            }}</a>
+                          } @else {
+                            {{ risultato.campionato }}
+                          }
+                        </span>
+                        @if (risultato.girone) {
+                          <span>
+                            @let vaiAlGironeGiocato = paginaGirone(risultato.gironeId);
+                            @if (vaiAlGironeGiocato) {
+                              <a [href]="vaiAlGironeGiocato" target="_blank" rel="noopener"
+                                >Girone {{ risultato.girone }}</a
+                              >
+                            } @else {
+                              Girone {{ risultato.girone }}
+                            }
+                          </span>
+                        }
                         @let dettaglio = dettaglioRisultato(risultato);
                         @if (dettaglio) {
                           <span>{{ dettaglio }}</span>

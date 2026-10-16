@@ -64,12 +64,20 @@ describe('risultato', () => {
   });
 
   it('nel dettaglio salta le parti che presenze non manda', () => {
-    expect(dettaglioRisultato(VITTORIA)).toBe('3ª giornata · Girone A · Roma');
+    expect(dettaglioRisultato(VITTORIA)).toBe('3ª giornata · Roma');
     expect(dettaglioRisultato({ ...VITTORIA, squadra: 'B' })).toBe(
-      '3ª giornata · Girone A · Roma · squadra B',
+      '3ª giornata · Roma · squadra B',
     );
-    expect(
-      dettaglioRisultato({ ...VITTORIA, girone: null, ente: null, giornata: null }),
-    ).toBe('');
+    expect(dettaglioRisultato({ ...VITTORIA, ente: null, giornata: null })).toBe('');
+  });
+
+  /**
+   * Il girone sta fuori dal dettaglio, ed è una scelta: è diventato un
+   * collegamento alla sua pagina su presenze, e dentro una stringa già unita
+   * non si rende cliccabile un pezzo solo. Il test lo fissa perché rimetterlo
+   * qui dentro vorrebbe dire vederlo due volte nella riga.
+   */
+  it('il girone non sta nel dettaglio: ha un posto suo, con il collegamento', () => {
+    expect(dettaglioRisultato({ ...VITTORIA, girone: 'A' })).not.toContain('Girone');
   });
 });

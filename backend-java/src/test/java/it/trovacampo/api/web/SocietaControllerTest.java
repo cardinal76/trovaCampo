@@ -229,11 +229,15 @@ class SocietaControllerTest {
                 OffsetDateTime.of(2026, 9, 6, 11, 0, 0, 0, ZoneOffset.ofHours(2)),
                 "BOREALE",
                 "VIGOR PERCONTI",
+                7L,
                 "ECCELLENZA",
                 "Regionali",
+                31L,
                 "A",
                 1,
                 "https://www.lnd.it/stemmi/boreale.png",
+                null,
+                null,
                 null);
     }
 
@@ -295,8 +299,10 @@ class SocietaControllerTest {
                                                 50L,
                                                 OffsetDateTime.of(
                                                         2026, 10, 11, 10, 30, 0, 0, ZoneOffset.ofHours(2)),
+                                                12L,
                                                 "UNDER 17 PROVINCIALE",
                                                 "Roma",
+                                                41L,
                                                 "A",
                                                 3,
                                                 "",
