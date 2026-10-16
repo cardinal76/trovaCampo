@@ -52,12 +52,13 @@ Due cose da sapere:
 - **i test del backend non usano Testcontainers** -- TrovaCampo parla con
   Mongo e i suoi test non accendono container -- quindi questo workflow gira
   anche su una macchina senza Docker. Il deploy invece Docker lo vuole;
-- **Karma ha bisogno di un Chrome vero**, e su `server2-trovacampo` non c'e':
-  il workflow lo cerca nei posti soliti e, se non lo trova, se lo scarica da
-  se' con Playwright nella cache della home del runner -- una volta, non a
-  ogni giro. Chi preferisce quello di sistema lo installi pure
-  (`sudo apt-get install -y chromium`): viene trovato per primo e lo scarico
-  non parte nemmeno. In locale si passa `CHROME_BIN`, per esempio
+- **Karma ha bisogno di un Chrome vero.** Sul runner si installa una volta
+  sola, `sudo apt-get install -y chromium`, e il workflow lo trova da se'.
+  Scaricarlo dentro il job si e' provato e non basta: un browser scaricato
+  senza le librerie di sistema non parte (su `server2-trovacampo` moriva con
+  `libatk-1.0.so.0: cannot open shared object file` dopo centoquattro
+  megabyte di scarico), e quelle librerie vogliono `sudo`, che un job non ha.
+  In locale si passa `CHROME_BIN`, per esempio
   `CHROME_BIN=/usr/bin/chromium npm test -- --watch=false --browsers=ChromeHeadlessCI`.
 
 ## Rilascio: lo fa una sola sessione
