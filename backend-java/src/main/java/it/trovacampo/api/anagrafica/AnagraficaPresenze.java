@@ -5,9 +5,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -119,6 +123,24 @@ public class AnagraficaPresenze {
                         .retrieve()
                         .body(Partita[].class);
         return partite == null ? List.of() : List.of(partite);
+    }
+
+    /**
+     * Solo i punteggi in diretta di queste partite, per id: quello che scheda e
+     * mappa chiedono ogni minuto mentre si gioca, invece di tutte le partite.
+     * Una partita che non c'è nella risposta non è in diretta.
+     */
+    public Map<Long, Live> live(Collection<Long> partite) {
+        if (partite.isEmpty()) {
+            return Map.of();
+        }
+        String elenco = partite.stream().map(String::valueOf).collect(Collectors.joining(","));
+        Map<Long, Live> punteggi =
+                client.get()
+                        .uri(uri -> uri.path("/api/pubblico/live").queryParam("partite", elenco).build())
+                        .retrieve()
+                        .body(new ParameterizedTypeReference<Map<Long, Live>>() {});
+        return punteggi == null ? Map.of() : punteggi;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -261,6 +283,9 @@ public class AnagraficaPresenze {
      * @param casaSocietaId la società di casa in presenze, come {@link Riferimento#id()}
      * @param casaSquadra vuota per la prima squadra, "B" per la seconda; null da un
      *     presenze che non la manda ancora (vedi {@code ChiaveSquadra})
+     * @param live il punteggio in diretta, se la partita si sta giocando e la
+     *     società lo sta scrivendo; null altrimenti, o da un presenze che non lo
+     *     manda ancora
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Partita(
@@ -279,7 +304,28 @@ public class AnagraficaPresenze {
             Long casaSocietaId,
             Long ospiteSocietaId,
             String casaSquadra,
-            String ospiteSquadra) {
+            String ospiteSquadra,
+            Live live) {
+
+        /** Senza diretta. */
+        public Partita(
+                Long id,
+                OffsetDateTime dataOra,
+                String stato,
+                Long impiantoId,
+                String casa,
+                String ospite,
+                String campionato,
+                String ente,
+                String girone,
+                int giornata,
+                Long casaSocietaId,
+                Long ospiteSocietaId,
+                String casaSquadra,
+                String ospiteSquadra) {
+            this(id, dataOra, stato, impiantoId, casa, ospite, null, campionato, ente, null, girone,
+                    giornata, casaSocietaId, ospiteSocietaId, casaSquadra, ospiteSquadra, null);
+        }
 
         /** Senza le squadre: quello che serve a scheda e mappa. */
         public Partita(
@@ -293,8 +339,15 @@ public class AnagraficaPresenze {
                 String ente,
                 String girone,
                 int giornata) {
-            this(id, dataOra, stato, impiantoId, casa, ospite, null, campionato, ente, null, girone, giornata,
-                    null, null, null, null);
+            this(id, dataOra, stato, impiantoId, casa, ospite, null, campionato, ente, null, girone,
+                    giornata, null, null, null, null, null);
         }
     }
+
+    /**
+     * Il punteggio di una partita che si sta giocando, scritto dallo staff della
+     * società in presenze: è quello che fa comparire l'etichetta LIVE.
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Live(int golCasa, int golOspite) {}
 }

@@ -20,6 +20,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.ResourceAccessException;
 
@@ -126,7 +127,8 @@ class PartiteSuiCampiTest {
                 10L,
                 20L,
                 "",
-                "");
+                "",
+                null);
         when(anagrafica.partite(any(), any())).thenReturn(List.of(conSocieta));
         // La Boreale ha due campi, quindi due righe; la Vigor uno stemma non ce l'ha.
         when(societa.stemmiDi(any()))
@@ -204,6 +206,37 @@ class PartiteSuiCampiTest {
         orologio.avanti(Duration.ofMinutes(2));
         partite.perLaMappa();
         verify(anagrafica, times(2)).partite(any(), any());
+    }
+
+    /** Con una partita in diretta il punteggio e l'id della partita arrivano alla scheda. */
+    @Test
+    void conUnaPartitaInDirettaIlPunteggioEIlSuoIdArrivanoAllaScheda() {
+        AnagraficaPresenze.Partita base = partita(190, LocalDateTime.of(2026, 9, 4, 9, 30), "BOREALE");
+        AnagraficaPresenze.Partita inDiretta = new AnagraficaPresenze.Partita(
+                77L, base.dataOra(), base.stato(), base.impiantoId(), base.casa(), base.ospite(),
+                base.campionatoId(), base.campionato(), base.ente(), base.gironeId(), base.girone(),
+                base.giornata(), null, null, null, null,
+                new AnagraficaPresenze.Live(2, 1));
+        when(anagrafica.partite(any(), any())).thenReturn(List.of(inDiretta));
+
+        PartiteSuiCampi.Partita vista = partite.sulCampo(campo(190L)).get(0);
+        assertThat(vista.live()).isEqualTo(new AnagraficaPresenze.Live(2, 1));
+        assertThat(vista.id()).isEqualTo(77L);
+    }
+
+    /** Mentre si gioca si chiedono i soli punteggi, con venti secondi di cache per gruppo di partite. */
+    @Test
+    void iPunteggiInDirettaSiChiedonoAPresenzeOgniVentiSecondi() {
+        when(anagrafica.live(List.of(1L, 2L))).thenReturn(Map.of(1L, new AnagraficaPresenze.Live(1, 0)));
+
+        assertThat(partite.live(List.of(2L, 1L))).containsEntry(1L, new AnagraficaPresenze.Live(1, 0));
+        orologio.avanti(Duration.ofSeconds(10));
+        partite.live(List.of(1L, 2L));
+        verify(anagrafica, times(1)).live(List.of(1L, 2L));
+
+        orologio.avanti(Duration.ofSeconds(11));
+        partite.live(List.of(1L, 2L));
+        verify(anagrafica, times(2)).live(List.of(1L, 2L));
     }
 
     @Test

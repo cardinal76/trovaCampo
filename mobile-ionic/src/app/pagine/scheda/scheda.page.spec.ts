@@ -94,6 +94,9 @@ describe('SchedaPage', () => {
   let entrato: boolean;
   /** Quante volte la scheda ha chiesto i risultati, e cosa le è stato risposto. */
   let richiesteRisultati: number;
+  let richiestePartite: number;
+  let chiesteLive: number[][];
+  let punteggiLive: Record<string, { golCasa: number; golOspite: number }>;
   let rispostaRisultati: () => Observable<Risultati>;
 
   afterEach(() => {
@@ -112,6 +115,9 @@ describe('SchedaPage', () => {
     accessi = 0;
     entrato = true;
     richiesteRisultati = 0;
+    richiestePartite = 0;
+    chiesteLive = [];
+    punteggiLive = {};
     rispostaRisultati = () => of({ stato: 'DISPONIBILI', risultati: [VITTORIA, SCONFITTA_FUORI] });
     TestBed.configureTestingModule({
       imports: [SchedaPage],
@@ -127,7 +133,14 @@ describe('SchedaPage', () => {
           useValue: {
             perId: () => of(societa),
             squadre: () => of(squadre),
-            partite: () => of(partite),
+            partite: () => {
+              richiestePartite++;
+              return of(partite);
+            },
+            live: (ids: number[]) => {
+              chiesteLive.push(ids);
+              return of(punteggiLive);
+            },
             risultati: () => {
               richiesteRisultati++;
               return rispostaRisultati();
@@ -247,6 +260,46 @@ describe('SchedaPage', () => {
     expect(pagina.querySelector('ion-accordion[value=partite] ion-badge')?.textContent?.trim()).toBe(
       '1',
     );
+  });
+
+  it('una partita in diretta ha l etichetta LIVE rossa e il punteggio al posto del vs', () => {
+    const pagina = apri(SOCIETA, [{ ...PARTITA, live: { golCasa: 2, golOspite: 1 } }]);
+    const partita = pagina.querySelector('.partita')!;
+
+    const live = partita.querySelector('ion-badge.live');
+    expect(live?.textContent?.trim()).toBe('LIVE');
+    expect(live?.getAttribute('color')).toBe('danger');
+    expect(partita.querySelector('.punteggio-live')?.textContent?.trim()).toBe('2 – 1');
+  });
+
+  it('mentre si gioca chiede solo i punteggi e cambia solo quelli, senza rileggere le partite', () => {
+    const adesso = new Date(Date.now() - 10 * 60_000).toISOString();
+    const pagina = apri(SOCIETA, [{ ...PARTITA, id: 9, dataOra: adesso }]);
+    expect(pagina.querySelector('.live')).toBeNull();
+    punteggiLive = { '9': { golCasa: 1, golOspite: 0 } };
+
+    (fixture.componentInstance as unknown as { aggiornaPunteggi(): void }).aggiornaPunteggi();
+    fixture.detectChanges();
+
+    expect(chiesteLive).toEqual([[9]]);
+    expect(richiestePartite).toBe(1);
+    expect(pagina.querySelector('ion-badge.live')?.textContent?.trim()).toBe('LIVE');
+    expect(pagina.querySelector('.punteggio-live')?.textContent?.trim()).toBe('1 – 0');
+  });
+
+  it('una partita lontana dall orario non si segue: niente richieste', () => {
+    apri(SOCIETA, [{ ...PARTITA, id: 9 }]);
+
+    (fixture.componentInstance as unknown as { aggiornaPunteggi(): void }).aggiornaPunteggi();
+
+    expect(chiesteLive).toEqual([]);
+  });
+
+  it('una partita non in diretta non ha l etichetta LIVE', () => {
+    const partita = apri(SOCIETA).querySelector('.partita')!;
+
+    expect(partita.querySelector('.live')).toBeNull();
+    expect(partita.querySelector('.contro')?.textContent?.trim()).toBe('vs');
   });
 
   it('senza partite in programma lo dice dentro la sezione', () => {

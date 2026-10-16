@@ -57,8 +57,12 @@ import {
 import {
   GIORNI_PARTITE_SCHEDA,
   Partita,
+  RILETTURA_IN_DIRETTA_MS,
   campionatoPartita,
+  daSeguire,
   dataPartita,
+  fondiLive,
+  punteggioLive,
   quandoPartita,
   squadrePartita,
 } from '../../modelli/partita';
@@ -211,6 +215,12 @@ export class SchedaPage implements OnDestroy {
   readonly squadrePartita = squadrePartita;
   readonly campionatoPartita = campionatoPartita;
   readonly dataPartita = (partita: Partita) => dataPartita(partita);
+  readonly punteggioLive = punteggioLive;
+  /**
+   * Ogni minuto, se una partita si può star giocando, si chiedono i soli
+   * punteggi in diretta e cambiano solo quelli: la scheda non si ricarica.
+   */
+  private rilettura: ReturnType<typeof setInterval> | null = null;
   /** Il pulsante "Modifica": solo se su questo browser è entrato un amministratore. */
   readonly amministratore = signal(amministratoreRicordato());
   /** Mentre l'eliminazione è in corso il pulsante è spento: niente doppi tocchi. */
@@ -395,7 +405,28 @@ export class SchedaPage implements OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.fermaRilettura();
     this.rimuoviMappa();
+  }
+
+  private fermaRilettura(): void {
+    if (this.rilettura !== null) {
+      clearInterval(this.rilettura);
+      this.rilettura = null;
+    }
+  }
+
+  /** I punteggi in diretta delle partite che si possono star giocando, e solo quelli. */
+  private aggiornaPunteggi(): void {
+    const ids = daSeguire(this.partite());
+    if (ids.length === 0 || document.visibilityState === 'hidden') {
+      return;
+    }
+    this.service.live(ids).subscribe({
+      next: (punteggi) => this.partite.update((partite) => fondiLive(partite, ids, punteggi)),
+      // Un errore lascia i punteggi di prima: al minuto dopo si riprova.
+      error: () => undefined,
+    });
   }
 
   private rimuoviMappa(): void {
@@ -601,6 +632,7 @@ export class SchedaPage implements OnDestroy {
    * resta com'è.
    */
   private caricaPartite(societa: Societa): void {
+    this.fermaRilettura();
     this.partite.set([]);
     if (!societa.anagraficaImpiantoId) {
       this.statoPartite.set('completata');
@@ -611,6 +643,14 @@ export class SchedaPage implements OnDestroy {
       next: (partite) => {
         this.partite.set(partite);
         this.statoPartite.set('completata');
+        // Fuori dalla zona di Angular: un timer che gira sempre non deve
+        // tenere la pagina «occupata». Si rientra solo per aggiornare.
+        this.zona.runOutsideAngular(() => {
+          this.rilettura = setInterval(
+            () => this.zona.run(() => this.aggiornaPunteggi()),
+            RILETTURA_IN_DIRETTA_MS,
+          );
+        });
       },
       error: () => this.statoPartite.set('errore'),
     });

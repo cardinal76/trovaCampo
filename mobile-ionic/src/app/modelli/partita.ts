@@ -4,6 +4,8 @@
  * di casa della squadra che ospita.
  */
 export interface Partita {
+  /** La partita in presenze: serve a chiederne il solo punteggio in diretta. */
+  id?: number | null;
   /** ISO 8601 con il fuso, "2026-09-06T11:00:00+02:00". */
   dataOra: string;
   casa: string;
@@ -24,6 +26,65 @@ export interface Partita {
   casaLogoUrl?: string | null;
   /** Lo stesso, per gli ospiti. */
   ospiteLogoUrl?: string | null;
+  /**
+   * Il punteggio in diretta, quando la partita si sta giocando e la società lo
+   * scrive in presenze: fa comparire l'etichetta LIVE. Null altrimenti.
+   */
+  live?: PunteggioLive | null;
+}
+
+export interface PunteggioLive {
+  golCasa: number;
+  golOspite: number;
+}
+
+/** Ogni quanto si rileggono i punteggi mentre si gioca. */
+export const RILETTURA_IN_DIRETTA_MS = 60_000;
+
+/** Quanto dura una partita dal calcio d'inizio: la stessa finestra di presenze. */
+export const FINESTRA_PARTITA_MS = 135 * 60 * 1000;
+/** Da quanto prima dell'orario lo staff può avviare la diretta, in presenze. */
+export const ANTICIPO_DIRETTA_MS = 15 * 60 * 1000;
+
+/**
+ * Se una partita si può star giocando adesso: dal quarto d'ora prima
+ * dell'orario a due ore e un quarto dopo. Sono le sole di cui chiedere il
+ * punteggio: le altre non possono avere l'etichetta LIVE.
+ */
+export function inFinestra(partita: Partita, adesso: number = Date.now()): boolean {
+  if (partita.id === null || partita.id === undefined) {
+    return false;
+  }
+  const inizio = Date.parse(partita.dataOra);
+  return adesso >= inizio - ANTICIPO_DIRETTA_MS && adesso < inizio + FINESTRA_PARTITA_MS;
+}
+
+/** Gli id delle partite da tenere d'occhio, fra queste. */
+export function daSeguire(partite: Partita[], adesso: number = Date.now()): number[] {
+  return partite.filter((partita) => inFinestra(partita, adesso)).map((partita) => partita.id!);
+}
+
+/**
+ * Le partite con i punteggi appena letti: chi non c'è nella risposta non è
+ * più in diretta. Si tocca solo il campo live delle partite chieste, così il
+ * resto della pagina resta com'è.
+ */
+export function fondiLive(
+  partite: Partita[],
+  chieste: number[],
+  punteggi: Record<string, PunteggioLive>,
+): Partita[] {
+  const richieste = new Set(chieste);
+  return partite.map((partita) =>
+    partita.id !== null && partita.id !== undefined && richieste.has(partita.id)
+      ? { ...partita, live: punteggi[String(partita.id)] ?? null }
+      : partita,
+  );
+}
+
+/** "2 – 1", o null se la partita non è in diretta. */
+export function punteggioLive(partita: Partita): string | null {
+  return partita.live ? `${partita.live.golCasa} – ${partita.live.golOspite}` : null;
 }
 
 /** Le prime partite della settimana, per campo: la chiave è l'id del campo in presenze. */

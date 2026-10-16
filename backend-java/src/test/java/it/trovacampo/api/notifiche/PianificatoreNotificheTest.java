@@ -156,7 +156,8 @@ class PianificatoreNotificheTest {
                         LODIGIANI,
                         VIS_SEZZE,
                         squadraCasa,
-                        "B");
+                        "B",
+                        null);
         calendario.add(partita);
         return partita;
     }
@@ -312,7 +313,7 @@ class PianificatoreNotificheTest {
                         alle15.casa(), alle15.ospite(), alle15.campionatoId(), alle15.campionato(),
                         alle15.ente(), alle15.gironeId(), alle15.girone(), alle15.giornata(),
                         alle15.casaSocietaId(), alle15.ospiteSocietaId(), alle15.casaSquadra(),
-                        alle15.ospiteSquadra()));
+                        alle15.ospiteSquadra(), alle15.live()));
         orologio.avanti(Duration.ofMinutes(30));
         pianificatore().giro();
 

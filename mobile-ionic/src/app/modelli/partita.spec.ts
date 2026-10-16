@@ -3,6 +3,10 @@ import {
   campionatoPartita,
   dataPartita,
   partiteDelCampo,
+  daSeguire,
+  fondiLive,
+  inFinestra,
+  punteggioLive,
   quandoPartita,
   squadrePartita,
 } from './partita';
@@ -17,6 +21,40 @@ describe('partita', () => {
     girone: 'A',
     giornata: 1,
   };
+
+  it('dice il punteggio in diretta', () => {
+    const inDiretta: Partita = { ...boreale, live: { golCasa: 0, golOspite: 3 } };
+
+    expect(punteggioLive(inDiretta)).toBe('0 – 3');
+    expect(punteggioLive(boreale)).toBeNull();
+  });
+
+  it('segue solo le partite che si possono star giocando: dal quarto d ora prima a 2h15 dopo', () => {
+    const conId: Partita = { ...boreale, id: 7 };
+    const orario = Date.parse(boreale.dataOra);
+
+    expect(inFinestra(conId, orario - 16 * 60_000)).toBeFalse();
+    expect(inFinestra(conId, orario - 14 * 60_000)).toBeTrue();
+    expect(inFinestra(conId, orario + 134 * 60_000)).toBeTrue();
+    expect(inFinestra(conId, orario + 136 * 60_000)).toBeFalse();
+    // Senza l'id di presenze non si può chiedere il punteggio.
+    expect(inFinestra(boreale, orario)).toBeFalse();
+    expect(daSeguire([conId, { ...boreale, id: 8, dataOra: '2026-09-20T11:00:00+02:00' }], orario)).toEqual([7]);
+  });
+
+  it('fonde i punteggi solo nelle partite chieste, e toglie il live a chi non c e piu', () => {
+    const prima: Partita[] = [
+      { ...boreale, id: 1, live: { golCasa: 0, golOspite: 0 } },
+      { ...boreale, id: 2, live: { golCasa: 1, golOspite: 1 } },
+      { ...boreale, id: 3 },
+    ];
+
+    const dopo = fondiLive(prima, [1, 2], { '1': { golCasa: 1, golOspite: 0 } });
+
+    expect(dopo[0].live).toEqual({ golCasa: 1, golOspite: 0 });
+    expect(dopo[1].live).toBeNull();
+    expect(dopo[2]).toBe(prima[2]);
+  });
 
   it('dice giorno e ora con il fuso di Roma, qualunque sia quello del telefono', () => {
     expect(quandoPartita(boreale)).toBe('dom 6 set, 11:00');

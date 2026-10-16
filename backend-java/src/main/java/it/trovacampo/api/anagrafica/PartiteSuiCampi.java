@@ -60,6 +60,14 @@ public class PartiteSuiCampi {
     /** Nel popup ne stanno poche. */
     static final int MASSIMO_MAPPA = 3;
     static final Duration DURATA_CACHE = Duration.ofMinutes(5);
+    /**
+     * I punteggi in diretta si chiedono a presenze al massimo ogni venti
+     * secondi per lo stesso gruppo di partite: dieci telefoni sulla stessa
+     * scheda fanno una chiamata sola.
+     */
+    static final Duration DURATA_CACHE_LIVE = Duration.ofSeconds(20);
+    /** Una scheda o una mappa ne mostrano molte meno. */
+    public static final int MASSIMO_LIVE = 100;
     static final Duration PAUSA_DOPO_ERRORE = Duration.ofMinutes(1);
     /**
      * Una partita cominciata da meno di due ore si sta ancora giocando: chi
@@ -80,6 +88,10 @@ public class PartiteSuiCampi {
      * @param casaLogoUrl lo stemma della squadra di casa; nullo sulla mappa e quando
      *     TrovaCampo non ce l'ha
      * @param ospiteLogoUrl lo stesso, per gli ospiti
+     * @param live il punteggio in diretta se la partita si sta giocando; null
+     *     altrimenti
+     * @param id la partita in presenze, per chiederne il solo punteggio in
+     *     diretta ({@link #live})
      */
     public record Partita(
             OffsetDateTime dataOra,
@@ -92,7 +104,25 @@ public class PartiteSuiCampi {
             String girone,
             int giornata,
             String casaLogoUrl,
-            String ospiteLogoUrl) {}
+            String ospiteLogoUrl,
+            AnagraficaPresenze.Live live,
+            Long id) {
+
+        /** Senza diretta. */
+        public Partita(
+                OffsetDateTime dataOra,
+                String casa,
+                String ospite,
+                String campionato,
+                String ente,
+                String girone,
+                int giornata,
+                String casaLogoUrl,
+                String ospiteLogoUrl) {
+            this(dataOra, casa, ospite, null, campionato, ente, null, girone, giornata, casaLogoUrl,
+                    ospiteLogoUrl, null, null);
+        }
+    }
 
     private final AnagraficaPresenze anagrafica;
     private final SocietaRepository societa;
@@ -237,7 +267,36 @@ public class PartiteSuiCampi {
                 partita.girone(),
                 partita.giornata(),
                 stemma(stemmi, partita.casaSocietaId()),
-                stemma(stemmi, partita.ospiteSocietaId()));
+                stemma(stemmi, partita.ospiteSocietaId()),
+                partita.live(),
+                partita.id());
+    }
+
+    private record LiveLetti(Instant quando, Map<Long, AnagraficaPresenze.Live> punteggi) {}
+
+    private final Map<List<Long>, LiveLetti> liveLetti = new HashMap<>();
+
+    /**
+     * I soli punteggi in diretta di queste partite, per id: scheda e mappa li
+     * chiedono ogni minuto mentre si gioca e cambiano solo quelli, senza
+     * rileggere le partite. Cache di {@link #DURATA_CACHE_LIVE} per gruppo di
+     * partite.
+     *
+     * @throws IllegalArgumentException oltre {@link #MASSIMO_LIVE} partite
+     */
+    public synchronized Map<Long, AnagraficaPresenze.Live> live(Collection<Long> partite) {
+        if (partite.size() > MASSIMO_LIVE) {
+            throw new IllegalArgumentException("Al massimo " + MASSIMO_LIVE + " partite per richiesta");
+        }
+        List<Long> chiave = partite.stream().distinct().sorted().toList();
+        Instant adesso = orologio.instant();
+        liveLetti.values().removeIf(letti -> !adesso.isBefore(letti.quando().plus(DURATA_CACHE_LIVE)));
+        LiveLetti letti = liveLetti.get(chiave);
+        if (letti == null) {
+            letti = new LiveLetti(adesso, anagrafica.live(chiave));
+            liveLetti.put(chiave, letti);
+        }
+        return letti.punteggi();
     }
 
     private static String stemma(Map<Long, String> stemmi, Long societaId) {

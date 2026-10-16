@@ -43,8 +43,12 @@ import {
 import {
   GIORNI_PARTITE_MAPPA,
   PartitePerCampo,
+  RILETTURA_IN_DIRETTA_MS,
   campionatoPartita,
+  daSeguire,
+  fondiLive,
   partiteDelCampo,
+  punteggioLive,
   quandoPartita,
   squadrePartita,
 } from '../../modelli/partita';
@@ -365,14 +369,81 @@ export class MappaPage implements OnDestroy {
     });
     // A parte, e senza toccare lo stato della pagina: le partite sono un di
     // più, la mappa non le aspetta.
+    this.leggiPartite();
+  }
+
+  /**
+   * Ogni minuto, se una partita si può star giocando, si chiedono i soli
+   * punteggi in diretta e cambiano solo quelli: la mappa non si ricarica, e
+   * nel popup aperto si riscrive solo l'elenco delle partite.
+   */
+  private rilettura: ReturnType<typeof setInterval> | null = null;
+
+  private leggiPartite(): void {
     this.service.partiteSuiCampi().subscribe({
-      next: (partite) => this.partite.set(partite ?? {}),
+      next: (partite) => {
+        this.partite.set(partite ?? {});
+        if (!this.distrutta && this.rilettura === null) {
+          // Fuori dalla zona di Angular: un timer che gira sempre non deve
+          // tenere la pagina «occupata». Si rientra solo per aggiornare.
+          this.zona.runOutsideAngular(() => {
+            this.rilettura = setInterval(
+              () => this.zona.run(() => this.aggiornaPunteggi()),
+              RILETTURA_IN_DIRETTA_MS,
+            );
+          });
+        }
+      },
       error: () => this.partite.set({}),
     });
   }
 
+  /** I punteggi in diretta delle partite che si possono star giocando, e solo quelli. */
+  private aggiornaPunteggi(): void {
+    const ids = daSeguire(Object.values(this.partite()).flat());
+    if (ids.length === 0 || document.visibilityState === 'hidden') {
+      return;
+    }
+    this.service.live(ids).subscribe({
+      next: (punteggi) => {
+        this.partite.update((perCampo) =>
+          Object.fromEntries(
+            Object.entries(perCampo).map(([campo, partite]) => [
+              campo,
+              fondiLive(partite, ids, punteggi),
+            ]),
+          ),
+        );
+        this.aggiornaPopupAperti();
+      },
+      // Un errore lascia i punteggi di prima: al minuto dopo si riprova.
+      error: () => undefined,
+    });
+  }
+
+  /**
+   * Nel popup aperto si riscrive solo l'elenco delle partite: la partenza
+   * che si sta scrivendo e il resto restano come sono.
+   */
+  private aggiornaPopupAperti(): void {
+    for (const [id, segnaposto] of this.segnaposto) {
+      if (!segnaposto.isPopupOpen()) {
+        continue;
+      }
+      const campo = this.mostrati.find((c) => c.id === id);
+      const elenco = segnaposto.getPopup()?.getElement()?.querySelector('.partite-popup');
+      if (campo && elenco) {
+        elenco.outerHTML = this.partiteNelPopup(campo);
+      }
+    }
+  }
+
   ngOnDestroy(): void {
     this.distrutta = true;
+    if (this.rilettura !== null) {
+      clearInterval(this.rilettura);
+      this.rilettura = null;
+    }
     this.livelloVicini = null;
     this.anelli.clear();
     this.mappa?.remove();
@@ -738,6 +809,7 @@ export class MappaPage implements OnDestroy {
       .map(
         (partita) => `
           <li>
+            ${partita.live ? `<span class="live">LIVE ${testoSicuro(punteggioLive(partita) ?? '')}</span>` : ''}
             <span class="quando">${testoSicuro(quandoPartita(partita))}</span>
             ${testoSicuro(squadrePartita(partita))}
             <small>${testoSicuro(campionatoPartita(partita))}</small>
