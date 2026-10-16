@@ -160,9 +160,13 @@ public class ImportazioneService {
     /**
      * Copia la riga sulla società. Vero se qualcosa è cambiato.
      *
-     * <p>Se cambia l'indirizzo e il file non porta coordinate, quelle vecchie
-     * vengono tolte: indicherebbero il posto sbagliato. Le ricalcola la
-     * geocodifica automatica.
+     * <p><b>Le coordinate hanno la precedenza sull'indirizzo</b> (regola di
+     * Marco): se cambia l'indirizzo e il file non porta coordinate, quelle che
+     * il campo ha già restano. Spesso sono state messe a mano proprio perché
+     * l'indirizzo non bastava a trovarlo, e toglierle per un indirizzo
+     * riscritto riportava il campo fra quelli senza posizione. Le coordinate
+     * del file, se ci sono, valgono; un campo senza coordinate e con un
+     * indirizzo nuovo ritorna alla geocodifica.
      */
     private static boolean applica(Societa societa, RigaExcel riga, boolean rispettaPosizioni) {
         boolean cambiata = false;
@@ -236,8 +240,9 @@ public class ImportazioneService {
                         .setGeocodificaFallitaVersione(null);
                 cambiata = true;
             }
-        } else if (spostata) {
-            // Anche un tentativo fallito sull'indirizzo vecchio non conta più.
+        } else if (spostata && (societa.getLat() == null || societa.getLng() == null)) {
+            // Senza coordinate: un tentativo fallito sull'indirizzo vecchio
+            // non conta più, e la geocodifica riprova su quello nuovo.
             societa.setLat(null)
                     .setLng(null)
                     .setPosizioneApprossimata(null)

@@ -198,9 +198,20 @@ class SocietaServiceTest {
         assertThat(modificata.getLat()).isEqualTo(41.89);
     }
 
+    /** Le coordinate hanno la precedenza: un indirizzo nuovo non le toglie. */
     @Test
-    void cambiandoLIndirizzoLeCoordinateSiRicalcolano() {
+    void cambiandoLIndirizzoLeCoordinateRestano() {
         Societa modificata = modifica(modulo("Via della Certosa 99", 41.89, 12.48));
+
+        assertThat(modificata.getIndirizzoImpianto()).isEqualTo("Via della Certosa 99");
+        assertThat(modificata.getLat()).isEqualTo(41.89);
+        assertThat(modificata.getLng()).isEqualTo(12.48);
+    }
+
+    /** Chi vuole che il campo si sposti con l'indirizzo svuota le coordinate. */
+    @Test
+    void svuotandoLeCoordinateLeRicalcolaLaGeocodifica() {
+        Societa modificata = modifica(modulo("Via della Certosa 99", null, null));
 
         assertThat(modificata.getLat()).isNull();
         assertThat(modificata.getLng()).isNull();
