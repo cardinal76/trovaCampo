@@ -53,7 +53,13 @@ Due cose da sapere:
   Mongo e i suoi test non accendono container -- quindi questo workflow gira
   anche su una macchina senza Docker. Il deploy invece Docker lo vuole;
 - **Karma ha bisogno di un Chrome vero.** Sul runner si installa una volta
-  sola, `sudo apt-get install -y chromium`, e il workflow lo trova da se'.
+  sola Chrome dal pacchetto `.deb` (`wget -q
+  https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb`
+  e `sudo apt-get install -y ./google-chrome-stable_current_amd64.deb`), e
+  il workflow lo trova da se', prima di Chromium. **Non lo snap**: su Ubuntu
+  `apt install chromium` installa lo snap, che dal servizio systemd del
+  runner non parte (`... is not a snap cgroup for tag
+  snap.chromium.chromium`, successo il 21 ottobre 2026).
   Scaricarlo dentro il job si e' provato e non basta: un browser scaricato
   senza le librerie di sistema non parte (su `server2-trovacampo` moriva con
   `libatk-1.0.so.0: cannot open shared object file` dopo centoquattro

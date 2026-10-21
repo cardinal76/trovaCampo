@@ -22,6 +22,11 @@ import java.util.List;
  * ({@code null}, come da un'app di prima che il campo esistesse) resta quello
  * salvato; vuoto lo toglie. Deve essere un indirizzo https, perché la pagina
  * lo mostra così com'è.
+ *
+ * <p>{@code anagraficaSocietaId} collega la scheda alla società di presenze:
+ * lo manda il modulo aperto da «Società senza campo», così la scheda nuova
+ * trova squadre e risultati e la sincronizzazione la riconosce. Nullo lascia
+ * il collegamento com'è.
  */
 public record ModificaSocietaRequest(
         @Size(max = 30, message = "sigla troppo lunga") String siglaSocieta,
@@ -55,4 +60,5 @@ public record ModificaSocietaRequest(
         @Size(max = 50, message = "troppi campionati") List<Campionato> campionati,
         @Size(max = 500, message = "logoUrl troppo lungo")
                 @Pattern(regexp = "^$|^https://\\S+$", message = "lo stemma deve essere un indirizzo https")
-                String logoUrl) {}
+                String logoUrl,
+        Long anagraficaSocietaId) {}

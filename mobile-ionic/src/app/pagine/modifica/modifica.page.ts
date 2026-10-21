@@ -78,6 +78,8 @@ class Modulo {
   scuolaCalcio = false;
   prezziScuolaCalcio = '';
   campionati: RigaCampionato[] = [];
+  /** Il collegamento a presenze: non si vede nel modulo, ma va e viene col salvataggio. */
+  anagraficaSocietaId: number | null = null;
 
   static da(societa: Societa): Modulo {
     const modulo = new Modulo();
@@ -100,6 +102,23 @@ class Modulo {
     modulo.scuolaCalcio = societa.scuolaCalcio ?? false;
     modulo.prezziScuolaCalcio = societa.prezziScuolaCalcio ?? '';
     modulo.campionati = (societa.campionati ?? []).map((c) => ({ ...c }));
+    modulo.anagraficaSocietaId = societa.anagraficaSocietaId ?? null;
+    return modulo;
+  }
+
+  /**
+   * Una scheda nuova per una società di presenze ancora senza campo: arriva
+   * dal filtro «Senza campo» dell'elenco, con nome, stemma e collegamento già
+   * scritti. Il campo resta da scrivere: è il motivo per cui si è qui.
+   */
+  static perSocietaSenzaCampo(parametri: {
+    get(nome: string): string | null;
+  }): Modulo {
+    const modulo = new Modulo();
+    modulo.nomeSocieta = parametri.get('nomeSocieta') ?? '';
+    modulo.logoUrl = parametri.get('logoUrl') ?? '';
+    const id = Number(parametri.get('anagraficaSocietaId'));
+    modulo.anagraficaSocietaId = Number.isInteger(id) && id > 0 ? id : null;
     return modulo;
   }
 }
@@ -287,7 +306,7 @@ export class ModificaPage {
 
   private carica(): void {
     if (this.nuova) {
-      this.modulo.set(new Modulo());
+      this.modulo.set(Modulo.perSocietaSenzaCampo(this.rotta.snapshot.queryParamMap));
       this.stato.set('pronto');
       return;
     }
@@ -347,6 +366,7 @@ export class ModificaPage {
       prezziScuolaCalcio: modulo.prezziScuolaCalcio,
       campionati: modulo.campionati,
       logoUrl,
+      anagraficaSocietaId: modulo.anagraficaSocietaId ?? undefined,
     };
   }
 }

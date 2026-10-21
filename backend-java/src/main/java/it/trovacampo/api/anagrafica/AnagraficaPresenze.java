@@ -72,6 +72,19 @@ public class AnagraficaPresenze {
         return trovate == null ? List.of() : List.of(trovate);
     }
 
+    /**
+     * Tutte le società di presenze che hanno almeno una squadra, ognuna col
+     * suo campo principale: nullo quando il comitato non l'ha ancora detto.
+     */
+    public List<SocietaConCampo> societa() {
+        SocietaConCampo[] tutte =
+                client.get()
+                        .uri("/api/pubblico/anagrafica/societa")
+                        .retrieve()
+                        .body(SocietaConCampo[].class);
+        return tutte == null ? List.of() : List.of(tutte);
+    }
+
     /** Una società con tutte le sue squadre. */
     public Scheda scheda(long id) {
         return client.get()
@@ -165,6 +178,10 @@ public class AnagraficaPresenze {
             this(id, denominazione, null);
         }
     }
+
+    /** @param campo il campo principale, nullo se presenze non lo conosce */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record SocietaConCampo(Long id, String denominazione, Campo campo, String logoUrl) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Scheda(Long id, String denominazione, List<Campo> campi, List<Squadra> squadre) {}

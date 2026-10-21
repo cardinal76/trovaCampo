@@ -66,6 +66,19 @@
             ></ion-icon>
             Senza stemma
           </button>
+          <button
+            type="button"
+            class="filtro-senza-campo pillola"
+            [class.attivo]="soloSenzaCampo()"
+            [attr.aria-pressed]="soloSenzaCampo()"
+            (click)="cambiaSoloSenzaCampo(!soloSenzaCampo())"
+          >
+            <ion-icon
+              [name]="soloSenzaCampo() ? 'checkmark-circle' : 'warning-outline'"
+              aria-hidden="true"
+            ></ion-icon>
+            Senza campo
+          </button>
         }
         <span class="conteggio" aria-live="polite">
           @if (filtrato()) {
@@ -93,6 +106,59 @@
       </div>
     }
     @case ('pronto') {
+      @if (filtroSenzaCampo()) {
+        <div class="contenuto-largo">
+          <ion-list class="elenco senza-campo" lines="full" aria-label="Società senza campo">
+            @if (senzaCampo() === null) {
+              <ion-item lines="none"><ion-spinner></ion-spinner></ion-item>
+            } @else if (erroreSenzaCampo()) {
+              <ion-item lines="none">
+                <ion-label color="danger">{{ erroreSenzaCampo() }}</ion-label>
+                <ion-button slot="end" fill="outline" (click)="caricaSenzaCampo()">Riprova</ion-button>
+              </ion-item>
+            } @else {
+              <ion-item lines="none" class="spiegazione">
+                <ion-label color="medium" class="ion-text-wrap">
+                  Società di presenze di cui il comitato non ha ancora pubblicato il campo:
+                  {{ senzaCampoFiltrate().length }} di {{ senzaCampo()!.length }}.
+                  Aggiungi il campo a mano: la scheda nasce già collegata.
+                </ion-label>
+              </ion-item>
+              @for (societa of senzaCampoFiltrate(); track societa.anagraficaSocietaId) {
+                <ion-item
+                  button
+                  [routerLink]="['/admin/societa/nuova']"
+                  [queryParams]="parametriNuovaScheda(societa)"
+                  detail="false"
+                >
+                  <stemma-societa
+                    slot="start"
+                    class="stemma"
+                    [nome]="societa.denominazione"
+                    [logoUrl]="societa.logoUrl ?? undefined"
+                    [dimensione]="36"
+                  ></stemma-societa>
+                  <ion-label class="ion-text-wrap">
+                    <h2 class="societa">{{ societa.denominazione }}</h2>
+                  </ion-label>
+                  <ion-icon slot="end" name="add-circle-outline" aria-hidden="true"></ion-icon>
+                  <span class="aggiungi" slot="end">Aggiungi campo</span>
+                </ion-item>
+              } @empty {
+                <ion-item lines="none">
+                  <ion-label color="medium">
+                    @if (filtro()) {
+                      Nessuna società senza campo corrisponde a "{{ filtro() }}".
+                    } @else {
+                      Tutte le società hanno un campo.
+                    }
+                  </ion-label>
+                </ion-item>
+              }
+            }
+          </ion-list>
+        </div>
+      } @else {
       <div class="contenuto-largo">
         <ion-list class="elenco" lines="full">
           @for (campo of visibili(); track campo.id) {
@@ -146,6 +212,7 @@
           <ion-infinite-scroll-content></ion-infinite-scroll-content>
         </ion-infinite-scroll>
       </div>
+      }
     }
   }
 </ion-content>

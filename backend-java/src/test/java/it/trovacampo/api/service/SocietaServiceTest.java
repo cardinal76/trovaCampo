@@ -142,6 +142,7 @@ class SocietaServiceTest {
                 List.of(
                         new Campionato("Terza Categoria", "B", "LAZIO", null),
                         new Campionato("  ", "", "", TipoCampionato.SCUOLA_CALCIO)),
+                null,
                 null);
     }
 
@@ -150,7 +151,7 @@ class SocietaServiceTest {
                 m.siglaSocieta(), m.nomeSocieta(), m.comitatoRegionale(), m.nomeImpianto(),
                 m.indirizzoImpianto(), m.localitaImpianto(), m.provinciaImpianto(), m.lat(), m.lng(),
                 m.matricola(), m.presidente(), m.indirizzoSede(), m.telefono(), m.fax(), m.email(),
-                m.sitoWeb(), m.scuolaCalcio(), m.prezziScuolaCalcio(), m.campionati(), logoUrl);
+                m.sitoWeb(), m.scuolaCalcio(), m.prezziScuolaCalcio(), m.campionati(), logoUrl, null);
     }
 
     @Test
@@ -262,7 +263,7 @@ class SocietaServiceTest {
                         m.siglaSocieta(), m.nomeSocieta(), m.comitatoRegionale(), m.nomeImpianto(),
                         m.indirizzoImpianto(), m.localitaImpianto(), m.provinciaImpianto(), m.lat(), m.lng(),
                         m.matricola(), m.presidente(), m.indirizzoSede(), m.telefono(), m.fax(), m.email(),
-                        m.sitoWeb(), false, "180 euro", m.campionati(), null);
+                        m.sitoWeb(), false, "180 euro", m.campionati(), null, null);
 
         assertThat(modifica(senza).getPrezziScuolaCalcio()).isNull();
     }
@@ -276,7 +277,7 @@ class SocietaServiceTest {
                         m.siglaSocieta(), m.nomeSocieta(), m.comitatoRegionale(), m.nomeImpianto(),
                         m.indirizzoImpianto(), "Frosinone", " ", m.lat(), m.lng(),
                         m.matricola(), m.presidente(), m.indirizzoSede(), m.telefono(), m.fax(), m.email(),
-                        m.sitoWeb(), m.scuolaCalcio(), m.prezziScuolaCalcio(), m.campionati(), null);
+                        m.sitoWeb(), m.scuolaCalcio(), m.prezziScuolaCalcio(), m.campionati(), null, null);
 
         assertThat(service().crea(senzaProvincia).getProvinciaImpianto()).isEqualTo("FR");
     }

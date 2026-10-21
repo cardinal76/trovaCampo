@@ -211,6 +211,9 @@ public class SocietaService {
                 .setPrezziScuolaCalcio(
                         scuolaCalcio ? oNull(richiesta.prezziScuolaCalcio()) : null)
                 .setCampionati(campionati(richiesta.campionati()));
+        if (richiesta.anagraficaSocietaId() != null) {
+            societa.setAnagraficaSocietaId(richiesta.anagraficaSocietaId());
+        }
         if (richiesta.logoUrl() != null) {
             // Messo a mano, per le società che il portale LND non ha: la
             // sincronizzazione lo sostituisce solo se presenze ne porta uno.
