@@ -21,11 +21,13 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import {
+  addCircleOutline,
   checkmarkCircle,
   footballOutline,
   locationOutline,
   navigateCircleOutline,
   shieldOutline,
+  warningOutline,
 } from 'ionicons/icons';
 import { StemmaComponent } from '../../componenti/stemma/stemma.component';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
@@ -38,11 +40,13 @@ import {
 } from '../../modelli/provincia';
 import {
   Societa,
+  SocietaSenzaCampo,
   haCoordinate,
   indirizzoCompleto,
   nomeCompleto,
   senzaPosizionePrecisa,
 } from '../../modelli/societa';
+import { AmministrazioneService } from '../../servizi/amministrazione.service';
 import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
 import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
 import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
@@ -106,6 +110,7 @@ export class ElencoPage {
   private readonly service = inject(SocietaService);
   private readonly provinciaScelta = inject(ProvinciaSceltaService);
   private readonly cambiati = inject(CampiCambiatiService);
+  private readonly amministrazione = inject(AmministrazioneService);
   /** La versione dell'archivio dei campi scaricati: se al rientro è salita, si ricarica. */
   private versioneCaricata = -1;
 
@@ -118,6 +123,24 @@ export class ElencoPage {
   readonly amministratore = signal(amministratoreRicordato());
   readonly soloSenzaPosizione = signal(false);
   readonly soloSenzaStemma = signal(false);
+  /**
+   * Le società di presenze senza campo: non sono schede, quindi non sono un
+   * filtro sull'elenco ma un elenco loro, che si chiede al server solo
+   * quando lo si apre.
+   */
+  readonly soloSenzaCampo = signal(false);
+  readonly senzaCampo = signal<SocietaSenzaCampo[] | null>(null);
+  readonly erroreSenzaCampo = signal('');
+  /** Come {@link filtroPosizione}: chi esce dall'amministrazione torna all'elenco. */
+  readonly filtroSenzaCampo = computed(() => this.amministratore() && this.soloSenzaCampo());
+  /** Le società senza campo che corrispondono al testo cercato. */
+  readonly senzaCampoFiltrate = computed(() => {
+    const parole = normalizza(this.filtro()).split(/\s+/).filter(Boolean);
+    return (this.senzaCampo() ?? []).filter((s) => {
+      const testo = normalizza(s.denominazione);
+      return parole.every((parola) => testo.includes(parola));
+    });
+  });
 
   readonly nomeCompleto = nomeCompleto;
   readonly indirizzoCompleto = indirizzoCompleto;
@@ -177,11 +200,13 @@ export class ElencoPage {
 
   constructor() {
     addIcons({
+      addCircleOutline,
       checkmarkCircle,
       footballOutline,
       locationOutline,
       navigateCircleOutline,
       shieldOutline,
+      warningOutline,
     });
     this.carica();
   }
@@ -193,6 +218,10 @@ export class ElencoPage {
     // deve mostrarla com'è adesso (o non mostrarla più).
     if (this.cambiati.versione() !== this.versioneCaricata) {
       this.carica();
+      // Una scheda appena creata toglie la sua società da quelle senza campo.
+      if (this.soloSenzaCampo()) {
+        this.caricaSenzaCampo();
+      }
     }
   }
 
@@ -241,6 +270,33 @@ export class ElencoPage {
   cambiaSoloSenzaStemma(attivo: boolean): void {
     this.soloSenzaStemma.set(attivo);
     this.mostrati.set(BLOCCO);
+  }
+
+  cambiaSoloSenzaCampo(attivo: boolean): void {
+    this.soloSenzaCampo.set(attivo);
+    if (attivo && this.senzaCampo() === null) {
+      this.caricaSenzaCampo();
+    }
+  }
+
+  caricaSenzaCampo(): void {
+    this.erroreSenzaCampo.set('');
+    this.amministrazione.societaSenzaCampo().subscribe({
+      next: (elenco) => this.senzaCampo.set(elenco),
+      error: (errore: Error) => {
+        this.senzaCampo.set([]);
+        this.erroreSenzaCampo.set(errore.message);
+      },
+    });
+  }
+
+  /** Il modulo della scheda nuova, già col nome, lo stemma e il collegamento a presenze. */
+  parametriNuovaScheda(societa: SocietaSenzaCampo): Record<string, string | number> {
+    return {
+      nomeSocieta: societa.denominazione,
+      anagraficaSocietaId: societa.anagraficaSocietaId,
+      ...(societa.logoUrl ? { logoUrl: societa.logoUrl } : {}),
+    };
   }
 
   altri(evento: InfiniteScrollCustomEvent): void {

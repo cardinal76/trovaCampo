@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, from, switchMap, tap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Esclusione, ModificaSocieta, Societa } from '../modelli/societa';
+import { Esclusione, ModificaSocieta, Societa, SocietaSenzaCampo } from '../modelli/societa';
 import { AutenticazioneService } from './autenticazione.service';
 import { CampiCambiatiService } from './campi-cambiati.service';
 import { messaggioErrore } from './errori-amministrazione';
@@ -15,6 +15,7 @@ export class AmministrazioneService {
   private readonly cambiati = inject(CampiCambiatiService);
   private readonly base = `${environment.apiUrl}/api/admin/societa`;
   private readonly baseEsclusioni = `${environment.apiUrl}/api/admin/esclusioni`;
+  private readonly baseSenzaCampo = `${environment.apiUrl}/api/admin/societa-senza-campo`;
 
   // In caso di errore gli Observable falliscono con un messaggio già pronto da mostrare.
 
@@ -45,6 +46,11 @@ export class AmministrazioneService {
   /** I campi di presenze eliminati, i più recenti prima. */
   esclusioni(): Observable<Esclusione[]> {
     return this.conToken((headers) => this.http.get<Esclusione[]>(this.baseEsclusioni, { headers }));
+  }
+
+  /** Le società di presenze senza campo, e quindi senza scheda qui. */
+  societaSenzaCampo(): Observable<SocietaSenzaCampo[]> {
+    return this.conToken((headers) => this.http.get<SocietaSenzaCampo[]>(this.baseSenzaCampo, { headers }));
   }
 
   /** Il campo torna con la prossima sincronizzazione, se presenze lo manda ancora. */

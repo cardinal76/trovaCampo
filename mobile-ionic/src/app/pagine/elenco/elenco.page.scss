@@ -39,6 +39,18 @@
   --pillola-sfondo: rgba(var(--ion-color-tertiary-rgb, 82, 96, 255), 0.15);
 }
 
+.filtro-senza-campo {
+  --pillola-colore: var(--ion-color-danger, #c5000f);
+  --pillola-sfondo: rgba(var(--ion-color-danger-rgb, 197, 0, 15), 0.12);
+}
+
+/* Nell'elenco delle società senza campo l'azione sta a destra, scritta. */
+.senza-campo .aggiungi {
+  font-size: 0.85rem;
+  color: var(--ion-color-primary, #3880ff);
+  white-space: nowrap;
+}
+
 .conteggio {
   margin-inline-start: auto;
   color: var(--ion-color-medium, #666);

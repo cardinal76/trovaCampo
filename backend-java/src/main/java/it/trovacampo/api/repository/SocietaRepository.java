@@ -41,6 +41,10 @@ public interface SocietaRepository extends MongoRepository<Societa, String> {
             sort = "{ 'nomeSocieta': 1, 'nomeImpianto': 1 }")
     List<Societa> tuttiICampi();
 
+    /** Nome e collegamento a presenze di ogni scheda: per sapere quali società ci sono già. */
+    @Query(value = "{}", fields = "{ 'nomeSocieta': 1, 'anagraficaSocietaId': 1 }")
+    List<Societa> nomiECollegamenti();
+
     /**
      * Una società senza coordinate su cui la versione corrente della
      * geocodifica non ha ancora rinunciato. {@code lat: null} comprende anche

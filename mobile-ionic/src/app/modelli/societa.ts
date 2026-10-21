@@ -74,6 +74,16 @@ export interface Esclusione {
   esclusaIl?: string;
 }
 
+/**
+ * Una società di presenze che in TrovaCampo non c'è, perché il comitato non
+ * ha ancora pubblicato il suo campo: si completa a mano.
+ */
+export interface SocietaSenzaCampo {
+  anagraficaSocietaId: number;
+  denominazione: string;
+  logoUrl?: string | null;
+}
+
 /** La scheda come la manda la pagina di modifica: tutto tranne l'id. */
 export type ModificaSocieta = Omit<Societa, 'id'>;
 

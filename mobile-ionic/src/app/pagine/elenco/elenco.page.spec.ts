@@ -2,7 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular/standalone';
 import { of } from 'rxjs';
-import { Societa } from '../../modelli/societa';
+import { Societa, SocietaSenzaCampo } from '../../modelli/societa';
+import { AmministrazioneService } from '../../servizi/amministrazione.service';
 import { ricordaAmministratore } from '../../servizi/amministratore-ricordato';
 import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
 import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
@@ -37,6 +38,14 @@ describe('ElencoPage', () => {
   let pagina: ElencoPage;
   /** Quello che risponde il backend: i test di ricarica lo cambiano. */
   let scaricati: Societa[];
+  let senzaCampo: jasmine.Spy;
+
+  const ZAGAROLO: SocietaSenzaCampo = { anagraficaSocietaId: 383, denominazione: 'ASDPOL ZAGAROLO CALCIO' };
+  const CERVETERI: SocietaSenzaCampo = {
+    anagraficaSocietaId: 9,
+    denominazione: 'POLISPORTIVA CERVETERI',
+    logoUrl: 'https://play.lnd.it/lndimg/9/9-web.png',
+  };
 
   function crea(): void {
     fixture = TestBed.createComponent(ElencoPage);
@@ -54,12 +63,14 @@ describe('ElencoPage', () => {
 
   beforeEach(() => {
     scaricati = CAMPI;
+    senzaCampo = jasmine.createSpy('societaSenzaCampo').and.returnValue(of([ZAGAROLO, CERVETERI]));
     TestBed.configureTestingModule({
       imports: [ElencoPage],
       providers: [
         provideIonicAngular(),
         provideRouter([]),
         { provide: SocietaService, useValue: { tutti: () => of(scaricati) } },
+        { provide: AmministrazioneService, useValue: { societaSenzaCampo: senzaCampo } },
       ],
     });
   });
@@ -163,6 +174,52 @@ describe('ElencoPage', () => {
 
     pagina.cambiaSoloSenzaStemma(true);
     expect(nomi().length).toBe(CAMPI.length);
+  });
+
+  describe('le società senza campo', () => {
+    it('chi non amministra non vede la pillola, e il server non si chiede', () => {
+      crea();
+
+      expect(fixture.nativeElement.querySelector('.filtro-senza-campo')).toBeNull();
+      expect(senzaCampo).not.toHaveBeenCalled();
+    });
+
+    it('accesa elenca le società senza campo, chieste una volta, e la ricerca le filtra', () => {
+      ricordaAmministratore(true);
+      crea();
+      const pillola = fixture.nativeElement.querySelector('.filtro-senza-campo') as HTMLButtonElement;
+
+      pillola.click();
+      fixture.detectChanges();
+      pillola.click();
+      pillola.click();
+      fixture.detectChanges();
+
+      expect(senzaCampo).toHaveBeenCalledTimes(1);
+      expect(pillola.getAttribute('aria-pressed')).toBe('true');
+      const righe = fixture.nativeElement.querySelectorAll('.senza-campo h2.societa');
+      expect(Array.from(righe).map((r) => (r as HTMLElement).textContent?.trim())).toEqual([
+        'ASDPOL ZAGAROLO CALCIO',
+        'POLISPORTIVA CERVETERI',
+      ]);
+
+      pagina.cambiaFiltro('zagarolo');
+      expect(pagina.senzaCampoFiltrate()).toEqual([ZAGAROLO]);
+    });
+
+    it('il modulo nuovo parte col nome, lo stemma e il collegamento a presenze', () => {
+      crea();
+
+      expect(pagina.parametriNuovaScheda(ZAGAROLO)).toEqual({
+        nomeSocieta: 'ASDPOL ZAGAROLO CALCIO',
+        anagraficaSocietaId: 383,
+      });
+      expect(pagina.parametriNuovaScheda(CERVETERI)).toEqual({
+        nomeSocieta: 'POLISPORTIVA CERVETERI',
+        anagraficaSocietaId: 9,
+        logoUrl: 'https://play.lnd.it/lndimg/9/9-web.png',
+      });
+    });
   });
 
   it('la provincia chiusa dice di cosa si parla', () => {
