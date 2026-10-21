@@ -64,14 +64,21 @@ jobs:
       # megabyte di scarico -- e quelle librerie vogliono sudo, che un job
       # non ha e non deve avere. Meglio un job rosso con l'istruzione giusta
       # che cento megabyte buttati a ogni giro per fallire lo stesso.
+      #
+      # Prima Chrome dal pacchetto .deb, poi Chromium. Su Ubuntu
+      # "apt install chromium" mette lo snap (anche /usr/bin/chromium-browser
+      # e' solo il suo lanciatore), e lo snap non parte da un processo del
+      # servizio systemd del runner: "... .service is not a snap cgroup for
+      # tag snap.chromium.chromium", e Karma rinuncia. E' successo su
+      # server2-trovacampo il 21 ottobre 2026, con il job verde il 16.
       - name: Trova il browser per i test
         run: |
           for candidato in \
             "$CHROME_BIN" \
+            /usr/bin/google-chrome-stable \
+            /usr/bin/google-chrome \
             /usr/bin/chromium \
             /usr/bin/chromium-browser \
-            /usr/bin/google-chrome \
-            /usr/bin/google-chrome-stable \
             /snap/bin/chromium
           do
             if [ -n "$candidato" ] && [ -x "$candidato" ]; then
@@ -82,8 +89,9 @@ jobs:
           done
           echo "::error::Nessun Chrome sul runner: i test del frontend girano su Chrome headless." >&2
           echo "Installalo una volta sola, sulla macchina del runner:" >&2
-          echo "  sudo apt-get update && sudo apt-get install -y chromium" >&2
-          echo "Porta con se' le librerie che servono, che un browser scaricato a mano non ha." >&2
+          echo "  wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb" >&2
+          echo "  sudo apt-get install -y ./google-chrome-stable_current_amd64.deb" >&2
+          echo "Il pacchetto porta con se' le librerie che servono; lo snap di chromium dal servizio del runner non parte." >&2
           exit 1
 
       # "npm ci" e non "npm install": installa esattamente il lockfile, che e'
