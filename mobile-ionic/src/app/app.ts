@@ -27,7 +27,8 @@ function schedaDi(url: string): Scheda | null {
   if (percorso.startsWith('/mappa')) {
     return 'mappa';
   }
-  if (percorso.startsWith('/notifiche')) {
+  // Le prossime partite si aprono da Notifiche, e sono la sua lista.
+  if (percorso.startsWith('/notifiche') || percorso.startsWith('/prossime-partite')) {
     return 'notifiche';
   }
   return null;

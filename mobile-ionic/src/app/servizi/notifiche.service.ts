@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { ElencoProssime } from '../modelli/prossime';
 import { AmbientePush, SupportoPush } from './ambiente-push';
 import { DiagnosiService } from './diagnosi.service';
 import { PosizioneService } from './posizione.service';
@@ -209,6 +210,54 @@ export class NotificheService {
     this.diagnosi.aggiornaNotifiche();
   }
 
+  /**
+   * Le prossime partite con un avviso, per la pagina Prossime partite.
+   *
+   * Si mandano le scelte di questo telefono, non l'iscrizione: così
+   * l'elenco c'è anche dove le notifiche non sono accese (o non possono
+   * esserlo), e il server non deve leggere niente di salvato. Le squadre
+   * sempre, anche con l'avviso spento: si seguono, e la pagina dice che
+   * l'avviso non arriva. La posizione solo con l'avviso delle vicine acceso,
+   * arrotondata come la salva il server.
+   *
+   * L'endpoint dell'iscrizione push, se c'è, serve solo a sapere quali
+   * avvisi sono già arrivati: il server non lo salva.
+   */
+  async prossime(): Promise<ElencoProssime> {
+    const preferenze = this.preferenze();
+    let endpoint: string | null = null;
+    if (this.supporto() === 'supportato' && this.qualcheAvviso()) {
+      try {
+        endpoint = (await this.ambiente.iscrizioneAttuale())?.endpoint ?? null;
+      } catch {
+        // Senza service worker si sa lo stesso quando arriveranno.
+      }
+    }
+    const posizione =
+      preferenze.avvisoVicino && preferenze.posizione
+        ? { lat: arrotonda(preferenze.posizione.lat), lng: arrotonda(preferenze.posizione.lng) }
+        : null;
+    return firstValueFrom(
+      this.http.post<ElencoProssime>(`${this.base}/prossime`, {
+        squadre: this.squadre.chiavi(),
+        posizione,
+        raggioKm: preferenze.raggioKm,
+        endpoint,
+      }),
+    );
+  }
+
+  /**
+   * Se l'avviso di quel tipo arriva davvero su questo browser: acceso, e
+   * con le notifiche permesse. Altrimenti la pagina Prossime partite scrive
+   * «Avviso spento».
+   */
+  avvisoAcceso(tipo: 'squadra' | 'vicino'): boolean {
+    const preferenze = this.preferenze();
+    const acceso = tipo === 'squadra' ? preferenze.avvisoSquadre : preferenze.avvisoVicino;
+    return acceso && this.supporto() === 'supportato' && this.permesso() === 'granted';
+  }
+
   segue(chiave: string): boolean {
     return this.squadre.segue(chiave);
   }
@@ -381,6 +430,11 @@ export class NotificheService {
       // Archivio bloccato: le scelte valgono finché la pagina resta aperta.
     }
   }
+}
+
+/** Tre decimali, un centinaio di metri: come IscrizioniService.arrotonda nel backend. */
+function arrotonda(gradi: number): number {
+  return Math.round(gradi * 1000) / 1000;
 }
 
 function ricordate(): PreferenzeNotifiche {

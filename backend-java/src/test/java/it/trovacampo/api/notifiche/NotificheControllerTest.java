@@ -7,11 +7,19 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import it.trovacampo.api.anagrafica.AnagraficaPresenze.Partita;
+import it.trovacampo.api.anagrafica.PartiteSuiCampi;
 import it.trovacampo.api.config.ConfigurazioneSicurezza;
+import it.trovacampo.api.dominio.Societa;
+import it.trovacampo.api.repository.SocietaRepository;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Set;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +38,7 @@ import org.springframework.test.web.servlet.MockMvc;
  * pubblici), la validazione vera e il servizio vero: finto solo Mongo.
  */
 @WebMvcTest(NotificheController.class)
-@Import({ConfigurazioneSicurezza.class, IscrizioniService.class})
+@Import({ConfigurazioneSicurezza.class, IscrizioniService.class, ProssimePartite.class, PartiteDaAvvisare.class})
 class NotificheControllerTest {
 
     private static final String ENDPOINT = "https://fcm.googleapis.com/fcm/send/abc:def-123";
@@ -43,6 +51,12 @@ class NotificheControllerTest {
     private MongoTemplate mongo;
 
     @MockitoBean private DepositoChiaviVapid deposito;
+
+    @MockitoBean private PartiteSuiCampi partite;
+
+    @MockitoBean private SocietaRepository campi;
+
+    @MockitoBean private RegistroInvii registro;
 
     private final Browser browser = new Browser();
 
@@ -242,5 +256,79 @@ class NotificheControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(repository).deleteById(Iscrizione.idDi(ENDPOINT));
+    }
+
+    /** Domani alle 15:00 (all'incirca: basta che sia nella settimana), sul campo della Lodigiani. */
+    private void unaPartitaDomani() {
+        OffsetDateTime domani = OffsetDateTime.now().plusDays(1).truncatedTo(ChronoUnit.HOURS);
+        when(partite.fra(any(), any()))
+                .thenReturn(
+                        List.of(
+                                new Partita(
+                                        9L, domani, "DA_GIOCARE", 190L, "LODIGIANI CALCIO 1972", "VIS SEZZE",
+                                        "ECCELLENZA", "Regionali", "B", 3, 412L, 77L, "", "B")));
+        when(campi.findByAnagraficaImpiantoIdIn(any()))
+                .thenReturn(
+                        List.of(
+                                new Societa()
+                                        .setId("campo-lodigiani")
+                                        .setNomeImpianto("La Borghesiana")
+                                        .setAnagraficaSocietaId(412L)
+                                        .setAnagraficaImpiantoId(190L)
+                                        .setLat(41.9)
+                                        .setLng(12.5)));
+        when(registro.giaPrenotati(any())).thenReturn(Set.of());
+    }
+
+    @Test
+    void leProssimePartiteSenzaLoginEConLeScelteDelBrowser() throws Exception {
+        unaPartitaDomani();
+
+        mockMvc.perform(
+                        post("/api/notifiche/prossime")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        """
+                                        {"squadre": ["412|eccellenza|regionali|"],
+                                         "posizione": {"lat": 41.91, "lng": 12.5}, "raggioKm": 5,
+                                         "endpoint": "%s"}"""
+                                                .formatted(ENDPOINT)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.partite[0].casa").value("LODIGIANI CALCIO 1972"))
+                .andExpect(jsonPath("$.partite[0].campo.id").value("campo-lodigiani"))
+                .andExpect(jsonPath("$.partite[0].avvisi[0].tipo").value("squadra"))
+                .andExpect(jsonPath("$.partite[0].avvisi[0].seguite[0]").value("LODIGIANI CALCIO 1972"))
+                .andExpect(jsonPath("$.partite[0].avvisi[0].stato").value("previsto"))
+                .andExpect(jsonPath("$.partite[0].avvisi[1].tipo").value("vicino"))
+                .andExpect(jsonPath("$.partite[0].avvisi[1].distanzaKm").value(1.1))
+                .andExpect(jsonPath("$.altre").value(false));
+
+        // Non salva niente: le scelte servono a questa risposta e basta.
+        verify(repository, never()).save(any());
+        verify(registro, never()).prenota(any());
+    }
+
+    @Test
+    void leScelteDelleProssimeSiControllanoComeLIscrizione() throws Exception {
+        mockMvc.perform(
+                        post("/api/notifiche/prossime")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"squadre\": [\"<script>\"]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errore").value("Squadra seguita non valida"));
+        mockMvc.perform(
+                        post("/api/notifiche/prossime")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"squadre\": [], \"raggioKm\": 51,"
+                                                + " \"posizione\": {\"lat\": 41.9, \"lng\": 12.5}}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errore").value("Raggio di al massimo 50 km"));
+        mockMvc.perform(
+                        post("/api/notifiche/prossime")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"squadre\": [], \"riempitivo\": \"" + "x".repeat(20_000) + "\"}"))
+                .andExpect(status().isPayloadTooLarge());
+        verify(partite, never()).fra(any(), any());
     }
 }

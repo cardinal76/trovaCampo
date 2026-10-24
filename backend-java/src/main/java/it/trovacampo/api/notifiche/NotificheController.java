@@ -5,6 +5,7 @@ import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,10 +22,13 @@ public class NotificheController {
 
     private final IscrizioniService iscrizioni;
     private final DepositoChiaviVapid chiavi;
+    private final ProssimePartite prossime;
 
-    public NotificheController(IscrizioniService iscrizioni, DepositoChiaviVapid chiavi) {
+    public NotificheController(
+            IscrizioniService iscrizioni, DepositoChiaviVapid chiavi, ProssimePartite prossime) {
         this.iscrizioni = iscrizioni;
         this.chiavi = chiavi;
+        this.prossime = prossime;
     }
 
     /** La chiave pubblica VAPID, che il browser vuole per iscriversi. */
@@ -42,6 +46,18 @@ public class NotificheController {
     public ResponseEntity<Void> salva(@Valid @RequestBody IscrizioneRequest richiesta) {
         iscrizioni.salva(richiesta);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Le partite della settimana per cui arriverebbe un avviso, con le
+     * scelte che manda il browser (squadre seguite, posizione e raggio):
+     * per la pagina Prossime partite. POST e non GET perché le scelte stanno
+     * nel corpo, non nell'indirizzo che finisce nei log di Caddy; non salva
+     * niente.
+     */
+    @PostMapping("/prossime")
+    public ProssimePartite.Elenco prossime(@Valid @RequestBody ProssimeRequest richiesta) {
+        return prossime.elenco(richiesta);
     }
 
     @DeleteMapping("/iscrizione")

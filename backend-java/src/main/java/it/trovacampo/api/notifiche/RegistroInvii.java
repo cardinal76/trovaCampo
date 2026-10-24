@@ -1,5 +1,8 @@
 package it.trovacampo.api.notifiche;
 
+import java.util.Collection;
+import java.util.Set;
+
 /**
  * Le notifiche già mandate, perché nessuna parta due volte: né al giro dopo
  * del pianificatore, che rivede la stessa partita nella sua finestra, né dopo
@@ -16,4 +19,11 @@ public interface RegistroInvii {
 
     /** Toglie la prenotazione di un invio non riuscito: il giro dopo riprova. */
     void annulla(String chiave);
+
+    /**
+     * Quali di questi invii sono già stati prenotati (cioè mandati, o in
+     * corso): per la pagina Prossime partite, che scrive «avviso inviato».
+     * Si legge e basta, senza prenotare niente.
+     */
+    Set<String> giaPrenotati(Collection<String> chiavi);
 }

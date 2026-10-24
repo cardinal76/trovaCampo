@@ -391,4 +391,64 @@ describe('NotificheService', () => {
     expect(servizio().preferenze().raggioKm).toBe(10);
     expect(servizio().preferenze().posizione).toBeNull();
   });
+
+  describe('prossime partite', () => {
+    const VUOTO = { fino: '2026-09-12', partite: [], altre: false };
+
+    it('manda le squadre seguite anche con l avviso spento, senza posizione né endpoint', async () => {
+      localStorage.setItem('trovacampo.squadreSeguite', JSON.stringify([LODIGIANI]));
+      localStorage.setItem(
+        'trovacampo.notifiche',
+        JSON.stringify({ posizione: { lat: 41.9, lng: 12.5, il: '2026-09-05T10:00:00Z' } }),
+      );
+
+      const risposta = servizio().prossime();
+      await attendi();
+      const post = http.expectOne((r) => r.method === 'POST' && r.url === `${API}/prossime`);
+      expect(post.request.body).toEqual({
+        squadre: [LODIGIANI.chiave],
+        posizione: null,
+        raggioKm: 10,
+        endpoint: null,
+      });
+      post.flush(VUOTO);
+      expect(await risposta).toEqual(VUOTO);
+    });
+
+    it('con le vicine accese manda la posizione arrotondata, e l endpoint per gli avvisi arrivati', async () => {
+      localStorage.setItem(
+        'trovacampo.notifiche',
+        JSON.stringify({
+          avvisoVicino: true,
+          raggioKm: 5,
+          posizione: { lat: 41.902345, lng: 12.496789, il: '2026-09-05T10:00:00Z' },
+        }),
+      );
+      ambiente.iscrizione = ISCRIZIONE_FINTA;
+
+      const risposta = servizio().prossime();
+      await attendi();
+      const post = http.expectOne(`${API}/prossime`);
+      expect(post.request.body).toEqual({
+        squadre: [],
+        posizione: { lat: 41.902, lng: 12.497 },
+        raggioKm: 5,
+        endpoint: ISCRIZIONE_FINTA.endpoint,
+      });
+      post.flush(VUOTO);
+      await risposta;
+    });
+
+    it('avvisoAcceso vuole l avviso acceso e le notifiche permesse', () => {
+      localStorage.setItem('trovacampo.notifiche', JSON.stringify({ avvisoSquadre: true }));
+      ambiente.permessoAttuale = 'granted';
+      const notifiche = servizio();
+
+      expect(notifiche.avvisoAcceso('squadra')).toBeTrue();
+      expect(notifiche.avvisoAcceso('vicino')).toBeFalse();
+      ambiente.permessoAttuale = 'denied';
+      notifiche.rileggiPermesso();
+      expect(notifiche.avvisoAcceso('squadra')).toBeFalse();
+    });
+  });
 });
