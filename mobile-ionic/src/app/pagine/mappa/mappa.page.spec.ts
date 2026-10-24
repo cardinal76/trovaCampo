@@ -615,6 +615,10 @@ describe('MappaPage', () => {
       crea();
       await pagina.vicinoAMe();
       await disegnata();
+      // I vicini si disegnano dopo che l'icona del campo e' caricata, e su
+      // una macchina lenta (il runner della CI) arrivano oltre i 50 ms di
+      // disegnata(): allora la loro inquadratura cancellava lo zoom qui sotto.
+      await finche(() => pagina['anelli'].has('1') && pagina['anelli'].has('5'));
       const mappa = pagina['mappa']!;
       const anello = (id: string) => pagina['anelli'].get(id)!.options.opacity;
 
@@ -652,5 +656,13 @@ describe('MappaPage', () => {
     fixture.detectChanges();
     await fixture.whenStable();
     await new Promise((fatto) => setTimeout(fatto, 50));
+  }
+
+  /** Aspetta che la condizione diventi vera, fino a due secondi. */
+  async function finche(condizione: () => boolean): Promise<void> {
+    for (let i = 0; i < 40 && !condizione(); i++) {
+      await disegnata();
+    }
+    expect(condizione()).withContext('la mappa non ha finito di disegnare').toBeTrue();
   }
 });
