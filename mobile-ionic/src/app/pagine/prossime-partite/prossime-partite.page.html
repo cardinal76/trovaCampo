@@ -1,0 +1,152 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/notifiche"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Prossime partite</ion-title>
+    <ion-buttons slot="end">
+      <menu-utente></menu-utente>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="ricarica($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="pagina contenuto-largo">
+    @if (senzaScelte()) {
+      <!-- Niente da cercare: si spiega cosa serve e dove si sceglie. -->
+      <div class="vuota" data-vuota="scelte">
+        <ion-icon name="notifications-outline" aria-hidden="true"></ion-icon>
+        <h2>Ancora nessuna partita da seguire</h2>
+        <p>
+          Qui compaiono le partite per cui ti arriva un avviso: quelle delle squadre che segui e
+          quelle sui campi vicino a te.
+        </p>
+        <p>
+          Segui una squadra con la campanella nella scheda della sua società, oppure accendi le
+          partite vicine dalla pagina Notifiche.
+        </p>
+        <ion-button routerLink="/notifiche" class="vai-notifiche">
+          <ion-icon slot="start" name="notifications-outline"></ion-icon>
+          Vai a Notifiche
+        </ion-button>
+      </div>
+    } @else {
+      <p class="introduzione">{{ introduzione() }}</p>
+
+      @if (senzaNotifiche()) {
+        <div class="avviso" data-avviso="spente">
+          <ion-icon name="information-circle-outline" aria-hidden="true"></ion-icon>
+          <p>
+            Su questo browser le notifiche non sono accese: le partite delle squadre che segui sono
+            qui, ma l’avviso non arriva.
+            <a routerLink="/notifiche">Accendile da Notifiche</a>.
+          </p>
+        </div>
+      }
+
+      @switch (stato()) {
+        @case ('caricamento') {
+          <div class="attesa"><ion-spinner name="crescent" aria-label="Attendere"></ion-spinner></div>
+        }
+        @case ('errore') {
+          <div class="vuota" data-vuota="errore">
+            <p>Le partite non sono disponibili in questo momento: riprova tra poco.</p>
+            <ion-button fill="outline" (click)="carica()">Riprova</ion-button>
+          </div>
+        }
+        @default {
+          @for (giorno of giorni(); track giorno.data) {
+            <section class="giorno" [attr.aria-label]="giorno.titolo">
+              <h2 class="titolo-giorno">
+                @if (giorno.vicino) {
+                  <span class="vicino">{{ giorno.vicino }}</span>
+                }
+                <span class="data">{{ giorno.titolo }}</span>
+              </h2>
+              <ol class="partite">
+                @for (partita of giorno.partite; track traccia(partita)) {
+                  <li class="partita">
+                    <p class="ora">
+                      <ion-icon name="time-outline" aria-hidden="true"></ion-icon>
+                      {{ oraDi(partita.dataOra) }}
+                    </p>
+                    <div class="dettagli">
+                      <p class="squadre">
+                        <span class="casa">{{ partita.casa }}</span>
+                        <span class="contro"> – </span>
+                        <span class="ospite">{{ partita.ospite }}</span>
+                      </p>
+                      <p class="campionato">
+                        <span>{{ partita.campionato }}</span>
+                        @if (partita.girone) {
+                          <span>Girone {{ partita.girone }}</span>
+                        }
+                        @if (partita.ente) {
+                          <span>{{ partita.ente }}</span>
+                        }
+                      </p>
+                      @let dove = doveSiGioca(partita.campo);
+                      <p class="campo">
+                        <ion-icon name="location-outline" aria-hidden="true"></ion-icon>
+                        @if (partita.campo) {
+                          <a [routerLink]="['/societa', partita.campo.id]">{{ dove ?? 'Scheda del campo' }}</a>
+                        } @else {
+                          <span>Campo non ancora su TrovaCampo</span>
+                        }
+                      </p>
+                      <ul class="avvisi">
+                        @for (avviso of partita.avvisi; track avviso.tipo) {
+                          <li class="avviso-partita" [attr.data-tono]="tonoAvviso(avviso)">
+                            <span class="motivo">
+                              <ion-icon
+                                [name]="avviso.tipo === 'squadra' ? 'people-outline' : 'location-outline'"
+                                aria-hidden="true"
+                              ></ion-icon>
+                              {{ motivo(avviso) }}
+                            </span>
+                            <span class="quando">
+                              <ion-icon
+                                [name]="
+                                  tonoAvviso(avviso) === 'inviato'
+                                    ? 'checkmark-circle'
+                                    : tonoAvviso(avviso) === 'previsto'
+                                      ? 'notifications-outline'
+                                      : 'notifications-off-outline'
+                                "
+                                aria-hidden="true"
+                              ></ion-icon>
+                              {{ statoAvviso(avviso) }}
+                            </span>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  </li>
+                }
+              </ol>
+            </section>
+          } @empty {
+            <div class="vuota" data-vuota="partite">
+              <ion-icon name="calendar-outline" aria-hidden="true"></ion-icon>
+              <h2>Nessuna partita in programma</h2>
+              <p>{{ nessunaPartita() }}</p>
+              <ion-button fill="outline" routerLink="/notifiche">Cambia le scelte</ion-button>
+            </div>
+          }
+          @if (elenco()?.altre) {
+            <p class="nota">Ci sono altre partite: qui si vedono le prime cento.</p>
+          }
+        }
+      }
+
+      <p class="nota piede">
+        Gli orari vengono dai programmi gare dei Comunicati Ufficiali: una partita spostata all’ultimo
+        momento può arrivare con l’orario vecchio.
+      </p>
+    }
+  </div>
+</ion-content>

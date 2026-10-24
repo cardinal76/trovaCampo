@@ -27,6 +27,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pagine/notifiche/notifiche.page').then((m) => m.NotifichePage),
   },
   {
+    // Le partite per cui arriva un avviso: si apre da Notifiche.
+    path: 'prossime-partite',
+    loadComponent: () =>
+      import('./pagine/prossime-partite/prossime-partite.page').then((m) => m.ProssimePartitePage),
+  },
+  {
     path: 'aggiungi',
     loadComponent: () => import('./pagine/aggiungi/aggiungi.page').then((m) => m.AggiungiPage),
   },

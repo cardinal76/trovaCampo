@@ -2,6 +2,9 @@ package it.trovacampo.api.notifiche;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.annotation.Id;
@@ -49,6 +52,17 @@ public class RegistroInviiMongo implements RegistroInvii {
     @Override
     public void annulla(String chiave) {
         mongo.remove(Query.query(Criteria.where("_id").is(chiave)), Invio.class);
+    }
+
+    @Override
+    public Set<String> giaPrenotati(Collection<String> chiavi) {
+        if (chiavi.isEmpty()) {
+            return Set.of();
+        }
+        // Una query sola, e solo gli _id: la pagina ne chiede qualche decina.
+        Query query = Query.query(Criteria.where("_id").in(chiavi));
+        query.fields().include("_id");
+        return mongo.find(query, Invio.class).stream().map(Invio::id).collect(Collectors.toSet());
     }
 
     /** Alla prima prenotazione e non all'avvio: il backend deve partire anche senza Mongo. */

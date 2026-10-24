@@ -24,9 +24,11 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -71,6 +73,11 @@ class PianificatoreNotificheTest {
         @Override
         public void annulla(String chiave) {
             prenotati.remove(chiave);
+        }
+
+        @Override
+        public Set<String> giaPrenotati(Collection<String> chiavi) {
+            return chiavi.stream().filter(prenotati::contains).collect(Collectors.toSet());
         }
     }
 
@@ -129,7 +136,8 @@ class PianificatoreNotificheTest {
     }
 
     private PianificatoreNotifiche pianificatore() {
-        return new PianificatoreNotifiche(iscrizioni, partite, campi, registro, invio, json, orologio);
+        return new PianificatoreNotifiche(
+                iscrizioni, new PartiteDaAvvisare(partite, campi), registro, invio, json, orologio);
     }
 
     /** LODIGIANI (prima squadra) – VIS SEZZE (seconda, "B"), in Eccellenza sul campo della Lodigiani. */
@@ -410,7 +418,43 @@ class PianificatoreNotificheTest {
     @Test
     void distanzaConHaversine() {
         // Roma Termini – Colosseo, circa 1,6 km.
-        assertThat(PianificatoreNotifiche.distanzaKm(41.9010, 12.5016, 41.8902, 12.4922))
+        assertThat(PartiteDaAvvisare.distanzaKm(41.9010, 12.5016, 41.8902, 12.4922))
                 .isBetween(1.3, 1.6);
+    }
+
+    /**
+     * L'ora che la pagina Prossime partite scrive ({@link TipoAvviso#previsto})
+     * è quella del giro che manda davvero l'avviso: si fanno girare i giri
+     * ogni cinque minuti e si guarda quando parte.
+     */
+    @Test
+    void lAvvisoParteAllOraCheDiceLaPagina() {
+        int[][] orari = {{15, 0}, {15, 2}, {15, 4}, {15, 5}, {15, 30}, {15, 33}, {16, 0}};
+        for (int[] orario : orari) {
+            for (TipoAvviso tipo : TipoAvviso.values()) {
+                calendario.clear();
+                iscritte.clear();
+                registro.prenotati.clear();
+                org.mockito.Mockito.clearInvocations(invio);
+                Partita partita = partitaAlle(orario[0], orario[1]);
+                Iscrizione chi =
+                        tipo == TipoAvviso.SQUADRA
+                                ? segue("tifoso", "412|eccellenza|regionali|")
+                                : vicinoA("vicino", LAT_CAMPO, LNG_CAMPO, 10);
+                // Dalle 13:00, un giro ogni cinque minuti, finché non parte.
+                orologio.adesso = ORE_14.withHour(13).atZone(ROMA).toInstant();
+                Instant partito = null;
+                while (partito == null && orologio.adesso.isBefore(partita.dataOra().toInstant())) {
+                    if (pianificatore().giro().mandate() > 0) {
+                        partito = orologio.adesso;
+                    }
+                    orologio.avanti(PianificatoreNotifiche.PASSO);
+                }
+                assertThat(partito)
+                        .as("%s alle %02d:%02d", tipo, orario[0], orario[1])
+                        .isEqualTo(tipo.previsto(partita.dataOra().toInstant()));
+                verify(invio, times(1)).invia(eq(chi), anyString(), any());
+            }
+        }
     }
 }

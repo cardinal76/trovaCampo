@@ -119,7 +119,8 @@ public class IscrizioniService {
         }
     }
 
-    private static double arrotonda(double gradi) {
+    /** Come si salva la posizione di un'iscrizione: anche la pagina Prossime partite fa lo stesso conto. */
+    static double arrotonda(double gradi) {
         return Math.round(gradi * 1000) / 1000.0;
     }
 

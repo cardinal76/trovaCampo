@@ -12,7 +12,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 /**
  * Un browser (o un telefono) iscritto alle notifiche, senza login: tutto
  * quello che TrovaCampo sa di chi lo usa sta qui, ed è solo quello che serve
- * a mandare gli avvisi che ha chiesto.
+ * a mandare gli avvisi che ha chiesto. Come {@link Destinatario} sceglie
+ * le partite da avvisare, in {@link PartiteDaAvvisare}.
  *
  * <p>L'id è l'impronta SHA-256 dell'endpoint push: l'endpoint lo conosce solo
  * quel browser (è un indirizzo lungo e casuale del servizio push), quindi
@@ -41,7 +42,8 @@ public record Iscrizione(
         Double lng,
         Integer raggioKm,
         Instant posizioneAggiornataIl,
-        Instant aggiornataIl) {
+        Instant aggiornataIl)
+        implements Destinatario {
 
     public static String idDi(String endpoint) {
         try {
@@ -50,10 +52,6 @@ public record Iscrizione(
         } catch (NoSuchAlgorithmException eccezione) {
             throw new IllegalStateException(eccezione);
         }
-    }
-
-    public boolean haPosizione() {
-        return lat != null && lng != null && raggioKm != null;
     }
 
     /** L'endpoint è una credenziale: nei log e nelle eccezioni non si stampa. */

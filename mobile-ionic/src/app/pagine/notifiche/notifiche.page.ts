@@ -14,7 +14,9 @@ import {
 import { addIcons } from 'ionicons';
 import {
   alertCircleOutline,
+  calendarOutline,
   checkmarkCircle,
+  chevronForward,
   helpCircleOutline,
   locateOutline,
   locationOutline,
@@ -125,7 +127,9 @@ export class NotifichePage {
   constructor() {
     addIcons({
       alertCircleOutline,
+      calendarOutline,
       checkmarkCircle,
+      chevronForward,
       helpCircleOutline,
       locateOutline,
       locationOutline,

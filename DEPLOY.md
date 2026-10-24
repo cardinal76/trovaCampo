@@ -213,6 +213,18 @@ Come funziona, in breve:
   non è isolata. Gli endpoint accettati sono solo di quei servizi
   (`trovacampo.notifiche.servizi-push` in `application.yml`).
 
+**La pagina Prossime partite** (`/prossime-partite`, dal riquadro «Vedi le
+prossime partite» in cima a Notifiche) elenca, giorno per giorno da oggi a
+sette giorni dopo, le partite per cui a quel browser arriva un avviso, con
+il motivo («Segui …», «A 2,4 km») e l'ora dell'avviso, o «Avviso inviato».
+La chiede a `POST /api/notifiche/prossime`, che non salva niente e risponde
+solo sulle scelte che il browser manda (squadre seguite, posizione
+arrotondata e raggio, e l'endpoint push se c'è, solo per cercare in
+`notifiche_inviate` gli avvisi già partiti): funziona anche con le notifiche
+spente e non mostra mai iscrizioni altrui. Sceglie le partite con la stessa
+regola del giro (`PartiteDaAvvisare`) e dalla stessa cache: pagina e
+notifiche dicono la stessa cosa, e presenze non riceve chiamate in più.
+
 Il sito è installabile (`manifest.webmanifest`), e il service worker
 (`public/sw.js`) serve solo alle notifiche: niente cache, quindi non trattiene
 versioni vecchie dopo un rilascio. `nginx.conf` del frontend lo serve con
