@@ -8,8 +8,8 @@
   "display": "standalone",
   "lang": "it",
   "dir": "ltr",
-  "theme_color": "#151B2E",
-  "background_color": "#F4F5F0",
+  "theme_color": "#0f5c3c",
+  "background_color": "#f5f8f4",
   "categories": ["sports"],
   "icons": [
     { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
