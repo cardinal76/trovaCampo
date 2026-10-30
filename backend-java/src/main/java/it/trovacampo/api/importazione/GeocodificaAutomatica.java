@@ -136,7 +136,7 @@ public class GeocodificaAutomatica {
      * Le ricerche da provare, in ordine: l'indirizzo ripulito, poi la sola
      * via senza civico. Senza doppioni, quando il civico non c'era.
      */
-    static List<String> tentativi(Societa societa) {
+    public static List<String> tentativi(Societa societa) {
         String via = pulisci(societa.getIndirizzoImpianto());
         String localita =
                 Stream.of(societa.getLocalitaImpianto(), societa.getProvinciaImpianto())
