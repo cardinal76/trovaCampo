@@ -48,6 +48,12 @@ export const routes: Routes = [
       import('./pagine/importazione/importazione.page').then((m) => m.ImportazionePage),
   },
   {
+    // Le ASD/SSD del Registro nazionale: lista commerciale, solo per chi
+    // amministra (login e ruolo li chiede la pagina, i dati il backend).
+    path: 'admin/prospect',
+    loadComponent: () => import('./pagine/prospect/prospect.page').then((m) => m.ProspectPage),
+  },
+  {
     // Prima di :id, che altrimenti prenderebbe "nuova" per un identificativo.
     path: 'admin/societa/nuova',
     data: { nuova: true },

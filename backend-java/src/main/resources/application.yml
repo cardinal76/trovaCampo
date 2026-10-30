@@ -47,6 +47,16 @@ trovacampo:
   anagrafica:
     url: ${ANAGRAFICA_URL:http://localhost:8080}
 
+  # La lista delle ASD/SSD dal Registro nazionale (RASD) di Sport e Salute:
+  # importazione lanciata a mano da /admin/prospect, vedi tools/prospect/README.md.
+  prospect:
+    rasd:
+      url: ${RASD_URL:https://registro.sportesalute.eu}
+      # Chi siamo, in ogni richiesta: niente finti browser.
+      user-agent: "TrovaCampo-prospect/0.1 (+https://trovacampo.footballer.it)"
+      # Almeno 1000: sotto il secondo il limitatore non scende comunque.
+      intervallo-ms: 1100
+
   # Notifiche push (Web Push) per chi segue una squadra o vuole le partite
   # vicine. Le chiavi VAPID, se VAPID_PUBBLICA e VAPID_PRIVATA non ci sono,
   # il backend le crea da solo e le tiene in Mongo (vedi DepositoChiaviVapid).

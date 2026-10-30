@@ -1,0 +1,42 @@
+.attesa {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 0;
+}
+
+.filtri {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.mappa {
+  height: 60vh;
+  min-height: 20rem;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.conteggio {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.azioni {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin: 0.75rem 0;
+}
+
+.stato,
+.fonti {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.errore {
+  margin: 0.5rem 0;
+}
