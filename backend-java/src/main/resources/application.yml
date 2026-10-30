@@ -23,7 +23,20 @@ trovacampo:
     origini: "*"
   nominatim:
     url: https://nominatim.openstreetmap.org
-    user-agent: "TrovaCampo/0.1 (progetto di analisi calcio dilettantistico)"
+    user-agent: "TrovaCampo/0.1 (+https://trovacampo.footballer.it; progetto di analisi calcio dilettantistico)"
+    # Fra due richieste a Nominatim, da qualsiasi parte del backend (usage
+    # policy: al massimo una al secondo).
+    intervallo: PT1.1S
+  # Gli indirizzi delle societa' del Registro RASD (collection prospect): vedi
+  # tools/prospect/INDIRIZZI_LAZIO.md per fonti e licenze.
+  indirizzi:
+    prospect:
+      collection: prospect
+    open-data:
+      # Censimento impianti sportivi di Roma e Provincia, Citta' metropolitana
+      # di Roma Capitale, CC0 1.0. Il catalogo CKAN scrive un IP interno nelle
+      # URL delle risorse: questa e' la stessa risorsa sull'host pubblico.
+      cmrc-url: https://opendata.cittametropolitanaroma.it/dataset/f1f8d5d1-3b6e-4111-8275-b95ab7ed8224/resource/98636f4f-77b1-427c-8047-010958cd3d17/download/impiantisportivi.csv
   seed:
     abilitato: true
   # Il Keycloak di presenze, che protegge solo /api/admin/** (importazione).

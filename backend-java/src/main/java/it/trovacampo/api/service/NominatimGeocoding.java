@@ -26,11 +26,14 @@ public class NominatimGeocoding implements Geocoding {
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
     private final RestClient client;
+    private final RitmoNominatim ritmo;
 
     public NominatimGeocoding(
             RestClient.Builder builder,
             @Value("${trovacampo.nominatim.url}") String url,
-            @Value("${trovacampo.nominatim.user-agent}") String userAgent) {
+            @Value("${trovacampo.nominatim.user-agent}") String userAgent,
+            RitmoNominatim ritmo) {
+        this.ritmo = ritmo;
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(TIMEOUT);
         requestFactory.setReadTimeout(TIMEOUT);
@@ -45,6 +48,7 @@ public class NominatimGeocoding implements Geocoding {
     @Override
     public Optional<Coordinate> geocodifica(String indirizzo) {
         try {
+            ritmo.attendi();
             RisultatoNominatim[] risultati =
                     client.get()
                             .uri(
