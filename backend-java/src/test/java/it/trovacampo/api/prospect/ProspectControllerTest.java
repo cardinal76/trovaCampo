@@ -7,14 +7,19 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import it.trovacampo.api.config.ConfigurazioneSicurezza;
+import it.trovacampo.api.indirizzi.Confidenza;
+import it.trovacampo.api.indirizzi.FonteIndirizzo;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -23,6 +28,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 /** La lista delle ASD/SSD è commerciale: solo con il ruolo trovacampo-admin. */
 @WebMvcTest(ProspectController.class)
@@ -35,6 +41,7 @@ class ProspectControllerTest {
     @MockitoBean private CollegamentoCampi collegamento;
     @MockitoBean private EsportazioneProspect esportazione;
     @MockitoBean private ProspectRepository repository;
+    @MockitoBean private ArricchimentoProspect arricchimento;
 
     private static JwtRequestPostProcessor conRuolo(String ruolo) {
         return jwt().jwt(token -> token.claim("preferred_username", "mario"))
@@ -117,10 +124,60 @@ class ProspectControllerTest {
 
     @Test
     void lExportScaricaProspectItaliaXlsx() throws Exception {
-        mockMvc.perform(get("/api/admin/prospect/export.xlsx").with(admin()))
+        // Il file si scrive in streaming, su un altro thread: si aspetta la fine
+        // prima di guardare la risposta, altrimenti i filtri di sicurezza e il
+        // thread dello streaming scrivono le intestazioni insieme (e in CI capita
+        // una ConcurrentModificationException).
+        MvcResult avviata =
+                mockMvc.perform(get("/api/admin/prospect/export.xlsx").with(admin()))
+                        .andExpect(request().asyncStarted())
+                        .andReturn();
+        mockMvc.perform(asyncDispatch(avviata))
                 .andExpect(status().isOk())
                 .andExpect(
                         header().string(
                                 "Content-Disposition", "attachment; filename=\"prospect_italia.xlsx\""));
+    }
+
+    @Test
+    void laGeocodificaSenzaProspectLoDiceENonFallisce() throws Exception {
+        when(arricchimento.avvia(any()))
+                .thenReturn(new ArricchimentoProspect.Avvio(
+                        false, ArricchimentoProspect.NESSUN_PROSPECT, ArricchimentoProspect.Stato.MAI_PARTITO));
+
+        mockMvc.perform(post("/api/admin/prospect/geocodifica")
+                        .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.avviato").value(false))
+                .andExpect(jsonPath("$.messaggio").value(ArricchimentoProspect.NESSUN_PROSPECT));
+    }
+
+    @Test
+    void laGeocodificaParteInSottofondo() throws Exception {
+        when(arricchimento.avvia(new ArricchimentoProspect.Richiesta(false, 20)))
+                .thenReturn(new ArricchimentoProspect.Avvio(
+                        true, "Ricerca avviata su 20 società",
+                        new ArricchimentoProspect.Stato(true, null, null, 20, 0, 0, 0, "In corso")));
+
+        mockMvc.perform(post("/api/admin/prospect/geocodifica?limite=20")
+                        .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.stato.daCercare").value(20));
+    }
+
+    @Test
+    void laCoperturaPerFonteEConfidenza() throws Exception {
+        when(collegamento.copertura())
+                .thenReturn(new CollegamentoCampi.Esito(
+                        10, 7, 6, Map.of(FonteIndirizzo.CAMPO_TROVACAMPO, 5, FonteIndirizzo.OPEN_DATA, 2),
+                        Map.of(), Map.of(Confidenza.ALTA, 5), true));
+
+        mockMvc.perform(get("/api/admin/prospect/copertura")
+                        .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.collegati").value(7))
+                .andExpect(jsonPath("$.copertura").value(70.0))
+                .andExpect(jsonPath("$.perFonte.OPEN_DATA").value(2));
+        mockMvc.perform(get("/api/admin/prospect/copertura")).andExpect(status().isUnauthorized());
     }
 }

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -33,7 +34,9 @@ import org.springframework.web.client.RestClient;
  * </ol>
  *
  * <p>Si accettano solo luoghi {@code leisure=pitch}, {@code sports_centre} o
- * {@code stadium} nel comune della sede, dentro il riquadro del Lazio. L'esito
+ * {@code stadium} nel comune della sede, dentro il riquadro del Lazio, che
+ * nel nome non dicano un altro sport. A Roma la seconda ricerca non si fa:
+ * un campo qualunque fra centinaia non è l'indirizzo di nessuno. L'esito
  * ha sempre confidenza BASSA: è un'ipotesi, da controllare. I dati sono
  * © OpenStreetMap contributors, licenza ODbL: l'attribuzione viaggia con
  * l'indirizzo.
@@ -48,6 +51,12 @@ public class RicercaCampiOsm {
     static final String RIQUADRO_LAZIO = "11.40,42.90,14.10,40.70";
 
     private static final Set<String> TIPI_CAMPO = Set.of("pitch", "sports_centre", "stadium");
+
+    /** Un campo che nel nome dice un altro sport ("ASD APRILIA RUGBY", prova vera) non è di una società di calcio. */
+    private static final Pattern ALTRI_SPORT =
+            Pattern.compile(
+                    "rugby|tennis|basket|pallavolo|volley|golf|padel|baseball|softball|atletica|nuoto|piscina|bocce",
+                    Pattern.CASE_INSENSITIVE);
 
     static final double PUNTEGGIO_PER_NOME = 0.4;
     static final double PUNTEGGIO_CAMPO_DEL_PAESE = 0.2;
@@ -87,21 +96,27 @@ public class RicercaCampiOsm {
         String nome = String.join(" ", NomiSocieta.parole(societa.denominazione()));
         if (!nome.isEmpty()) {
             Optional<IndirizzoMigliore> perNome =
-                    primoCampo(nome + " " + societa.comune(), societa, PUNTEGGIO_PER_NOME);
+                    primoCampo(nome + " " + societa.comune(), societa, PUNTEGGIO_PER_NOME, "osm-nome");
             if (perNome.isPresent()) {
                 return perNome;
             }
         }
-        return primoCampo("campo sportivo " + societa.comune(), societa, PUNTEGGIO_CAMPO_DEL_PAESE);
+        if (Comuni.chiave(societa.comune()).equals("roma")) {
+            // A Roma "un campo sportivo" è uno qualunque fra centinaia: non è un indirizzo.
+            return Optional.empty();
+        }
+        return primoCampo(
+                "campo sportivo " + societa.comune(), societa, PUNTEGGIO_CAMPO_DEL_PAESE, "osm-paese");
     }
 
     private Optional<IndirizzoMigliore> primoCampo(
-            String ricerca, SocietaDaLocalizzare societa, double punteggio) {
+            String ricerca, SocietaDaLocalizzare societa, double punteggio, String regola) {
         return luoghi(ricerca).stream()
                 .filter(luogo -> "leisure".equals(luogo.category()) && TIPI_CAMPO.contains(luogo.type()))
                 .filter(luogo -> Comuni.stesso(luogo.comune(), societa.comune()))
+                .filter(luogo -> luogo.name() == null || !ALTRI_SPORT.matcher(luogo.name()).find())
                 .findFirst()
-                .map(luogo -> luogo.indirizzo(punteggio));
+                .map(luogo -> luogo.indirizzo(punteggio, regola));
     }
 
     private List<Luogo> luoghi(String ricerca) {
@@ -145,7 +160,7 @@ public class RicercaCampiOsm {
                     .orElse("");
         }
 
-        IndirizzoMigliore indirizzo(double punteggio) {
+        IndirizzoMigliore indirizzo(double punteggio, String regola) {
             String via =
                     address == null
                             ? ""
@@ -157,12 +172,12 @@ public class RicercaCampiOsm {
                     comune(),
                     Double.parseDouble(lat),
                     Double.parseDouble(lon),
-                    Fonte.GEOCODING_OSM,
+                    FonteIndirizzo.GEOCODIFICA,
                     Confidenza.BASSA,
                     punteggio,
                     name,
                     name,
-                    Fonte.GEOCODING_OSM.attribuzione());
+                    regola);
         }
     }
 }

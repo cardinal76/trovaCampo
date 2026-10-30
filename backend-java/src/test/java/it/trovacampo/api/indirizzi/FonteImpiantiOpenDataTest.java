@@ -29,7 +29,7 @@ class FonteImpiantiOpenDataTest {
 
         assertThat(trovato).hasValueSatisfying(indirizzo -> {
             assertThat(indirizzo.indirizzo()).isEqualTo("Via Casal de' Pazzi, 16");
-            assertThat(indirizzo.fonte()).isEqualTo(Fonte.OPEN_DATA);
+            assertThat(indirizzo.fonte()).isEqualTo(FonteIndirizzo.OPEN_DATA);
             assertThat(indirizzo.confidenza()).isEqualTo(Confidenza.MEDIA);
             assertThat(indirizzo.haCoordinate()).isFalse();
             assertThat(indirizzo.attribuzione()).contains("CC0");

@@ -27,11 +27,9 @@ trovacampo:
     # Fra due richieste a Nominatim, da qualsiasi parte del backend (usage
     # policy: al massimo una al secondo).
     intervallo: PT1.1S
-  # Gli indirizzi delle societa' del Registro RASD (collection prospect): vedi
+  # Le fonti degli indirizzi delle societa' del Registro RASD (prospect): vedi
   # tools/prospect/INDIRIZZI_LAZIO.md per fonti e licenze.
   indirizzi:
-    prospect:
-      collection: prospect
     open-data:
       # Censimento impianti sportivi di Roma e Provincia, Citta' metropolitana
       # di Roma Capitale, CC0 1.0. Il catalogo CKAN scrive un IP interno nelle

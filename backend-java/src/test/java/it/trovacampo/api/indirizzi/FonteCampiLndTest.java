@@ -1,83 +1,76 @@
 package it.trovacampo.api.indirizzi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import it.trovacampo.api.indirizzi.FonteCampiLnd.CampoLnd;
+import it.trovacampo.api.anagrafica.AnagraficaPresenze;
+import it.trovacampo.api.dominio.Societa;
+import it.trovacampo.api.repository.SocietaRepository;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** Righe vere della collection societa, come le scrive la sincronizzazione con presenze. */
+/** Le regole del collegamento ai campi LND, con nomi veri dei comunicati e del registro. */
 class FonteCampiLndTest {
 
-    private static final CampoLnd ROMULEA =
-            new CampoLnd("SS ROMULEA", "ROMULEA", "VIA FARSALO 21", "ROMA", "RM", 41.88, 12.50, null);
-    private static final CampoLnd ARNARA =
-            new CampoLnd("A.S.D. ARNARA", "COMUNALE", "VIA MARITTIMA", "FROSINONE", "FR", 41.63, 13.35, "945001");
-    private static final CampoLnd ROMULEA_ALTRA =
-            new CampoLnd("ROMULEA", "COMUNALE", "VIA ROMA 1", "RIETI", "RI", null, null, null);
-    private static final CampoLnd SENZA_POSIZIONE =
-            new CampoLnd("SS ROMULEA", "ROMULEA B", "VIA FARSALO 23", "ROMA", "RM", null, null, null);
+    private final SocietaRepository societa = mock(SocietaRepository.class);
+    private final AnagraficaPresenze anagrafica = mock(AnagraficaPresenze.class);
+    private final FonteCampiLnd fonte = new FonteCampiLnd(societa, anagrafica);
 
-    @Test
-    void stessoNomeNelloStessoComuneEConfidenzaAlta() {
-        var trovato =
-                FonteCampiLnd.cerca(
-                        new SocietaDaLocalizzare("A.S.D. ROMULEA", "Roma (RM)"),
-                        List.of(SENZA_POSIZIONE, ROMULEA, ARNARA));
-
-        assertThat(trovato).hasValueSatisfying(indirizzo -> {
-            assertThat(indirizzo.indirizzo()).isEqualTo("VIA FARSALO 21");
-            assertThat(indirizzo.fonte()).isEqualTo(Fonte.CAMPI_LND);
-            assertThat(indirizzo.confidenza()).isEqualTo(Confidenza.ALTA);
-            // A parità di nome, il campo che ha già la posizione.
-            assertThat(indirizzo.lat()).isEqualTo(41.88);
-        });
+    private static Societa campo(String id, String nome, String indirizzo, String comune, Double lat) {
+        return new Societa().setId(id).setNomeSocieta(nome).setNomeImpianto("COMUNALE")
+                .setIndirizzoImpianto(indirizzo).setLocalitaImpianto(comune).setLat(lat).setLng(lat);
     }
 
     @Test
-    void ilCampoInUnAltroComuneDellaProvinciaSeLaSocietaEUnica() {
-        var trovato =
-                FonteCampiLnd.cerca(new SocietaDaLocalizzare("ARNARA", "ARNARA"), List.of(ROMULEA, ARNARA));
+    void stesseParoleDistintiveEConfidenzaAlta() {
+        when(societa.tuttiICampi()).thenReturn(List.of(campo("s1", "SS ROMULEA", "VIA FARSALO 21", "ROMA", 41.88)));
+        when(anagrafica.impianti()).thenReturn(List.of());
 
-        assertThat(trovato).hasValueSatisfying(indirizzo -> {
-            assertThat(indirizzo.comune()).isEqualTo("FROSINONE");
-            assertThat(indirizzo.confidenza()).isEqualTo(Confidenza.MEDIA);
-        });
+        assertThat(fonte.cerca(new SocietaDaLocalizzare("ASSOCIAZIONE SPORTIVA DILETTANTISTICA ROMULEA", "Roma")))
+                .hasValueSatisfying(trovato -> {
+                    assertThat(trovato.indirizzo()).isEqualTo("VIA FARSALO 21");
+                    assertThat(trovato.fonte()).isEqualTo(FonteIndirizzo.CAMPO_TROVACAMPO);
+                    assertThat(trovato.confidenza()).isEqualTo(Confidenza.ALTA);
+                    assertThat(trovato.regola()).isEqualTo("nome");
+                    assertThat(trovato.societaTrovaCampoId()).isEqualTo("s1");
+                });
     }
 
     @Test
-    void nienteAltroComuneSeIlNomeEDiPiuSocieta() {
-        // Una Romulea a Roma e una a Rieti: da Frascati non si sa quale.
-        assertThat(
-                        FonteCampiLnd.cerca(
-                                new SocietaDaLocalizzare("ROMULEA", "FRASCATI"), List.of(ROMULEA, ROMULEA_ALTRA)))
-                .isEmpty();
+    void unaSchedaSenzaPosizioneNonECandidata() {
+        when(societa.tuttiICampi()).thenReturn(List.of(campo("s1", "SS ROMULEA", "VIA FARSALO 21", "ROMA", null)));
+        when(anagrafica.impianti()).thenReturn(List.of());
+
+        assertThat(fonte.cerca(new SocietaDaLocalizzare("ROMULEA", "Roma"))).isEmpty();
     }
 
     @Test
-    void nienteAltroComuneInUnAltraProvincia() {
-        assertThat(FonteCampiLnd.cerca(new SocietaDaLocalizzare("ARNARA", "LATINA"), List.of(ARNARA)))
-                .isEmpty();
+    void unaParolaSolaNelloStessoComuneEConfidenzaMedia() {
+        when(societa.tuttiICampi())
+                .thenReturn(List.of(campo("s1", "A.S.D. PRENESTINO", "VIA PRENESTINA 1", "ROMA", 41.9)));
+        when(anagrafica.impianti()).thenReturn(List.of());
+
+        assertThat(fonte.cerca(new SocietaDaLocalizzare("VIRTUS PRENESTINO", "Roma (RM)")))
+                .hasValueSatisfying(trovato -> {
+                    assertThat(trovato.regola()).isEqualTo("parola+comune");
+                    assertThat(trovato.confidenza()).isEqualTo(Confidenza.MEDIA);
+                });
     }
 
     @Test
-    void laMatricolaFigcVinceSulNome() {
-        var trovato =
-                FonteCampiLnd.cerca(
-                        new SocietaDaLocalizzare("NOME DIVERSO NEL REGISTRO", "ARNARA", "01234567890", "0945001"),
-                        List.of(ROMULEA, ARNARA));
+    void iCampiSiLeggonoUnaVoltaFinoAllaRicarica() {
+        when(societa.tuttiICampi()).thenReturn(List.of());
+        when(anagrafica.impianti()).thenReturn(List.of());
 
-        assertThat(trovato).hasValueSatisfying(indirizzo -> {
-            assertThat(indirizzo.abbinatoA()).isEqualTo("A.S.D. ARNARA");
-            assertThat(indirizzo.confidenza()).isEqualTo(Confidenza.ALTA);
-        });
-    }
+        fonte.cerca(new SocietaDaLocalizzare("A", "ROMA"));
+        fonte.cerca(new SocietaDaLocalizzare("B", "ROMA"));
+        fonte.ricarica();
+        fonte.cerca(new SocietaDaLocalizzare("C", "ROMA"));
 
-    @Test
-    void sottoLaSogliaNiente() {
-        assertThat(
-                        FonteCampiLnd.cerca(
-                                new SocietaDaLocalizzare("A.S.D. ROMA CITY", "ROMA"), List.of(ROMULEA)))
-                .isEmpty();
+        verify(societa, times(2)).tuttiICampi();
+        verify(anagrafica, times(2)).impianti();
     }
 }

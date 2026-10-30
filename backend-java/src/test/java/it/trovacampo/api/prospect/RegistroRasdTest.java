@@ -10,6 +10,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import it.trovacampo.api.service.LimitatoreRichieste;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;

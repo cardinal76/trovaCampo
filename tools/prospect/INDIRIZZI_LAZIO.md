@@ -1,142 +1,165 @@
 # Indirizzi delle società di calcio del Lazio
 
-Il Registro RASD (registro.sportesalute.eu) dà codice fiscale, denominazione,
-comune e organismi affilianti, ma non l'indirizzo. Il modulo
-`backend-java/.../indirizzi` cerca **l'indirizzo del campo** di una società,
-con coordinate, fonte e confidenza. Obiettivo: almeno il 70% delle società di
-calcio del Lazio.
+Il Registro RASD dà codice fiscale, denominazione, comune della sede e
+organismi affilianti, ma non l'indirizzo. Qui si cerca **l'indirizzo del campo
+di gioco** delle società di calcio del Lazio in `prospect` (vedi `README.md`),
+con coordinate, fonte e confidenza. Obiettivo: almeno il 70%.
 
-## Come si usa
+Il codice: `backend-java/.../indirizzi` (fonti, normalizzazione dei nomi,
+`LocalizzatoreSocieta`) e `backend-java/.../prospect` (`CollegamentoCampi`,
+`ArricchimentoProspect`, che scrivono l'esito nei documenti `prospect`).
 
-Dal codice (per l'arricchimento della collection `prospect`):
+## Come si lancia
+
+Tutto dall'amministrazione, `/admin/prospect` (riquadro «Indirizzi del calcio
+nel Lazio»), o con `prospect.sh`; serve il ruolo `trovacampo-admin`.
+
+1. **Importa impianti open data** (`./prospect.sh opendata`, `POST
+   /api/admin/indirizzi/impianti-open-data`): scarica il censimento CC0 e lo
+   mette in `impianto_open_data`. Una richiesta sola; si rifà quando l'ente
+   aggiorna il file.
+2. **Collega ai campi** (`./prospect.sh collega`, `POST
+   /api/admin/prospect/collegamento`): campi LND e open data, subito, senza
+   chiamare Nominatim. Parte da solo anche a fine importazione del Lazio.
+3. **Cerca su OpenStreetMap** (`./prospect.sh geocodifica [limite]`, `POST
+   /api/admin/prospect/geocodifica?ritenta=false&limite=`): in sottofondo, per
+   chi è ancora senza indirizzo o senza posizione. Fino a tre richieste a
+   Nominatim per società, una al secondo: le circa 330 mancanti del Lazio sono
+   una ventina di minuti. Una società già cercata così non si ricerca, salvo
+   `ritenta=true`. Senza prospect del Lazio risponde 200 con il messaggio
+   «Nessun prospect di calcio del Lazio: va prima importato il Registro RASD».
+4. **Copertura** (`./prospect.sh copertura`, `GET
+   /api/admin/prospect/copertura`): totale, con indirizzo, con coordinate,
+   percentuale, per fonte e per confidenza.
+
+Per provare una società sola: `POST /api/admin/indirizzi/trova?geocoding=false`
+con `{"denominazione":"A.S.D. ROMULEA","comune":"ROMA"}`.
+
+Nel documento `prospect` finiscono `indirizzo`, `comuneCampo`, `nomeImpianto`,
+`lat`/`lng`, `fonteIndirizzo`, `confidenzaIndirizzo`, `collegamento` (la
+regola) e `geocodificaTentata`. Una fonte migliore prende il posto di una
+peggiore, mai il contrario.
+
+Dal codice, per chi deve localizzare una società fuori dai prospect:
 
 ```java
 Optional<IndirizzoMigliore> trovato =
-        localizzatoreSocieta.trova(new SocietaDaLocalizzare(denominazione, comune, codiceFiscale, codiceFigc));
-// oppure, senza chiamare Nominatim:
-localizzatoreSocieta.trova(societa, LocalizzatoreSocieta.Opzioni.SENZA_RETE);
+        localizzatoreSocieta.trova(new SocietaDaLocalizzare(denominazione, comune, codiceFiscale));
+localizzatoreSocieta.trova(societa, LocalizzatoreSocieta.Opzioni.SENZA_RETE); // senza Nominatim
 ```
-
-Dall'amministrazione (token Keycloak con ruolo `trovacampo-admin`):
-
-| Chiamata | Cosa fa |
-|---|---|
-| `POST /api/admin/indirizzi/impianti-open-data` | scarica e (re)importa il censimento open data in `impianto_open_data` (una richiesta) |
-| `POST /api/admin/indirizzi/arricchimento?geocoding=true&ritenta=false&limite=` | cerca l'indirizzo delle società di calcio del Lazio in `prospect`, in sottofondo; 202 se parte, 200 con `avviato:false` e il motivo se `prospect` non esiste, 409 se ne gira già uno |
-| `GET /api/admin/indirizzi/arricchimento` | a che punto è |
-| `GET /api/admin/indirizzi/copertura` | totale, con indirizzo, con coordinate, per fonte e per confidenza |
-| `POST /api/admin/indirizzi/trova?geocoding=false` | prova su una società: `{"denominazione":"A.S.D. ROMULEA","comune":"ROMA"}` |
-
-Gli esiti vanno in una collection a parte, **`indirizzo_prospect`**, con
-chiave il codice fiscale: l'arricchimento non scrive nei documenti di
-`prospect`. Una società cercata e non trovata ha la riga con `fonte` nulla e
-non si ricerca, salvo `ritenta=true` o una prima corsa fatta senza rete.
-
-Ordine consigliato dopo il rilascio: importare il censimento, lanciare
-l'arricchimento con `geocoding=false` (veloce, solo dati in Mongo), guardare
-la copertura, poi rilanciarlo con `geocoding=true` per le mancanti (una
-richiesta al secondo: qualche migliaio di società sono un'ora o due).
 
 ## Le fonti, in ordine
 
-### 1. Campi di gioco LND (collection `societa`)
+| Fonte (`fonteIndirizzo`) | Dati | Licenza / attribuzione |
+|---|---|---|
+| `CAMPO_TROVACAMPO` | schede di TrovaCampo: Comunicati Ufficiali LND, file importati, correzioni a mano | Comunicati Ufficiali LND - Comitato Regionale Lazio |
+| `CAMPO_PRESENZE` | anagrafica di presenze, `/api/pubblico/anagrafica/impianti` (393 impianti, 538 società con il campo) | Comunicati Ufficiali LND - Comitato Regionale Lazio |
+| `OPEN_DATA` | [Censimento impianti sportivi di Roma e Provincia](https://opendata.cittametropolitanaroma.it/dataset/censimento-impianti-sportivi-di-roma-e-provincia), Città metropolitana di Roma Capitale | **CC0 1.0** (citiamo comunque la fonte) |
+| `GEOCODIFICA` | OpenStreetMap via Nominatim | **ODbL 1.0**, «© OpenStreetMap contributors» |
 
-- **Cosa**: le coppie società–campo dei Comunicati Ufficiali del Comitato
-  Regionale Lazio LND, sincronizzate dall'anagrafica di presenze
-  (`/api/pubblico/anagrafica/impianti`) o importate dai file. Indirizzo e,
-  quasi sempre, coordinate.
-- **Licenza**: dati pubblicati nei Comunicati Ufficiali LND; già usati da
-  TrovaCampo. Attribuzione: "Comunicati Ufficiali LND - Comitato Regionale
-  Lazio".
-- **Consistenza** (30 ottobre 2026): presenze conosce 713 società (699 tolte
-  le righe di rinuncia/ripescaggio), **538 con il campo di casa** (77%), su
-  393 impianti (375 con coordinate). In TrovaCampo 561 righe, 491 società,
-  tutte con coordinate.
-- **Abbinamento**: matricola FIGC se c'è (ALTA); nome sopra soglia nel
-  comune della sede (ALTA da 0,9, MEDIA da 0,8); nome praticamente identico
-  (≥ 0,95) di una sola società LND della regione con il campo in un altro
-  comune **della stessa provincia** (MEDIA). Quest'ultima è l'unica eccezione
-  alla regola dello stesso comune, ed è frequente: "A.S.D. ARNARA" gioca a
-  Frosinone, "CASSINO CALCIO 1924" a Casalattico.
+Le coordinate di un indirizzo open data (il censimento non ne ha) vengono
+dalla geocodifica di TrovaCampo (`NominatimGeocoding`): anche loro ODbL.
+L'attribuzione viaggia con ogni esito (`IndirizzoMigliore.attribuzione`), ed è
+nel foglio «Fonti» dell'export e in fondo alla pagina.
 
-### 2. Censimenti open data degli impianti (collection `impianto_open_data`)
+### Il censimento open data
 
-| Dataset | Ente | Licenza | Esito |
-|---|---|---|---|
-| [Censimento impianti sportivi di Roma e Provincia](https://opendata.cittametropolitanaroma.it/dataset/censimento-impianti-sportivi-di-roma-e-provincia) | Città metropolitana di Roma Capitale | **CC0 1.0** | **usato**. 6.636 righe (impianto × disciplina), 3.319 impianti, **1.007 con calcio** (Calcio-11, Calcio-5, Calcio 8-7-9) in 130 comuni, 911 righe a Roma. **Senza coordinate**: solo nome, comune, municipio, indirizzo. Dati del 2012 (XML generato il 28/12/2012, metadati aggiornati il 1/7/2025). Il catalogo CKAN scrive nelle URL delle risorse un IP interno (`172.16.1.68`): l'importatore usa la stessa risorsa sull'host pubblico (in `application.yml`, `trovacampo.indirizzi.open-data.cmrc-url`). |
-| [Monitoraggio impianti sportivi](https://dati.lazio.it/dataset/4775d6b7-f1c0-4a8d-8129-1b41ea1e46d6) | Regione Lazio | CC BY 4.0 | **non scaricabile**: CSV e tracciato rispondono 500 (30/10/2026), datastore e SPARQL non lo hanno. Da riprovare: se torna, l'importatore va esteso alle sue colonne (attribuzione obbligatoria: "Regione Lazio"). |
-| [Centri Sportivi Municipali 2018](https://dati.comune.roma.it/catalog/dataset/acb9bbf0-9beb-409d-b5e8-b4407dec1aef) | Roma Capitale | CC BY | **scartato**: 362 palestre scolastiche, nessun campo da calcio. |
+6.636 righe (impianto × disciplina), 3.319 impianti, **1.007 con calcio**
+(Calcio-11, Calcio-5, Calcio 8-7-9) in 130 comuni della provincia di Roma.
+Solo nome, comune, municipio e indirizzo: **niente coordinate**, nessun dato
+di persone. Dati del 2012 (l'XML dice «generated 2012-12-28»), metadati
+aggiornati a luglio 2025. Il catalogo CKAN scrive nelle URL delle risorse un
+IP interno (`172.16.1.68`): l'importatore usa la stessa risorsa sull'host
+pubblico (`trovacampo.indirizzi.open-data.cmrc-url` in `application.yml`).
 
-Su dati.gov.it non risultano altri censimenti degli impianti per Lazio,
-Latina, Frosinone, Viterbo o Rieti.
+Cercati e scartati (30 ottobre 2026):
 
-- **Abbinamento**: sempre nel comune della sede. Il nome dell'impianto, tolte
-  le parole da impianto ("Centro Sportivo", "Stadio Comunale", "Parrocchia"),
-  confrontato con quello della società: MEDIA da 0,9, BASSA da 0,8. Oppure,
-  se la società porta solo il nome del paese ("A.S.D. CERVETERI") e nel
-  comune c'è **un solo** impianto con campo a 11: BASSA. Mai per Roma.
-- **Coordinate**: l'indirizzo si geocodifica con il geocoder di TrovaCampo
-  (`NominatimGeocoding`, stessa pulizia degli indirizzi dei comunicati);
-  l'attribuzione aggiunge "coordinate © OpenStreetMap contributors, ODbL".
-- **Nessun dato di persone**: il file ha solo dati degli impianti.
+- **Regione Lazio**, «Monitoraggio impianti sportivi» (dati.lazio.it, CC BY
+  4.0): il CSV e il tracciato rispondono 500, il datastore e lo SPARQL non lo
+  hanno. È l'unico che coprirebbe tutte e cinque le province: da riprovare.
+- **Roma Capitale**, «Centri Sportivi Municipali 2018» (CC BY): 362 palestre
+  scolastiche, nessun campo da calcio.
+- Su dati.gov.it nient'altro per Lazio, Latina, Frosinone, Viterbo, Rieti.
 
-### 3. OpenStreetMap via Nominatim (ultima risorsa)
+### OpenStreetMap
 
-- Due ricerche al massimo: "<nome senza forma giuridica> <comune>" e
-  "campo sportivo <comune>", `format=jsonv2`, `countrycodes=it`, riquadro del
-  Lazio (`bounded=1`). Si accettano solo `leisure=pitch`, `sports_centre`,
-  `stadium` nel comune della sede. **Confidenza sempre BASSA.**
-- **Usage policy** (operations.osmfoundation.org/policies/nominatim):
-  massimo una richiesta al secondo, User-Agent identificato
-  (`TrovaCampo/0.1 (+https://trovacampo.footballer.it; ...)`), niente uso
-  massivo. Tutte le chiamate a Nominatim del backend (anche la geocodifica
-  automatica dei campi) passano da `RitmoNominatim`, un intervallo unico di
-  1,1 s (`trovacampo.nominatim.intervallo`).
-- **Licenza**: ODbL 1.0. Attribuzione obbligatoria dove il dato si mostra:
-  "© OpenStreetMap contributors". Viaggia nel campo `attribuzione` di ogni
-  esito.
-- Prove fatte (30/10/2026, cinque richieste a mano): "Romulea, Roma" trova
-  `leisure=sports_centre` "SS Romulea", Via Farsalo 21; "campo sportivo
-  Ronciglione" trova il Campo Sportivo "Marco Bigi"; "Arnara campo sportivo"
-  e "Vicus Ronciglione" niente. Nessuna corsa di massa dal container.
+Due ricerche al massimo per società, `format=jsonv2`, `countrycodes=it`,
+riquadro del Lazio (`bounded=1`):
 
-## La normalizzazione dei nomi (`NomiSocieta`)
+1. «<nome senza forma giuridica> <comune>» (regola `osm-nome`);
+2. «campo sportivo <comune>» (`osm-paese`), **non a Roma**, dove un campo
+   qualunque fra centinaia non è l'indirizzo di nessuno.
 
-Prima del confronto: minuscolo, senza accenti e apostrofi; sigle puntate
-unite ("A.S.D." → asd, "S.S.D. a r.l." → ssd + rl); tolte le forme
-giuridiche (ASD, SSD, SSDARL, A.R.L., APD, ASDPOL, POL., Polisportiva,
-Associazione Sportiva Dilettantistica, a responsabilità limitata...), le
-parole generiche (calcio, football, club, F.C., sport), articoli e
-preposizioni, gli anni di fondazione; "S." davanti a un nome diventa "san".
+Si accettano solo `leisure=pitch|sports_centre|stadium` nel comune della
+sede, e non quelli che nel nome dicono un altro sport (rugby, tennis,
+basket...). **Confidenza sempre BASSA.** Usage policy: una richiesta al
+secondo per tutto il backend (`RitmoNominatim`, che usa lo stesso
+`LimitatoreRichieste` del registro), User-Agent
+`TrovaCampo/0.1 (+https://trovacampo.footballer.it; ...)`, nessuna corsa
+automatica.
 
-Somiglianza: coefficiente di Dice sulle parole rimaste, con un refuso
-tollerato nelle parole lunghe; 1 se i nomi senza spazi coincidono
-("TORBELLAMONACA" / "TOR BELLA MONACA"); almeno 0,85 se un nome di due o più
-parole è tutto contenuto nell'altro; ×0,75 se i due nomi hanno anni di
-fondazione diversi. **Soglia 0,8, sempre dentro lo stesso comune** (con la
-chiave di `Comuni`: "Roma (RM)", "ROMA", "Lido di Ostia" sono lo stesso
-comune). I casi reali sono in `NomiSocietaTest`.
+## Normalizzazione e regole
 
-## Copertura stimata
+Una sola normalizzazione, `indirizzi.NomiSocieta`, per tutte le fonti:
+minuscolo, senza accenti e apostrofi; sigle puntate unite («A.S.D.» → asd,
+«S.S.D.R.L.» → ssdrl); via forme giuridiche e loro troncamenti del registro
+(ASD, SSD a r.l., APD, ASDPOL, POL., Polisportiva, «ASS.SPORTIVA DILETTANT.»,
+«a responsabilità limitata», «in forma abbreviata»...), parole generiche
+(calcio, football, club, F.C., C5), articoli, anni di fondazione. Il comune
+passa da `Comuni` («Roma (RM)», «Lido di Ostia» → roma) prima di diventare
+una chiave come i nomi.
 
-Il denominatore vero (le società di calcio del Lazio nel RASD) si saprà solo
-quando `prospect` sarà importato: `GET /api/admin/indirizzi/copertura` lo
-calcola. Stime al 30/10/2026:
+- **Campi LND** (`FonteCampiLnd`, le regole della #69): stesse parole
+  distintive (`nome`, `nome+comune`, ALTA); parole dell'una tutte nell'altra
+  (`parole`, `parole+comune`) o una parola sola nello stesso comune
+  (`parola+comune`), MEDIA. Nel dubbio non si collega.
+- **Open data** (`FonteImpiantiOpenData`): sempre nel comune della sede.
+  Somiglianza di Dice fra le parole della società e quelle del nome
+  dell'impianto senza «Centro Sportivo», «Stadio Comunale», «Parrocchia»:
+  soglia 0,8, MEDIA da 0,9. Un refuso è tollerato nelle parole lunghe, ma un
+  nome «contenuto» nell'altro vuole parole identiche. Oppure la società porta
+  solo il nome del paese e nel paese c'è un solo campo a 11
+  (`open-data+paese`, BASSA).
 
-- **Fonte 1 (LND)**: 538 società su 699 note a presenze, il **77% delle
-  società con una squadra nei campionati LND del Lazio**. Sul RASD la quota è
-  più bassa: il registro conta anche le società affiliate solo a enti di
-  promozione (CSI, UISP, AICS, OPES...), di calcio a 5 e di sola scuola
-  calcio, che nei comunicati LND non hanno un campo.
-- **Fonte 2 (open data)**: con il prototipo della normalizzazione circa 60
-  società LND hanno un impianto del censimento con lo stesso nome; il
-  guadagno vero è sulle società di Roma e provincia fuori dai campionati LND
-  (amatoriali, EPS) e sui paesi con un solo campo comunale. Copre solo la
-  provincia di Roma.
-- **Fonte 3 (OSM)**: da misurare con la corsa vera; resa attesa bassa nei
-  piccoli comuni (pochi campi con nome su OSM), confidenza sempre bassa.
+I casi reali sono nei test: `NomiSocietaTest`, `FonteCampiLndTest`,
+`CollegamentoCampiTest`, `FonteImpiantiOpenDataTest`, `RicercaCampiOsmTest`.
 
-Per arrivare al 70% sul RASD servono probabilmente: il dataset della Regione
-Lazio (se torna scaricabile, copre tutte e cinque le province), la matricola
-FIGC nel `prospect` (abbinamento esatto con i campi LND) e la sede legale
-delle società, quando il registro o un'altra fonte la daranno.
+## Copertura misurata (30 ottobre 2026)
+
+Sulle **823 società con affiliazione FIGC del Lazio** nel RASD (elenco
+pubblico letto a una richiesta al secondo, solo per la misura e poi
+cancellato), contro i 561 campi pubblici di TrovaCampo, l'anagrafica di
+presenze e il censimento, senza rete:
+
+| Fonte | Società | % | Cumulato |
+|---|---:|---:|---:|
+| `CAMPO_TROVACAMPO` | 433 | 52,6% | 52,6% |
+| `CAMPO_PRESENZE` | 37 (5 senza coordinate) | 4,5% | 57,1% |
+| `OPEN_DATA` | 26 (17 MEDIA, 9 BASSA) | 3,2% | **60,3%** |
+| `GEOCODIFICA` | stima | ~2-5% | ~62-65% |
+
+- La #69 misurava ~54% con le sue regole: la normalizzazione unica (che
+  riconosce più troncamenti del registro, «DILETTANT.», «SOC.», «C5»...) porta
+  i campi LND al 57,1% con le stesse regole.
+- OpenStreetMap: provate 7 società mancanti (14 richieste, una al secondo).
+  Una trovata in modo plausibile (LEGIO COLLEFERRO → Campo Sportivo Cedorelli,
+  Colleferro), due sbagliate (un campo da rugby ad Aprilia, un campo qualunque
+  a Roma) che hanno portato ai due filtri sopra, quattro niente. Resa bassa e
+  confidenza bassa: va guardato a mano.
+- Le 327 mancanti: 125 a Roma, 57 con «C5», «futsal» o «calcio a 5» nel nome
+  (giocano in palestre e palazzetti, che i comunicati del calcio a 11 non
+  hanno), più enti multisport, scuole calcio e società senza squadre nei
+  comunicati della stagione.
+
+## Cosa manca per il 70%
+
+Servono circa 80 società in più (576 su 823). In ordine di resa:
+
+1. **Il calcio a 5 nei comunicati**: il Comitato Lazio pubblica comunicati
+   anche per il calcio a 5; se presenze li leggesse, i loro campi entrerebbero
+   nella fonte 1 come quelli del calcio a 11.
+2. **Il dataset della Regione Lazio**, quando torna scaricabile: copre tutte e
+   cinque le province, il censimento della Città metropolitana solo Roma.
+3. **Correzioni a mano** dall'amministrazione delle società di Roma senza
+   campo: sono il grosso delle mancanti.
+4. OpenStreetMap per il resto, con confidenza bassa.

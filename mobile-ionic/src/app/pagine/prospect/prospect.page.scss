@@ -40,3 +40,22 @@
 .errore {
   margin: 0.5rem 0;
 }
+
+.indirizzi {
+  margin-top: 1rem;
+
+  h2 {
+    font-size: 1rem;
+    margin: 0 0 0.25rem;
+  }
+
+  .copertura {
+    margin: 0.25rem 0;
+  }
+
+  .per-fonte {
+    margin: 0 0 0.5rem;
+    padding-left: 1.25rem;
+    font-size: 0.9rem;
+  }
+}

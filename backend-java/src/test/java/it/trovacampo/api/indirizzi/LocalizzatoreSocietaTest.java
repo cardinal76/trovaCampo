@@ -22,32 +22,31 @@ class LocalizzatoreSocietaTest {
     private final LocalizzatoreSocieta localizzatore = new LocalizzatoreSocieta(lnd, openData, osm, geocoding);
 
     private static final SocietaDaLocalizzare KOLBE =
-            new SocietaDaLocalizzare("C.S. KOLBE PONTE MAMMOLO A.S.D", "ROMA", "97000000000", null);
+            new SocietaDaLocalizzare("C.S. KOLBE PONTE MAMMOLO A.S.D", "ROMA", "97000000000");
 
-    private static IndirizzoMigliore indirizzo(Fonte fonte, Double lat) {
+    private static IndirizzoMigliore indirizzo(FonteIndirizzo fonte, Double lat) {
         return new IndirizzoMigliore(
-                "Via Casal de' Pazzi, 16", "ROMA", lat, lat, fonte, Confidenza.MEDIA, 1, "x", "x",
-                fonte.attribuzione());
+                "Via Casal de' Pazzi, 16", "ROMA", lat, lat, fonte, Confidenza.MEDIA, 1, "x", "x", "prova");
     }
 
     @Test
     void laPrimaFonteCheRispondeVince() {
-        when(lnd.cerca(KOLBE)).thenReturn(Optional.of(indirizzo(Fonte.CAMPI_LND, 41.9)));
+        when(lnd.cerca(KOLBE)).thenReturn(Optional.of(indirizzo(FonteIndirizzo.CAMPO_TROVACAMPO, 41.9)));
 
         assertThat(localizzatore.trova(KOLBE)).hasValueSatisfying(
-                trovato -> assertThat(trovato.fonte()).isEqualTo(Fonte.CAMPI_LND));
+                trovato -> assertThat(trovato.fonte()).isEqualTo(FonteIndirizzo.CAMPO_TROVACAMPO));
         verifyNoInteractions(openData, osm, geocoding);
     }
 
     @Test
     void lIndirizzoOpenDataSenzaPosizioneSiGeocodifica() {
         when(lnd.cerca(KOLBE)).thenReturn(Optional.empty());
-        when(openData.cerca(KOLBE)).thenReturn(Optional.of(indirizzo(Fonte.OPEN_DATA, null)));
+        when(openData.cerca(KOLBE)).thenReturn(Optional.of(indirizzo(FonteIndirizzo.OPEN_DATA, null)));
         when(geocoding.geocodifica("VIA CASAL DE' PAZZI, 16, ROMA, Italia"))
                 .thenReturn(Optional.of(new Geocoding.Coordinate(41.93, 12.54)));
 
         assertThat(localizzatore.trova(KOLBE)).hasValueSatisfying(trovato -> {
-            assertThat(trovato.fonte()).isEqualTo(Fonte.OPEN_DATA);
+            assertThat(trovato.fonte()).isEqualTo(FonteIndirizzo.OPEN_DATA);
             assertThat(trovato.lat()).isEqualTo(41.93);
             assertThat(trovato.attribuzione()).contains("CC0", "OpenStreetMap");
         });
@@ -57,7 +56,7 @@ class LocalizzatoreSocietaTest {
     @Test
     void senzaReteNienteNominatim() {
         when(lnd.cerca(KOLBE)).thenReturn(Optional.empty());
-        when(openData.cerca(KOLBE)).thenReturn(Optional.of(indirizzo(Fonte.OPEN_DATA, null)));
+        when(openData.cerca(KOLBE)).thenReturn(Optional.of(indirizzo(FonteIndirizzo.OPEN_DATA, null)));
 
         assertThat(localizzatore.trova(KOLBE, LocalizzatoreSocieta.Opzioni.SENZA_RETE))
                 .hasValueSatisfying(trovato -> assertThat(trovato.haCoordinate()).isFalse());
@@ -68,10 +67,10 @@ class LocalizzatoreSocietaTest {
     void osmSoloComeUltimaRisorsa() {
         when(lnd.cerca(KOLBE)).thenReturn(Optional.empty());
         when(openData.cerca(KOLBE)).thenReturn(Optional.empty());
-        when(osm.cerca(KOLBE)).thenReturn(Optional.of(indirizzo(Fonte.GEOCODING_OSM, 41.9)));
+        when(osm.cerca(KOLBE)).thenReturn(Optional.of(indirizzo(FonteIndirizzo.GEOCODIFICA, 41.9)));
 
         assertThat(localizzatore.trova(KOLBE)).hasValueSatisfying(
-                trovato -> assertThat(trovato.fonte()).isEqualTo(Fonte.GEOCODING_OSM));
+                trovato -> assertThat(trovato.fonte()).isEqualTo(FonteIndirizzo.GEOCODIFICA));
         verify(geocoding, never()).geocodifica(anyString());
     }
 

@@ -87,6 +87,8 @@ class NomiSocietaTest {
         societaDiverse("ACADEMY GRIFONE", "F.C. MASSIMINA GRIFONE");
         societaDiverse("REAL TIBERINUS", "TIBERINUS");
         societaDiverse("A.S.D. ROMULEA", "A.S.D. ROMA CITY");
+        // Un refuso non basta per dire che un nome sta dentro l'altro (caso vero del censimento).
+        societaDiverse("A.S.D. SAN MARINO CALCIO", "C.S. Mario Paolucci - San Cleto");
     }
 
     @Test
@@ -114,5 +116,19 @@ class NomiSocietaTest {
         assertThat(Comuni.stesso("SANT'ORESTE", "Sant Oreste")).isTrue();
         assertThat(Comuni.stesso("ROMA", "RIETI")).isFalse();
         assertThat(Comuni.stesso(null, "")).isFalse();
+    }
+
+    @Test
+    void laDenominazioneLegaleDelRegistro() {
+        // I casi del collegamento dei prospect: denominazione RASD contro nome LND.
+        assertThat(NomiSocieta.chiave("ASS.SPORTIVA DILETTANT.VIS SUBIACO")).isEqualTo("vis subiaco");
+        assertThat(NomiSocieta.chiave("A.S.D. POLISPORTIVA SONNINO 1960")).isEqualTo("sonnino");
+        assertThat(NomiSocieta.chiave("SOCIETA' SPORTIVA DILETTANTISTICA ROMA CALCIO FEMMINILE S.R.L."))
+                .isEqualTo("roma femminile");
+        assertThat(NomiSocieta.chiave("S.S.D.R.L. ORIONE OGNISSANTI")).isEqualTo("orione ognissanti");
+        assertThat(NomiSocieta.chiave("S.S.D.COLONNA")).isEqualTo("colonna");
+        assertThat(NomiSocieta.chiave("AQUILOTTI LAZIO C5")).isEqualTo("aquilotti lazio");
+        assertThat(NomiSocieta.chiaveComune("Colonna (RM)")).isEqualTo("colonna");
+        assertThat(NomiSocieta.chiaveComune("Lido di Ostia")).isEqualTo("roma");
     }
 }

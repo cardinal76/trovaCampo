@@ -5,22 +5,45 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import it.trovacampo.api.anagrafica.AnagraficaPresenze;
 import it.trovacampo.api.dominio.Societa;
+import it.trovacampo.api.indirizzi.Confidenza;
+import it.trovacampo.api.indirizzi.FonteCampiLnd;
+import it.trovacampo.api.indirizzi.FonteImpiantiOpenData;
+import it.trovacampo.api.indirizzi.FonteIndirizzo;
+import it.trovacampo.api.indirizzi.ImpiantiOpenDataRepository;
+import it.trovacampo.api.indirizzi.ImpiantoOpenData;
+import it.trovacampo.api.indirizzi.LocalizzatoreSocieta;
+import it.trovacampo.api.indirizzi.RicercaCampiOsm;
 import it.trovacampo.api.repository.SocietaRepository;
+import it.trovacampo.api.service.Geocoding;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.ResourceAccessException;
 
-/** I prospect di calcio del Lazio prendono il campo dalle società che TrovaCampo ha già. */
+/**
+ * I prospect di calcio del Lazio prendono il campo dalle società che
+ * TrovaCampo ha già, poi dal censimento open data; senza rete, quindi senza
+ * Nominatim.
+ */
 class CollegamentoCampiTest {
 
     private final ProspectRepository prospect = mock(ProspectRepository.class);
     private final SocietaRepository societa = mock(SocietaRepository.class);
     private final AnagraficaPresenze anagrafica = mock(AnagraficaPresenze.class);
-    private final CollegamentoCampi collegamento = new CollegamentoCampi(prospect, societa, anagrafica);
+    private final ImpiantiOpenDataRepository openData = mock(ImpiantiOpenDataRepository.class);
+    private final RicercaCampiOsm osm = mock(RicercaCampiOsm.class);
+    private final Geocoding geocoding = mock(Geocoding.class);
+    private final FonteCampiLnd campiLnd = new FonteCampiLnd(societa, anagrafica);
+    private final CollegamentoCampi collegamento =
+            new CollegamentoCampi(
+                    prospect,
+                    new LocalizzatoreSocieta(campiLnd, new FonteImpiantiOpenData(openData), osm, geocoding),
+                    campiLnd);
 
     private static Prospect lazio(String cf, String denominazione, String comune) {
         return new Prospect()
@@ -56,10 +79,13 @@ class CollegamentoCampiTest {
         assertThat(subiaco.getNomeImpianto()).isEqualTo("COMUNALE");
         assertThat(subiaco.getLat()).isEqualTo(41.92);
         assertThat(subiaco.getFonteIndirizzo()).isEqualTo(FonteIndirizzo.CAMPO_TROVACAMPO);
+        assertThat(subiaco.getConfidenzaIndirizzo()).isEqualTo(Confidenza.ALTA);
         assertThat(subiaco.getSocietaTrovaCampoId()).isEqualTo("s1");
         assertThat(esito.collegati()).isEqualTo(1);
         assertThat(esito.copertura()).isEqualTo(100.0);
         verify(prospect).saveAll(List.of(subiaco));
+        // Il collegamento non chiama mai Nominatim.
+        verifyNoInteractions(osm, geocoding);
     }
 
     @Test
@@ -99,6 +125,7 @@ class CollegamentoCampiTest {
         // Due candidati per parole: vince quello nello stesso comune della sede.
         assertThat(p.getSocietaTrovaCampoId()).isEqualTo("b");
         assertThat(p.getCollegamento()).isEqualTo("parole+comune");
+        assertThat(p.getConfidenzaIndirizzo()).isEqualTo(Confidenza.MEDIA);
     }
 
     @Test
@@ -135,6 +162,56 @@ class CollegamentoCampiTest {
     }
 
     @Test
+    void senzaCampoLndIlCensimentoOpenData() {
+        Prospect kolbe = lazio("CF8", "C.S. KOLBE PONTE MAMMOLO A.S.D", "Roma");
+        when(prospect.findByRegioneAndCalcioTrue("Lazio")).thenReturn(List.of(kolbe));
+        when(societa.tuttiICampi()).thenReturn(List.of());
+        when(anagrafica.impianti()).thenReturn(List.of());
+        when(openData.findAll())
+                .thenReturn(List.of(new ImpiantoOpenData(
+                        "k", "cmrc-censimento", "CC0 1.0", "Centro Sportivo Kolbe Ponte Mammolo", "ROMA", null,
+                        "Via Casal de' Pazzi, 16", List.of("Calcio-11"), null, null, null)));
+
+        CollegamentoCampi.Esito esito = collegamento.collega();
+
+        assertThat(kolbe.getFonteIndirizzo()).isEqualTo(FonteIndirizzo.OPEN_DATA);
+        assertThat(kolbe.getIndirizzo()).isEqualTo("Via Casal de' Pazzi, 16");
+        assertThat(kolbe.getLat()).isNull();
+        assertThat(kolbe.getCollegamento()).isEqualTo("open-data");
+        assertThat(esito.perFonte()).containsEntry(FonteIndirizzo.OPEN_DATA, 1);
+    }
+
+    @Test
+    void unaFontePeggioreNonPrendeIlPostoDiUnaMigliore() {
+        Prospect p = lazio("CF9", "A.S.D. X", "Roma")
+                .setFonteIndirizzo(FonteIndirizzo.CAMPO_TROVACAMPO)
+                .setIndirizzo("VIA LND 1");
+        var openData =
+                new it.trovacampo.api.indirizzi.IndirizzoMigliore(
+                        "VIA OPEN 2", "ROMA", null, null, FonteIndirizzo.OPEN_DATA, Confidenza.MEDIA, 0.9, "X", "X",
+                        "open-data");
+
+        assertThat(CollegamentoCampi.applica(p, openData, Instant.EPOCH)).isFalse();
+        assertThat(p.getIndirizzo()).isEqualTo("VIA LND 1");
+    }
+
+    @Test
+    void loStessoIndirizzoSenzaRetiTieneLeCoordinateGeocodificate() {
+        Prospect p = lazio("CF10", "A.S.D. X", "Roma")
+                .setFonteIndirizzo(FonteIndirizzo.OPEN_DATA)
+                .setIndirizzo("VIA OPEN 2")
+                .setLat(41.9)
+                .setLng(12.5);
+        var ritrovato =
+                new it.trovacampo.api.indirizzi.IndirizzoMigliore(
+                        "VIA OPEN 2", "ROMA", null, null, FonteIndirizzo.OPEN_DATA, Confidenza.MEDIA, 0.9, "X", "X",
+                        "open-data");
+
+        assertThat(CollegamentoCampi.applica(p, ritrovato, Instant.EPOCH)).isTrue();
+        assertThat(p.getLat()).isEqualTo(41.9);
+    }
+
+    @Test
     void nessunAbbinamentoNessunSalvataggio() {
         Prospect p = lazio("CF7", "GORILLA", "Roma");
         when(prospect.findByRegioneAndCalcioTrue("Lazio")).thenReturn(List.of(p));
@@ -146,13 +223,5 @@ class CollegamentoCampiTest {
 
         assertThat(esito.collegati()).isZero();
         verify(prospect, never()).saveAll(any());
-    }
-
-    @Test
-    void leParoleDistintiveTolgonoFormaGiuridicaEAnno() {
-        assertThat(NomiSocieta.chiave("A.S.D. POLISPORTIVA SONNINO 1960")).isEqualTo("sonnino");
-        assertThat(NomiSocieta.chiave("SOCIETA' SPORTIVA DILETTANTISTICA ROMA CALCIO FEMMINILE S.R.L."))
-                .isEqualTo("roma femminile");
-        assertThat(NomiSocieta.chiave("S.S.D.R.L. ORIONE OGNISSANTI")).isEqualTo("orione ognissanti");
     }
 }

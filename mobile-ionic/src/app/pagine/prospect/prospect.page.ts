@@ -27,7 +27,7 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { cloudDownload, play, refresh, stop, warning } from 'ionicons/icons';
+import { cloudDownload, link, location, play, refresh, stop, warning } from 'ionicons/icons';
 import * as L from 'leaflet';
 import { campoSuCanvas, immagineCampo } from '../../mappa/icona-campo';
 import {
@@ -43,7 +43,12 @@ import {
   AutenticazioneService,
   RUOLO_AMMINISTRATORE,
 } from '../../servizi/autenticazione.service';
-import { ProspectService, StatoImportazioneProspect } from '../../servizi/prospect.service';
+import {
+  CoperturaProspect,
+  ProspectService,
+  StatoGeocodifica,
+  StatoImportazioneProspect,
+} from '../../servizi/prospect.service';
 
 const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
 /** L'id del Lazio nel registro: il primo lotto. */
@@ -98,12 +103,18 @@ export class ProspectPage implements OnDestroy {
   readonly prospect = signal<Prospect[]>([]);
   readonly stato = signal<StatoImportazioneProspect | null>(null);
   readonly filtri = signal<FiltriProspect>(NESSUN_FILTRO);
+  readonly copertura = signal<CoperturaProspect | null>(null);
+  readonly geocodifica = signal<StatoGeocodifica | null>(null);
+  /** L'esito dell'ultima azione sugli indirizzi, da mostrare sotto i pulsanti. */
+  readonly avviso = signal<string | null>(null);
+  readonly testoFonte = TESTO_FONTE;
+  readonly fonti = Object.keys(TESTO_FONTE) as (keyof typeof TESTO_FONTE)[];
 
   readonly opzioni = computed(() => opzioniFiltri(this.prospect()));
   readonly visibili = computed(() => filtraProspect(this.prospect(), this.filtri()));
 
   constructor() {
-    addIcons({ cloudDownload, play, refresh, stop, warning });
+    addIcons({ cloudDownload, link, location, play, refresh, stop, warning });
     this.entra();
 
     effect(() => {
@@ -166,6 +177,49 @@ export class ProspectPage implements OnDestroy {
   aggiornaStato(): void {
     this.service.stato().subscribe({
       next: (stato) => this.stato.set(stato),
+      error: (e: Error) => this.errore.set(e.message),
+    });
+    this.service.copertura().subscribe({
+      next: (copertura) => this.copertura.set(copertura),
+      error: (e: Error) => this.errore.set(e.message),
+    });
+    this.service.statoGeocodifica().subscribe({
+      next: (stato) => this.geocodifica.set(stato),
+      error: (e: Error) => this.errore.set(e.message),
+    });
+  }
+
+  /** Campi LND e censimento open data, subito. */
+  collega(): void {
+    this.errore.set(null);
+    this.service.collega().subscribe({
+      next: (copertura) => {
+        this.copertura.set(copertura);
+        this.avviso.set(`Collegamento fatto: ${copertura.collegati} su ${copertura.prospectCalcioLazio}`);
+      },
+      error: (e: Error) => this.errore.set(e.message),
+    });
+  }
+
+  importaOpenData(): void {
+    this.errore.set(null);
+    this.service.importaOpenData().subscribe({
+      next: (esito) =>
+        this.avviso.set(
+          `Censimento importato: ${esito.impianti} impianti con calcio (${esito.licenza}). Ora «Collega ai campi».`,
+        ),
+      error: (e: Error) => this.errore.set(e.message),
+    });
+  }
+
+  /** OpenStreetMap per chi è ancora senza indirizzo, in sottofondo. */
+  cercaSuOsm(): void {
+    this.errore.set(null);
+    this.service.geocodifica().subscribe({
+      next: (avvio) => {
+        this.geocodifica.set(avvio.stato);
+        this.avviso.set(avvio.messaggio);
+      },
       error: (e: Error) => this.errore.set(e.message),
     });
   }

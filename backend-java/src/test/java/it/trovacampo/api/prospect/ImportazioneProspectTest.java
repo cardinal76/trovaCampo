@@ -17,6 +17,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import it.trovacampo.api.service.LimitatoreRichieste;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

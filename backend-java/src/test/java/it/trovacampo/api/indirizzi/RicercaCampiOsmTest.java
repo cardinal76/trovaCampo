@@ -6,6 +6,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import it.trovacampo.api.service.LimitatoreRichieste;
 import it.trovacampo.api.service.RitmoNominatim;
 import java.time.Duration;
 import org.hamcrest.Matchers;
@@ -20,7 +21,9 @@ class RicercaCampiOsmTest {
     private final RestClient.Builder builder = RestClient.builder().baseUrl("https://nominatim.example");
     private final MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
     private final RicercaCampiOsm osm =
-            new RicercaCampiOsm(builder.build(), new RitmoNominatim(Duration.ZERO));
+            new RicercaCampiOsm(
+                    builder.build(),
+                    new RitmoNominatim(new LimitatoreRichieste(Duration.ZERO, System::nanoTime, millisecondi -> {})));
 
     private static final String ROMULEA =
             """
@@ -50,7 +53,7 @@ class RicercaCampiOsmTest {
                 .hasValueSatisfying(indirizzo -> {
                     assertThat(indirizzo.indirizzo()).isEqualTo("Via Farsalo 21");
                     assertThat(indirizzo.lat()).isEqualTo(41.8836901);
-                    assertThat(indirizzo.fonte()).isEqualTo(Fonte.GEOCODING_OSM);
+                    assertThat(indirizzo.fonte()).isEqualTo(FonteIndirizzo.GEOCODIFICA);
                     assertThat(indirizzo.confidenza()).isEqualTo(Confidenza.BASSA);
                     assertThat(indirizzo.attribuzione()).contains("OpenStreetMap", "ODbL");
                 });
@@ -79,6 +82,25 @@ class RicercaCampiOsmTest {
         server.expect(queryParam("q", "campo%20sportivo%20Ronciglione")).andRespond(withServerError());
 
         assertThat(osm.cerca(new SocietaDaLocalizzare("A.S.D. VICUS", "Ronciglione"))).isEmpty();
+    }
+
+    @Test
+    void unCampoDiUnAltroSportNonVale_eARomaNienteCampoDelPaese() {
+        server.expect(queryParam("q", "campus%20aprilia%20Aprilia"))
+                .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+        server.expect(queryParam("q", "campo%20sportivo%20Aprilia"))
+                .andRespond(withSuccess(
+                        """
+                        [{"lat":"41.57","lon":"12.64","category":"leisure","type":"pitch","name":"ASD APRILIA RUGBY",
+                          "address":{"road":"Via della Meccanica","city":"Aprilia"}}]
+                        """,
+                        MediaType.APPLICATION_JSON));
+        server.expect(queryParam("q", "borgata%20tro%20sapienza%20Roma"))
+                .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+
+        assertThat(osm.cerca(new SocietaDaLocalizzare("A.S.D. CAMPUS APRILIA", "Aprilia"))).isEmpty();
+        assertThat(osm.cerca(new SocietaDaLocalizzare("A.S.D. BORGATA TRO SAPIENZA", "Roma"))).isEmpty();
+        server.verify();
     }
 
     @Test
