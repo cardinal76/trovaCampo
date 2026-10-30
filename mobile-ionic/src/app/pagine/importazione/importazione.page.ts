@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import {
   IonBackButton,
   IonButton,
@@ -52,6 +53,7 @@ import { ImportazioneService } from '../../servizi/importazione.service';
 @Component({
   selector: 'pagina-importazione',
   imports: [
+    RouterLink,
     IonBackButton,
     IonButton,
     IonButtons,

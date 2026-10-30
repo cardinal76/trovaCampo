@@ -1,0 +1,138 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/admin/importazione"></ion-back-button>
+    </ion-buttons>
+    <ion-title>ASD/SSD dal registro</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @switch (accesso()) {
+    @case ('in-corso') {
+      <div class="attesa">
+        <ion-spinner name="crescent"></ion-spinner>
+        <p>Accesso in corso…</p>
+      </div>
+    }
+    @case ('errore') {
+      <ion-card color="danger">
+        <ion-card-content>Il login non risponde. Riprova tra poco.</ion-card-content>
+      </ion-card>
+      <ion-button expand="block" (click)="entra()">Riprova</ion-button>
+    }
+    @case ('entrato') {
+      @if (!autenticazione.amministratore()) {
+        <ion-card color="warning" class="senza-ruolo">
+          <ion-card-content>
+            <ion-icon name="warning"></ion-icon>
+            Pagina riservata: serve il ruolo <strong>{{ ruolo }}</strong>.
+          </ion-card-content>
+        </ion-card>
+      } @else {
+        <div class="filtri">
+          <ion-select
+            label="Regione"
+            labelPlacement="stacked"
+            interface="popover"
+            [value]="filtri().regione"
+            (ionChange)="filtra('regione', $event.detail.value)"
+          >
+            <ion-select-option value="">Tutte</ion-select-option>
+            @for (regione of opzioni().regioni; track regione) {
+              <ion-select-option [value]="regione">{{ regione }}</ion-select-option>
+            }
+          </ion-select>
+          <ion-select
+            label="Disciplina"
+            labelPlacement="stacked"
+            interface="popover"
+            [value]="filtri().disciplina"
+            (ionChange)="filtra('disciplina', $event.detail.value)"
+          >
+            <ion-select-option value="">Tutte</ion-select-option>
+            @for (disciplina of opzioni().discipline; track disciplina) {
+              <ion-select-option [value]="disciplina">{{ disciplina }}</ion-select-option>
+            }
+          </ion-select>
+          <ion-select
+            label="Organismo"
+            labelPlacement="stacked"
+            interface="popover"
+            [value]="filtri().organismo"
+            (ionChange)="filtra('organismo', $event.detail.value)"
+          >
+            <ion-select-option value="">Tutti</ion-select-option>
+            @for (organismo of opzioni().organismi; track organismo) {
+              <ion-select-option [value]="organismo">{{ organismo }}</ion-select-option>
+            }
+          </ion-select>
+        </div>
+
+        @if (errore(); as messaggio) {
+          <ion-text color="danger"><p class="errore">{{ messaggio }}</p></ion-text>
+        }
+
+        @switch (dati()) {
+          @case ('caricamento') {
+            <div class="attesa"><ion-spinner name="crescent"></ion-spinner></div>
+          }
+          @case ('pronto') {
+            <p class="conteggio">
+              <strong>{{ visibili().length }}</strong> società sulla mappa su
+              {{ prospect().length }} con la posizione
+            </p>
+            <div class="mappa" #contenitoreMappa></div>
+          }
+        }
+
+        <div class="azioni">
+          <ion-button size="small" (click)="importaLazio()" [disabled]="stato()?.inCorso">
+            <ion-icon slot="start" name="play"></ion-icon>
+            Importa il Lazio
+          </ion-button>
+          <ion-button size="small" fill="outline" (click)="importaItalia()" [disabled]="stato()?.inCorso">
+            <ion-icon slot="start" name="play"></ion-icon>
+            Importa tutta Italia
+          </ion-button>
+          <ion-button size="small" fill="outline" color="danger" (click)="ferma()" [disabled]="!stato()?.inCorso">
+            <ion-icon slot="start" name="stop"></ion-icon>
+            Ferma
+          </ion-button>
+          <ion-button size="small" fill="clear" (click)="carica()">
+            <ion-icon slot="start" name="refresh"></ion-icon>
+            Aggiorna
+          </ion-button>
+          <ion-button size="small" fill="clear" (click)="esporta()">
+            <ion-icon slot="start" name="cloud-download"></ion-icon>
+            prospect_italia.xlsx
+          </ion-button>
+        </div>
+
+        @if (stato(); as s) {
+          <ion-note class="stato">
+            Ultima importazione: {{ s.inCorso ? 'in corso' : s.ultimo.stato }}
+            @if (s.ultimo.pagine) {
+              · {{ s.ultimo.pagine }} pagine, {{ s.ultimo.lette }} società lette, {{ s.ultimo.dettagli }} dettagli
+            }
+            @if (s.ultimo.regioneCorrente) {
+              · {{ s.ultimo.regioneCorrente }}
+            }
+            @if (s.ultimo.errore) {
+              <br />{{ s.ultimo.errore }}
+            }
+            @if (s.ultimo.collegamento; as c) {
+              <br />Lazio, calcio: {{ c.collegati }} su {{ c.prospectCalcioLazio }} con il campo
+            }
+          </ion-note>
+        }
+
+        <ion-note class="fonti">
+          Dati delle società: Registro nazionale delle attività sportive dilettantistiche (Sport e
+          Salute), parte pubblica; solo dati della persona giuridica. Campi: comunicati ufficiali LND
+          (TrovaCampo e presenze). Mappa e geocodifica © OpenStreetMap contributors, ODbL.
+        </ion-note>
+      }
+    }
+  }
+</ion-content>

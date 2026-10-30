@@ -382,6 +382,18 @@ dei **Campi esclusi** con **Riammetti** (`GET` e `DELETE
 /api/admin/esclusioni/{id}`): il campo torna alla sincronizzazione
 successiva, se presenze lo manda ancora.
 
+## Le ASD/SSD dal Registro nazionale (prospect)
+
+Una lista commerciale, solo per chi amministra: le ASD/SSD del Registro
+nazionale delle attività sportive dilettantistiche (Sport e Salute) nella
+collection `prospect`, con il campo di gioco per il calcio del Lazio, una
+mappa in `/admin/prospect` e l'export `prospect_italia.xlsx`. L'importazione
+parte **solo a mano**, dalla pagina o con `tools/prospect/prospect.sh`, gira
+in sottofondo nel backend a una richiesta al secondo e riprende da dove si
+era fermata. Il backend deve poter uscire verso `registro.sportesalute.eu`
+(come già verso Nominatim). Come lanciarla, limiti, GDPR e attribuzioni in
+`tools/prospect/README.md`.
+
 ## Memoria
 
 Il server ha già Keycloak, Postgres e lo Spring Boot di presenze. Per questo
