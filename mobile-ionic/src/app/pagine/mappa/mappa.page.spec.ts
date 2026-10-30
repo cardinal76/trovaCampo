@@ -558,11 +558,21 @@ describe('MappaPage', () => {
   /**
    * Da ZOOM_STEMMI il campo di una società con lo stemma lo mostra al posto
    * dell'icona del campo. I controlli sono subito dopo setView (senza
-   * animazione Leaflet aggiorna tutto nella stessa chiamata): l'immagine,
-   * che nei test non si scarica, non ha ancora avuto il tempo di fallire.
+   * animazione Leaflet aggiorna tutto nella stessa chiamata). L'immagine
+   * nei test non si scarica, e su un runner senza rete l'errore vero può
+   * arrivare prima dei controlli: lo si ferma prima che arrivi alla mappa.
+   * Gli errori finti dei test (isTrusted falso) passano.
    */
   describe('stemmi da vicino', () => {
     const STEMMA = 'https://play.lnd.it/lndimg/1/1-web.png';
+    const fermaErroriVeri = (evento: Event) => {
+      if (evento.isTrusted && evento.target instanceof HTMLImageElement) {
+        evento.stopImmediatePropagation();
+      }
+    };
+
+    beforeEach(() => window.addEventListener('error', fermaErroriVeri, true));
+    afterEach(() => window.removeEventListener('error', fermaErroriVeri, true));
 
     beforeEach(() => {
       campiDalServer = [
