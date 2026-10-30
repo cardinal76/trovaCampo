@@ -44,7 +44,8 @@ public class EsportazioneProspect {
                     "Comune campo",
                     "Lat",
                     "Lng",
-                    "Fonte indirizzo");
+                    "Fonte indirizzo",
+                    "Confidenza indirizzo");
 
     static final List<String> FONTI =
             List.of(
@@ -53,6 +54,10 @@ public class EsportazioneProspect {
                     "Solo dati della persona giuridica: nessun dato del legale rappresentante.",
                     "CAMPO_TROVACAMPO: campi di TrovaCampo (comunicati ufficiali LND, file importati, correzioni a mano).",
                     "CAMPO_PRESENZE: anagrafica di presenze, dai Comunicati Ufficiali del Comitato Regionale Lazio LND.",
+                    "OPEN_DATA: Censimento impianti sportivi di Roma e Provincia, Città metropolitana di Roma Capitale,"
+                            + " licenza CC0 1.0 (https://opendata.cittametropolitanaroma.it).",
+                    "GEOCODIFICA: campo trovato su OpenStreetMap per nome e comune, posizione indicativa"
+                            + " (confidenza bassa).",
                     "Coordinate e indirizzi geocodificati: © OpenStreetMap contributors, dati ODbL"
                             + " (https://www.openstreetmap.org/copyright).");
 
@@ -117,7 +122,8 @@ public class EsportazioneProspect {
         testo(riga, i++, p.getComuneCampo());
         numero(riga, i++, p.getLat());
         numero(riga, i++, p.getLng());
-        testo(riga, i, p.getFonteIndirizzo() == null ? null : p.getFonteIndirizzo().name());
+        testo(riga, i++, p.getFonteIndirizzo() == null ? null : p.getFonteIndirizzo().name());
+        testo(riga, i, p.getConfidenzaIndirizzo() == null ? null : p.getConfidenzaIndirizzo().name());
     }
 
     private static String unisci(List<String> valori) {

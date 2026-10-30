@@ -87,7 +87,8 @@ public class FonteImpiantiOpenData {
                     indirizzo(
                             migliore.impianto(),
                             migliore.valore() >= SOGLIA_MEDIA ? Confidenza.MEDIA : Confidenza.BASSA,
-                            migliore.valore()));
+                            migliore.valore(),
+                            "open-data"));
         }
         return campoDelPaese(societa, parole, impianti);
     }
@@ -106,21 +107,21 @@ public class FonteImpiantiOpenData {
         if (a11.size() != 1) {
             return Optional.empty();
         }
-        return Optional.of(indirizzo(a11.get(0), Confidenza.BASSA, PUNTEGGIO_CAMPO_DEL_PAESE));
+        return Optional.of(indirizzo(a11.get(0), Confidenza.BASSA, PUNTEGGIO_CAMPO_DEL_PAESE, "open-data+paese"));
     }
 
     private static IndirizzoMigliore indirizzo(
-            ImpiantoOpenData impianto, Confidenza confidenza, double punteggio) {
+            ImpiantoOpenData impianto, Confidenza confidenza, double punteggio, String regola) {
         return new IndirizzoMigliore(
                 impianto.indirizzo(),
                 impianto.comune(),
                 impianto.lat(),
                 impianto.lng(),
-                Fonte.OPEN_DATA,
+                FonteIndirizzo.OPEN_DATA,
                 confidenza,
                 punteggio,
                 impianto.nome(),
                 impianto.nome(),
-                Fonte.OPEN_DATA.attribuzione());
+                regola);
     }
 }

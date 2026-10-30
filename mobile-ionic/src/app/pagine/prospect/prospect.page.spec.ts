@@ -41,7 +41,25 @@ describe('ProspectPage', () => {
       'avvia',
       'ferma',
       'esporta',
+      'copertura',
+      'statoGeocodifica',
+      'collega',
+      'geocodifica',
+      'importaOpenData',
     ]);
+    servizio.copertura.and.returnValue(
+      of({
+        prospectCalcioLazio: 823,
+        collegati: 450,
+        conCoordinate: 430,
+        copertura: 54.7,
+        perFonte: { CAMPO_TROVACAMPO: 400, OPEN_DATA: 50 },
+        perConfidenza: {},
+      }),
+    );
+    servizio.statoGeocodifica.and.returnValue(
+      of({ inCorso: false, daCercare: 0, cercate: 0, trovate: 0, errori: 0, messaggio: 'mai' }),
+    );
     servizio.sullaMappa.and.returnValue(of(PROSPECT));
     servizio.stato.and.returnValue(
       of({
@@ -150,5 +168,24 @@ describe('ProspectPage', () => {
 
     expect(servizio.avvia).toHaveBeenCalledWith([12]);
     expect(pagina.stato()?.inCorso).toBeTrue();
+  });
+
+  it('mostra la copertura per fonte e lancia OpenStreetMap', async () => {
+    servizio.geocodifica.and.returnValue(
+      of({
+        avviato: true,
+        messaggio: 'Ricerca avviata su 300 società',
+        stato: { inCorso: true, daCercare: 300, cercate: 0, trovate: 0, errori: 0, messaggio: 'In corso' },
+      }),
+    );
+    await crea();
+
+    const testo = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(testo).toContain('su 823');
+    expect(testo).toContain('censimento impianti (open data): 50');
+
+    pagina.cercaSuOsm();
+    expect(pagina.geocodifica()?.inCorso).toBeTrue();
+    expect(pagina.avviso()).toBe('Ricerca avviata su 300 società');
   });
 });

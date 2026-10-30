@@ -52,11 +52,16 @@ public final class NomiSocieta {
                     "coop", "scarl", "as", "ss", "ac", "us", "gs", "sc", "cs", "ad", "ud", "pd", "sd",
                     "pol", "polisp", "polisportiva", "ass", "associazione", "societa", "sportiva",
                     "sportivo", "dilettantistica", "dilettantistico", "dilettanti", "unione",
-                    "circolo", "gruppo");
+                    "circolo", "gruppo",
+                    // Le abbreviazioni con cui il registro tronca la denominazione legale.
+                    "dilett", "dilettant", "dil", "assoc", "associaz", "soc", "ads", "acd", "acsd",
+                    "ssdsrl", "promozione", "sociale",
+                    // "... in forma abbreviata", "denominata anche ...", "sigla ...".
+                    "sigla", "breve", "denominata", "anche", "forma", "abbreviata");
 
     /** Parole che quasi ogni società di calcio ha nel nome: non distinguono. */
     private static final Set<String> PAROLE_GENERICHE =
-            Set.of("calcio", "football", "club", "fc", "cf", "afc", "sport");
+            Set.of("calcio", "football", "club", "fc", "cf", "afc", "sport", "c5", "a5", "c11", "11");
 
     /** Articoli e preposizioni: "Città di Ostia" e "Città Ostia" sono lo stesso nome. */
     private static final Set<String> PAROLE_VUOTE =
@@ -118,6 +123,24 @@ public final class NomiSocieta {
         return significative;
     }
 
+    /**
+     * Le parole distintive unite da uno spazio: la chiave con cui i campi LND
+     * si confrontano per nome esatto ("A.S.D. VIS SUBIACO" e "ASS.SPORTIVA
+     * DILETTANT.VIS SUBIACO" hanno la stessa chiave, "vis subiaco").
+     */
+    public static String chiave(String nome) {
+        return String.join(" ", parole(nome));
+    }
+
+    /**
+     * Il comune ridotto come un nome ({@link Comuni#chiave} più {@link #chiave}),
+     * per confrontarlo con la chiave di una società che porta il nome del paese:
+     * "S.S.D. COLONNA" con sede a "Colonna (RM)".
+     */
+    public static String chiaveComune(String comune) {
+        return chiave(Comuni.chiave(comune));
+    }
+
     /** Gli anni scritti nel nome: "LODIGIANI CALCIO 1972" ha [1972]. */
     static List<String> anni(String nome) {
         return paroleGrezze(nome).stream().filter(parola -> ANNO.matcher(parola).matches()).toList();
@@ -155,7 +178,7 @@ public final class NomiSocieta {
      * in comune (coefficiente di Dice), dove due parole lunghe che differiscono
      * per un refuso contano come uguali. Due nomi che, tolti gli spazi, sono la
      * stessa stringa ("TORBELLAMONACA" e "TOR BELLA MONACA") valgono 1; un nome
-     * di almeno due parole tutto contenuto nell'altro ("CASAL BERNOCCHI" in
+     * di almeno due parole identiche tutto contenuto nell'altro ("CASAL BERNOCCHI" in
      * "CVN CASAL BERNOCCHI") vale almeno 0,85. Due anni di fondazione diversi
      * tolgono un quarto: "ATLETICO 2000" e "ATLETICO 1999" restano sotto la soglia.
      */
@@ -171,7 +194,10 @@ public final class NomiSocieta {
             int comuni = paroleInComune(parole, altre);
             punteggio = 2.0 * comuni / (parole.size() + altre.size());
             List<String> corto = parole.size() <= altre.size() ? parole : altre;
-            if (corto.size() >= 2 && comuni == corto.size()) {
+            List<String> lungo = corto == parole ? altre : parole;
+            // Contenuto vuol dire parole identiche: con il refuso tollerato
+            // "SAN MARINO" starebbe dentro "MARIO PAOLUCCI SAN CLETO".
+            if (corto.size() >= 2 && lungo.containsAll(corto)) {
                 punteggio = Math.max(punteggio, 0.85);
             }
         }

@@ -1,11 +1,12 @@
-package it.trovacampo.api.prospect;
+package it.trovacampo.api.service;
 
 import java.time.Duration;
 import java.util.function.LongSupplier;
 
 /**
- * Tiene almeno {@code intervallo} fra l'inizio di una richiesta al registro e
- * quello della successiva: la card chiede al massimo una richiesta al
+ * Tiene almeno {@code intervallo} fra l'inizio di una richiesta e quello
+ * della successiva verso lo stesso servizio esterno (il Registro RASD,
+ * Nominatim tramite {@link RitmoNominatim}): al massimo una richiesta al
  * secondo, e sotto il secondo non si scende nemmeno configurandolo.
  *
  * <p>Orologio e attesa si passano da fuori perché i test li controllino

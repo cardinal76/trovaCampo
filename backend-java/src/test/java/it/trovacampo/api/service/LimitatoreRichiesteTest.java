@@ -1,4 +1,4 @@
-package it.trovacampo.api.prospect;
+package it.trovacampo.api.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

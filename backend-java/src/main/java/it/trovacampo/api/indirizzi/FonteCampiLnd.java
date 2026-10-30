@@ -1,238 +1,275 @@
 package it.trovacampo.api.indirizzi;
 
-import it.trovacampo.api.dominio.ProvinciaDalComune;
+import it.trovacampo.api.anagrafica.AnagraficaPresenze;
 import it.trovacampo.api.dominio.Societa;
+import it.trovacampo.api.repository.SocietaRepository;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Component;
 
 /**
- * Fonte 1: i campi di gioco dei Comunicati Ufficiali LND che TrovaCampo ha
- * già, nella collection {@code societa} (sincronizzati dall'anagrafica di
- * presenze o importati dai file del Comitato). Ogni riga è una coppia
- * società–campo dove gioca in casa.
+ * Fonte 1: il campo di gioco dai comunicati LND, cioè le schede di TrovaCampo
+ * (comunicati, file, correzioni a mano) e, in seconda battuta, l'anagrafica
+ * di presenze ({@code /api/pubblico/anagrafica/impianti}).
  *
- * <p>Gli abbinamenti, dal più sicuro:
+ * <p>Il registro non ha né la matricola FIGC né un indirizzo, e i comunicati
+ * non hanno il codice fiscale: il collegamento è per nome, ridotto alle
+ * parole che distinguono la società ({@link NomiSocieta#chiave}), con il
+ * comune a decidere fra più candidati. Le regole, dalla più sicura:
  *
  * <ol>
- *   <li>la matricola FIGC, se la società la porta e la riga pure: ALTA;
- *   <li>il nome, sopra la {@linkplain NomiSocieta#SOGLIA soglia}, fra le
- *       società che giocano nel comune della sede: ALTA da 0,9, MEDIA sotto;
- *   <li>il nome praticamente identico (da 0,95) a quello di una sola società
- *       LND in tutta la regione, con il campo in un altro comune della stessa
- *       provincia: MEDIA. È l'unica eccezione alla regola dello stesso comune,
- *       ed è quella che serve davvero: "A.S.D. ARNARA" ha sede ad Arnara e
- *       gioca a Frosinone, "CASSINO CALCIO 1924" gioca a Casalattico.
+ *   <li><b>nome</b>: stesse parole distintive, almeno due, o una sola che
+ *       non sia il comune di un altro campo: «COLONNA» vale per la società con
+ *       sede a Colonna, «FROSINONE» non vale per una società di Ripi;
+ *   <li><b>parole</b>: le parole di uno stanno tutte nell'altro, almeno due,
+ *       e il candidato è uno solo; se sono più d'uno decide il comune;
+ *   <li>con il comune uguale basta anche una parola sola, di almeno cinque
+ *       lettere e che non sia il comune («VIRTUS PRENESTINO» e «PRENESTINO»).
  * </ol>
+ *
+ * Nel dubbio non si collega: una società senza indirizzo si vede che manca,
+ * una con l'indirizzo di un'altra società no. Confidenza ALTA per
+ * {@code nome} e {@code nome+comune}, MEDIA per le regole sulle parole.
+ *
+ * <p>I candidati si rileggono al massimo ogni dieci minuti, o quando lo
+ * chiede {@link #ricarica()}: un collegamento fa centinaia di ricerche.
  */
 @Component
 public class FonteCampiLnd {
 
-    /** Le righe si rileggono da Mongo al massimo ogni dieci minuti: un arricchimento ne fa migliaia di ricerche. */
+    private static final Logger log = LoggerFactory.getLogger(FonteCampiLnd.class);
     private static final Duration VALIDITA = Duration.ofMinutes(10);
 
-    static final double SOGLIA_ALTA = 0.9;
-    static final double SOGLIA_ALTRO_COMUNE = 0.95;
-
-    private final MongoTemplate mongo;
+    private final SocietaRepository societa;
+    private final AnagraficaPresenze anagrafica;
     private final Clock orologio;
-    private List<CampoLnd> campi;
-    private Instant lettiIl;
+    private Indice indice;
+    private Instant lettoIl;
 
     @Autowired
-    public FonteCampiLnd(MongoTemplate mongo) {
-        this(mongo, Clock.systemUTC());
+    public FonteCampiLnd(SocietaRepository societa, AnagraficaPresenze anagrafica) {
+        this(societa, anagrafica, Clock.systemUTC());
     }
 
-    FonteCampiLnd(MongoTemplate mongo, Clock orologio) {
-        this.mongo = mongo;
+    FonteCampiLnd(SocietaRepository societa, AnagraficaPresenze anagrafica, Clock orologio) {
+        this.societa = societa;
+        this.anagrafica = anagrafica;
         this.orologio = orologio;
     }
 
-    /** Una riga di {@code societa}: solo quello che serve all'abbinamento. */
-    record CampoLnd(
+    /** Un campo dove una società gioca: da una scheda di TrovaCampo o da presenze. */
+    record Candidato(
+            String chiave,
+            Set<String> parole,
+            String comune,
+            FonteIndirizzo fonte,
             String nomeSocieta,
             String nomeImpianto,
             String indirizzo,
-            String comune,
-            String provincia,
+            String comuneCampo,
             Double lat,
             Double lng,
-            String matricola,
-            List<String> parole,
-            List<String> anni) {
+            String societaId,
+            Long impiantoId) {
 
-        /** Le parole del nome si estraggono una volta sola, non a ogni ricerca. */
-        CampoLnd(
-                String nomeSocieta,
-                String nomeImpianto,
-                String indirizzo,
-                String comune,
-                String provincia,
-                Double lat,
-                Double lng,
-                String matricola) {
-            this(nomeSocieta, nomeImpianto, indirizzo, comune, provincia, lat, lng, matricola,
-                    NomiSocieta.parole(nomeSocieta), NomiSocieta.anni(nomeSocieta));
-        }
-
-        static CampoLnd di(Societa societa) {
-            return new CampoLnd(
-                    societa.getNomeSocieta(),
-                    societa.getNomeImpianto(),
-                    societa.getIndirizzoImpianto(),
-                    societa.getLocalitaImpianto(),
-                    societa.getProvinciaImpianto(),
-                    societa.getLat(),
-                    societa.getLng(),
-                    societa.getMatricola());
-        }
-
-        boolean haIndirizzo() {
-            return indirizzo != null && !indirizzo.isBlank();
+        boolean conCoordinate() {
+            return lat != null && lng != null;
         }
     }
+
+    /** I candidati, anche per chiave, e se presenze ha risposto. */
+    record Indice(List<Candidato> candidati, Map<String, List<Candidato>> perChiave, boolean presenzeRaggiungibile) {
+
+        static Indice di(List<Candidato> candidati, boolean presenzeRaggiungibile) {
+            Map<String, List<Candidato>> perChiave = new LinkedHashMap<>();
+            for (Candidato candidato : candidati) {
+                perChiave.computeIfAbsent(candidato.chiave(), k -> new ArrayList<>()).add(candidato);
+            }
+            return new Indice(candidati, perChiave, presenzeRaggiungibile);
+        }
+    }
+
+    record Abbinamento(Candidato campo, String regola) {}
 
     public Optional<IndirizzoMigliore> cerca(SocietaDaLocalizzare societa) {
-        return cerca(societa, campi());
+        return abbina(societa.denominazione(), societa.comune(), indice()).map(FonteCampiLnd::indirizzo);
     }
 
-    /** Quante righe ha la fonte: per il report. */
-    public int righe() {
-        return campi().size();
+    /** Rilegge i campi adesso: all'inizio di un collegamento, perché valgano gli ultimi importati. */
+    public synchronized void ricarica() {
+        indice = null;
     }
 
-    synchronized List<CampoLnd> campi() {
+    /** Se all'ultima lettura presenze ha risposto. */
+    public boolean presenzeRaggiungibile() {
+        return indice().presenzeRaggiungibile();
+    }
+
+    synchronized Indice indice() {
         Instant adesso = orologio.instant();
-        if (campi == null || lettiIl.plus(VALIDITA).isBefore(adesso)) {
-            Query query = new Query();
-            query.fields()
-                    .include(
-                            "nomeSocieta", "nomeImpianto", "indirizzoImpianto", "localitaImpianto",
-                            "provinciaImpianto", "lat", "lng", "matricola");
-            campi =
-                    mongo.find(query, Societa.class).stream()
-                            .map(CampoLnd::di)
-                            .filter(CampoLnd::haIndirizzo)
+        if (indice == null || lettoIl.plus(VALIDITA).isBefore(adesso)) {
+            indice = leggi();
+            lettoIl = adesso;
+        }
+        return indice;
+    }
+
+    private Indice leggi() {
+        List<Candidato> candidati = new ArrayList<>();
+        for (Societa s : societa.tuttiICampi()) {
+            if (s.getLat() == null || s.getLng() == null) {
+                continue;
+            }
+            candidati.add(
+                    candidato(
+                            s.getNomeSocieta(), s.getLocalitaImpianto(), FonteIndirizzo.CAMPO_TROVACAMPO,
+                            s.getNomeImpianto(), s.getIndirizzoImpianto(), s.getLat(), s.getLng(), s.getId(),
+                            s.getAnagraficaImpiantoId()));
+        }
+        boolean presenzeRaggiungibile = true;
+        try {
+            for (AnagraficaPresenze.Impianto impianto : anagrafica.impianti()) {
+                if (impianto.societa() == null || impianto.indirizzo() == null || impianto.indirizzo().isBlank()) {
+                    continue;
+                }
+                for (AnagraficaPresenze.Riferimento r : impianto.societa()) {
+                    candidati.add(
+                            candidato(
+                                    r.denominazione(), impianto.comune(), FonteIndirizzo.CAMPO_PRESENZE,
+                                    impianto.nome(), impianto.indirizzo(), impianto.lat(), impianto.lng(), null,
+                                    impianto.id()));
+                }
+            }
+        } catch (RuntimeException e) {
+            // Senza presenze bastano i campi di TrovaCampo, che sono la fonte preferita.
+            presenzeRaggiungibile = false;
+            log.warn("Anagrafica di presenze non raggiungibile: solo i campi di TrovaCampo", e);
+        }
+        return Indice.di(candidati, presenzeRaggiungibile);
+    }
+
+    static Candidato candidato(
+            String nomeSocieta,
+            String comune,
+            FonteIndirizzo fonte,
+            String nomeImpianto,
+            String indirizzo,
+            Double lat,
+            Double lng,
+            String societaId,
+            Long impiantoId) {
+        List<String> parole = NomiSocieta.parole(nomeSocieta);
+        return new Candidato(
+                String.join(" ", parole), Set.copyOf(parole), NomiSocieta.chiaveComune(comune), fonte, nomeSocieta,
+                nomeImpianto, indirizzo, comune, lat, lng, societaId, impiantoId);
+    }
+
+    /** Il campo di una società del registro, se le regole ne trovano uno solo. */
+    static Optional<Abbinamento> abbina(String denominazione, String comune, Indice indice) {
+        List<String> lista = NomiSocieta.parole(denominazione);
+        if (lista.isEmpty()) {
+            return Optional.empty();
+        }
+        String chiave = String.join(" ", lista);
+        Set<String> parole = Set.copyOf(lista);
+        String comuneChiave = NomiSocieta.chiaveComune(comune);
+
+        List<Candidato> stessoNome = indice.perChiave().getOrDefault(chiave, List.of());
+        if (!stessoNome.isEmpty()) {
+            if (parole.size() >= 2) {
+                return Optional.of(new Abbinamento(migliore(stessoNome, comuneChiave), "nome"));
+            }
+            // Una parola sola: «MENTANA» per la società di Mentana va bene anche se
+            // gioca a Fonte Nuova; «FROSINONE» per una società di Ripi no.
+            if (chiave.equals(comuneChiave)) {
+                return Optional.of(new Abbinamento(migliore(stessoNome, comuneChiave), "nome+comune"));
+            }
+            boolean eUnComune = stessoNome.stream().anyMatch(c -> c.comune().equals(chiave));
+            return chiave.length() >= 4 && !eUnComune
+                    ? Optional.of(new Abbinamento(migliore(stessoNome, comuneChiave), "nome"))
+                    : Optional.empty();
+        }
+
+        Map<String, List<Candidato>> perParole = new LinkedHashMap<>();
+        Map<String, List<Candidato>> unaParolaStessoComune = new LinkedHashMap<>();
+        for (Candidato c : indice.candidati()) {
+            if (c.parole().isEmpty()) {
+                continue;
+            }
+            boolean contenuto = parole.containsAll(c.parole()) || c.parole().containsAll(parole);
+            if (!contenuto) {
+                continue;
+            }
+            Set<String> piccolo = c.parole().size() <= parole.size() ? c.parole() : parole;
+            if (piccolo.size() >= 2) {
+                perParole.computeIfAbsent(c.chiave(), k -> new ArrayList<>()).add(c);
+            } else {
+                String sola = piccolo.iterator().next();
+                if (sola.length() >= 5
+                        && !sola.equals(comuneChiave)
+                        && !sola.equals(c.comune())
+                        && c.comune().equals(comuneChiave)) {
+                    unaParolaStessoComune.computeIfAbsent(c.chiave(), k -> new ArrayList<>()).add(c);
+                }
+            }
+        }
+        if (perParole.size() == 1) {
+            List<Candidato> trovati = perParole.values().iterator().next();
+            return Optional.of(new Abbinamento(migliore(trovati, comuneChiave), "parole"));
+        }
+        if (perParole.size() > 1) {
+            List<List<Candidato>> nelComune =
+                    perParole.values().stream()
+                            .filter(l -> l.stream().anyMatch(c -> c.comune().equals(comuneChiave)))
                             .toList();
-            lettiIl = adesso;
+            return nelComune.size() == 1
+                    ? Optional.of(new Abbinamento(migliore(nelComune.get(0), comuneChiave), "parole+comune"))
+                    : Optional.empty();
         }
-        return campi;
+        if (unaParolaStessoComune.size() == 1) {
+            List<Candidato> trovati = unaParolaStessoComune.values().iterator().next();
+            return Optional.of(new Abbinamento(migliore(trovati, comuneChiave), "parola+comune"));
+        }
+        return Optional.empty();
     }
 
-    static Optional<IndirizzoMigliore> cerca(SocietaDaLocalizzare societa, List<CampoLnd> campi) {
-        Optional<IndirizzoMigliore> perMatricola = perMatricola(societa, campi);
-        if (perMatricola.isPresent()) {
-            return perMatricola;
-        }
-
-        List<String> parole = NomiSocieta.parole(societa.denominazione());
-        List<String> anni = NomiSocieta.anni(societa.denominazione());
-        List<Punteggio> punteggi =
-                campi.stream()
-                        .map(
-                                campo ->
-                                        new Punteggio(
-                                                campo,
-                                                NomiSocieta.somiglianza(
-                                                        parole, anni, campo.parole(), campo.anni())))
-                        .filter(punteggio -> punteggio.valore() >= NomiSocieta.SOGLIA)
-                        .toList();
-
-        Optional<Punteggio> stessoComune =
-                punteggi.stream()
-                        .filter(punteggio -> Comuni.stesso(punteggio.campo().comune(), societa.comune()))
-                        .max(MIGLIORE);
-        if (stessoComune.isPresent()) {
-            Punteggio migliore = stessoComune.get();
-            return Optional.of(
-                    indirizzo(
-                            migliore.campo(),
-                            migliore.valore() >= SOGLIA_ALTA ? Confidenza.ALTA : Confidenza.MEDIA,
-                            migliore.valore()));
-        }
-        return inAltroComune(societa, punteggi);
-    }
-
-    /**
-     * Il nome identico a una sola società LND della regione, con il campo nella
-     * stessa provincia. Si contano i nomi come li scrive LND: "SS ROMULEA" a
-     * Roma e "ROMULEA" a Rieti sono due società, e da Frascati non si sceglie.
-     */
-    private static Optional<IndirizzoMigliore> inAltroComune(
-            SocietaDaLocalizzare societa, List<Punteggio> punteggi) {
-        List<Punteggio> identici =
-                punteggi.stream().filter(punteggio -> punteggio.valore() >= SOGLIA_ALTRO_COMUNE).toList();
-        long societaDiverse =
-                identici.stream()
-                        .map(punteggio -> punteggio.campo().nomeSocieta().strip().toUpperCase())
-                        .distinct()
-                        .count();
-        if (societaDiverse != 1) {
-            return Optional.empty();
-        }
-        String provinciaSede = ProvinciaDalComune.sigla(societa.comune());
-        return identici.stream()
-                .filter(
-                        punteggio ->
-                                !provinciaSede.isEmpty()
-                                        && provinciaSede.equals(provinciaDelCampo(punteggio.campo())))
-                .max(MIGLIORE)
-                .map(punteggio -> indirizzo(punteggio.campo(), Confidenza.MEDIA, punteggio.valore()));
-    }
-
-    private static String provinciaDelCampo(CampoLnd campo) {
-        if (campo.provincia() != null && !campo.provincia().isBlank()) {
-            return campo.provincia().strip().toUpperCase();
-        }
-        return ProvinciaDalComune.sigla(campo.comune());
-    }
-
-    private static Optional<IndirizzoMigliore> perMatricola(
-            SocietaDaLocalizzare societa, List<CampoLnd> campi) {
-        String matricola = matricola(societa.codiceFigc());
-        if (matricola.isEmpty()) {
-            return Optional.empty();
-        }
+    /** Fra i campi della stessa società: TrovaCampo prima di presenze, con le coordinate, nel comune. */
+    private static Candidato migliore(List<Candidato> campi, String comune) {
         return campi.stream()
-                .filter(campo -> matricola.equals(matricola(campo.matricola())))
-                .max(Comparator.comparing((CampoLnd campo) -> campo.lat() != null))
-                .map(campo -> indirizzo(campo, Confidenza.ALTA, 1));
+                .min(
+                        Comparator.comparing((Candidato c) -> c.fonte() != FonteIndirizzo.CAMPO_TROVACAMPO)
+                                .thenComparing(c -> !c.conCoordinate())
+                                .thenComparing(c -> !c.comune().equals(comune)))
+                .orElseThrow();
     }
 
-    /** "0945580" e "945580" sono la stessa matricola. */
-    private static String matricola(String valore) {
-        if (valore == null) {
-            return "";
-        }
-        return valore.strip().replaceFirst("^0+", "");
-    }
-
-    private static IndirizzoMigliore indirizzo(CampoLnd campo, Confidenza confidenza, double punteggio) {
+    private static IndirizzoMigliore indirizzo(Abbinamento abbinamento) {
+        Candidato campo = abbinamento.campo();
+        boolean perNome = abbinamento.regola().startsWith("nome");
         return new IndirizzoMigliore(
-                campo.indirizzo().strip(),
-                campo.comune(),
+                campo.indirizzo() == null ? null : campo.indirizzo().strip(),
+                campo.comuneCampo(),
                 campo.lat(),
                 campo.lng(),
-                Fonte.CAMPI_LND,
-                confidenza,
-                punteggio,
+                campo.fonte(),
+                perNome ? Confidenza.ALTA : Confidenza.MEDIA,
+                1,
                 campo.nomeSocieta(),
                 campo.nomeImpianto(),
-                Fonte.CAMPI_LND.attribuzione());
+                campo.fonte().attribuzione(),
+                abbinamento.regola(),
+                campo.societaId(),
+                campo.impiantoId());
     }
-
-    private record Punteggio(CampoLnd campo, double valore) {}
-
-    /** Il nome più simile; a parità, il campo che ha già la posizione. */
-    private static final Comparator<Punteggio> MIGLIORE =
-            Comparator.comparingDouble(Punteggio::valore)
-                    .thenComparing(punteggio -> punteggio.campo().lat() != null);
 }

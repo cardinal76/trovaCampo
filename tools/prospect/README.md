@@ -71,7 +71,10 @@ anche ripetuto, `maxPagine`, `ricomincia`, `dettagli`):
 | `POST /api/admin/prospect/importazione` | avvia, 202; 409 se ce n'è già una |
 | `GET  /api/admin/prospect/importazione` | stato |
 | `POST /api/admin/prospect/importazione/ferma` | ferma dopo la richiesta in corso |
-| `POST /api/admin/prospect/collegamento` | collega il calcio laziale ai campi |
+| `POST /api/admin/prospect/collegamento` | collega il calcio laziale ai campi LND e al censimento open data |
+| `GET  /api/admin/prospect/copertura` | quanti hanno l'indirizzo, per fonte e confidenza |
+| `POST /api/admin/prospect/geocodifica` | OpenStreetMap per chi manca, in sottofondo (`ritenta`, `limite`) |
+| `GET  /api/admin/prospect/geocodifica` | a che punto è |
 | `GET  /api/admin/prospect` | i prospect con le coordinate, per la mappa |
 | `GET  /api/admin/prospect/export.xlsx` | `prospect_italia.xlsx` |
 
@@ -130,10 +133,10 @@ In ordine di preferenza, con la fonte scritta in `fonteIndirizzo`:
    comunicati LND, cioè i campi di TrovaCampo e, in seconda battuta,
    l'anagrafica di presenze (`/api/pubblico/anagrafica/impianti`). Fatto per il
    Lazio (`CollegamentoCampi`).
-2. `OPEN_DATA`: censimenti degli impianti (es. il CSV CC0 della Città
-   Metropolitana di Roma). Prossime consegne.
-3. `GEOCODIFICA`: denominazione + comune, con Nominatim (una richiesta al
-   secondo, User-Agent identificato, attribuzione ODbL). Prossime consegne.
+2. **`OPEN_DATA`**: il «Censimento impianti sportivi di Roma e Provincia»
+   della Città metropolitana (CC0), nel collegamento insieme ai campi LND.
+3. **`GEOCODIFICA`**: un campo su OpenStreetMap per nome e comune (Nominatim,
+   una richiesta al secondo, ODbL), in sottofondo, confidenza bassa.
 4. Il Registro Imprese è a pagamento: **non si usa**.
 
 Il registro non ha la matricola FIGC e i comunicati non hanno il codice
@@ -141,8 +144,10 @@ fiscale, quindi il collegamento è **per nome**: la denominazione ridotta alle
 parole che la distinguono (via forma giuridica, sigle puntate, «calcio»,
 anno di fondazione), con il comune a decidere fra più candidati. Nel dubbio
 non si collega. `collegamento` dice quale regola ha deciso (`nome`,
-`nome+comune`, `parole`, `parole+comune`, `parola+comune`): quelle «per
-parole» sono le prime da ricontrollare a mano.
+`nome+comune`, `parole`, `parole+comune`, `parola+comune`, poi `open-data`,
+`open-data+paese`, `osm-nome`, `osm-paese`) e `confidenzaIndirizzo` quanto
+fidarsi: quelle «per parole» e tutte le BASSA sono le prime da ricontrollare
+a mano. Fonti, regole, licenze e copertura misurata: **`INDIRIZZI_LAZIO.md`**.
 
 **Copertura stimata per il Lazio** (prova del 30 ottobre 2026 sulle 823
 società FIGC del registro, contro i 561 campi pubblici di TrovaCampo e
@@ -151,6 +156,8 @@ anche le coordinate. Il resto sono soprattutto società di calcio a 5 (che
 giocano in palestre e palazzetti, non nei campi dei comunicati del
 calcio a 11), enti multisport (gruppi sportivi militari, CUS) e società
 assenti dai comunicati della stagione: per loro servono i punti 2 e 3.
+Con la normalizzazione unica e il censimento open data la misura del 30
+ottobre sale al **60,3%** senza rete: dettagli in `INDIRIZZI_LAZIO.md`.
 
 ## Attribuzione
 

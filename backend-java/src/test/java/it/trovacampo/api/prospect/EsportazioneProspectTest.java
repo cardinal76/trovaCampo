@@ -2,6 +2,7 @@ package it.trovacampo.api.prospect;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import it.trovacampo.api.indirizzi.FonteIndirizzo;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;

@@ -6,7 +6,11 @@
 #   TOKEN=... ./prospect.sh prova                 # Lazio, due pagine sole
 #   TOKEN=... ./prospect.sh stato
 #   TOKEN=... ./prospect.sh ferma
-#   TOKEN=... ./prospect.sh collega               # collega il calcio laziale ai campi
+#   TOKEN=... ./prospect.sh collega               # campi LND e open data, subito
+#   TOKEN=... ./prospect.sh opendata              # (re)importa il censimento impianti open data
+#   TOKEN=... ./prospect.sh geocodifica [limite]  # OpenStreetMap per chi manca, in sottofondo
+#   TOKEN=... ./prospect.sh geostato              # a che punto e' la geocodifica
+#   TOKEN=... ./prospect.sh copertura             # quanti hanno l'indirizzo, per fonte
 #   TOKEN=... ./prospect.sh export [file.xlsx]    # prospect_italia.xlsx
 #
 # TOKEN e' un access token del Keycloak di presenze (client trovacampo-frontend)
@@ -14,7 +18,8 @@
 # produzione.
 set -euo pipefail
 
-URL="${TROVACAMPO_URL:-https://trovacampo.footballer.it}/api/admin/prospect"
+BASE="${TROVACAMPO_URL:-https://trovacampo.footballer.it}/api/admin"
+URL="${BASE}/prospect"
 : "${TOKEN:?Serve TOKEN: un access token di Keycloak con il ruolo trovacampo-admin}"
 AUTH=(-H "Authorization: Bearer ${TOKEN}")
 
@@ -39,13 +44,26 @@ case "$comando" in
   collega)
     curl -fsS -X POST "${AUTH[@]}" "${URL}/collegamento"
     ;;
+  opendata)
+    curl -fsS -X POST "${AUTH[@]}" "${BASE}/indirizzi/impianti-open-data"
+    ;;
+  geocodifica)
+    limite="${1:+?limite=$1}"
+    curl -fsS -X POST "${AUTH[@]}" "${URL}/geocodifica${limite}"
+    ;;
+  geostato)
+    curl -fsS "${AUTH[@]}" "${URL}/geocodifica"
+    ;;
+  copertura)
+    curl -fsS "${AUTH[@]}" "${URL}/copertura"
+    ;;
   export)
     file="${1:-prospect_italia.xlsx}"
     curl -fsS "${AUTH[@]}" -o "$file" "${URL}/export.xlsx"
     echo "Scritto $file"
     ;;
   *)
-    sed -n '2,15p' "$0"
+    sed -n '2,19p' "$0"
     exit 1
     ;;
 esac

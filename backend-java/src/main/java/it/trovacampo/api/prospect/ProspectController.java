@@ -1,5 +1,6 @@
 package it.trovacampo.api.prospect;
 
+import it.trovacampo.api.indirizzi.FonteIndirizzo;
 import java.util.List;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -32,16 +33,19 @@ public class ProspectController {
     private final CollegamentoCampi collegamento;
     private final EsportazioneProspect esportazione;
     private final ProspectRepository repository;
+    private final ArricchimentoProspect arricchimento;
 
     public ProspectController(
             ImportazioneProspect importazione,
             CollegamentoCampi collegamento,
             EsportazioneProspect esportazione,
-            ProspectRepository repository) {
+            ProspectRepository repository,
+            ArricchimentoProspect arricchimento) {
         this.importazione = importazione;
         this.collegamento = collegamento;
         this.esportazione = esportazione;
         this.repository = repository;
+        this.arricchimento = arricchimento;
     }
 
     /** I prospect con una posizione, per la mappa: solo i dati che la mappa mostra. */
@@ -109,10 +113,42 @@ public class ProspectController {
         return importazione.stato();
     }
 
-    /** Il collegamento ai campi del Lazio, adesso: per esempio dopo aver importato nuovi campi. */
+    /**
+     * Il collegamento ai campi del Lazio, adesso: campi LND e censimento open
+     * data, senza chiamare Nominatim. Per esempio dopo aver importato nuovi
+     * campi o il censimento.
+     */
     @PostMapping("/collegamento")
     public CollegamentoCampi.Esito collega() {
         return collegamento.collega();
+    }
+
+    /** Quante società di calcio del Lazio hanno l'indirizzo, per fonte e confidenza, senza cercare niente. */
+    @GetMapping("/copertura")
+    public CollegamentoCampi.Esito copertura() {
+        return collegamento.copertura();
+    }
+
+    /**
+     * La ricerca con la rete (geocodifica e OpenStreetMap) per chi è ancora
+     * senza indirizzo o senza posizione, in sottofondo: 202 se parte, 409 se
+     * ne gira già una, 200 con il motivo se non c'è niente da cercare
+     * (il registro non è ancora stato importato).
+     */
+    @PostMapping("/geocodifica")
+    public ResponseEntity<ArricchimentoProspect.Avvio> geocodifica(
+            @RequestParam(name = "ritenta", defaultValue = "false") boolean ritenta,
+            @RequestParam(name = "limite", required = false) Integer limite) {
+        ArricchimentoProspect.Avvio avvio = arricchimento.avvia(new ArricchimentoProspect.Richiesta(ritenta, limite));
+        if (avvio.avviato()) {
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(avvio);
+        }
+        return ResponseEntity.status(avvio.stato().inCorso() ? HttpStatus.CONFLICT : HttpStatus.OK).body(avvio);
+    }
+
+    @GetMapping("/geocodifica")
+    public ArricchimentoProspect.Stato statoGeocodifica() {
+        return arricchimento.stato();
     }
 
     @GetMapping("/export.xlsx")

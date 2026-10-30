@@ -1,5 +1,7 @@
 package it.trovacampo.api.prospect;
 
+import it.trovacampo.api.indirizzi.Confidenza;
+import it.trovacampo.api.indirizzi.FonteIndirizzo;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -57,6 +59,13 @@ public class Prospect {
     private FonteIndirizzo fonteIndirizzo;
     /** Come si è trovato il collegamento (per nome esatto, per parole, con il comune). */
     private String collegamento;
+    /** Quanto è sicuro l'indirizzo: vedi {@link Confidenza}. */
+    private Confidenza confidenzaIndirizzo;
+    /**
+     * Quando l'indirizzo si è cercato anche su OpenStreetMap: la ricerca con
+     * la rete non si ripete, salvo chiederlo. Vuoto se non si è mai cercato.
+     */
+    private Instant geocodificaTentata;
     /** La scheda di TrovaCampo da cui viene il campo, se viene da lì. */
     private String societaTrovaCampoId;
     /** L'impianto dell'anagrafica di presenze, se il campo viene da lì. */
@@ -250,6 +259,24 @@ public class Prospect {
 
     public Prospect setCollegamento(String collegamento) {
         this.collegamento = collegamento;
+        return this;
+    }
+
+    public Confidenza getConfidenzaIndirizzo() {
+        return confidenzaIndirizzo;
+    }
+
+    public Prospect setConfidenzaIndirizzo(Confidenza confidenzaIndirizzo) {
+        this.confidenzaIndirizzo = confidenzaIndirizzo;
+        return this;
+    }
+
+    public Instant getGeocodificaTentata() {
+        return geocodificaTentata;
+    }
+
+    public Prospect setGeocodificaTentata(Instant geocodificaTentata) {
+        this.geocodificaTentata = geocodificaTentata;
         return this;
     }
 

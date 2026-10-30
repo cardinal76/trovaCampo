@@ -56,4 +56,34 @@ describe('ProspectService', () => {
     http.expectOne(url).flush({}, { status: 403, statusText: 'Forbidden' });
     expect(((await risposta) as Error).message).toContain('trovacampo-admin');
   });
+
+  it('collega e chiede la copertura', async () => {
+    const collegati = firstValueFrom(service.collega());
+    await dopoIlToken();
+    const chiamata = http.expectOne(`${url}/collegamento`);
+    expect(chiamata.request.method).toBe('POST');
+    chiamata.flush({ prospectCalcioLazio: 10, collegati: 6, conCoordinate: 5, copertura: 60, perFonte: {}, perConfidenza: {} });
+    expect((await collegati).copertura).toBe(60);
+
+    const copertura = firstValueFrom(service.copertura());
+    await dopoIlToken();
+    http.expectOne(`${url}/copertura`).flush({ prospectCalcioLazio: 10, collegati: 6, conCoordinate: 5, copertura: 60, perFonte: { OPEN_DATA: 1 }, perConfidenza: {} });
+    expect((await copertura).perFonte.OPEN_DATA).toBe(1);
+  });
+
+  it('lancia la geocodifica e importa il censimento open data', async () => {
+    const avvio = firstValueFrom(service.geocodifica());
+    await dopoIlToken();
+    const chiamata = http.expectOne(`${url}/geocodifica`);
+    expect(chiamata.request.method).toBe('POST');
+    chiamata.flush({ avviato: false, messaggio: 'Nessun prospect', stato: { inCorso: false } });
+    expect((await avvio).messaggio).toBe('Nessun prospect');
+
+    const openData = firstValueFrom(service.importaOpenData());
+    await dopoIlToken();
+    const importa = http.expectOne(`${environment.apiUrl}/api/admin/indirizzi/impianti-open-data`);
+    expect(importa.request.method).toBe('POST');
+    importa.flush({ fonte: 'cmrc-censimento', licenza: 'CC0 1.0', righe: 6636, impianti: 1007, conCalcioA11: 480 });
+    expect((await openData).impianti).toBe(1007);
+  });
 });

@@ -392,7 +392,10 @@ parte **solo a mano**, dalla pagina o con `tools/prospect/prospect.sh`, gira
 in sottofondo nel backend a una richiesta al secondo e riprende da dove si
 era fermata. Il backend deve poter uscire verso `registro.sportesalute.eu`
 (come già verso Nominatim). Come lanciarla, limiti, GDPR e attribuzioni in
-`tools/prospect/README.md`.
+`tools/prospect/README.md`. Gli indirizzi dei campi (campi LND, censimento
+open data della Città metropolitana scaricato da
+`opendata.cittametropolitanaroma.it`, OpenStreetMap) si cercano dalla stessa
+pagina: fonti, licenze e ordine dei passi in `tools/prospect/INDIRIZZI_LAZIO.md`.
 
 ## Memoria
 

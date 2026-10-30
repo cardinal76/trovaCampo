@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, from, switchMap, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Prospect } from '../modelli/prospect';
+import { FonteIndirizzo, Prospect } from '../modelli/prospect';
 import { AutenticazioneService } from './autenticazione.service';
 import { messaggioErrore } from './errori-amministrazione';
 
@@ -22,6 +22,44 @@ export interface StatoImportazioneProspect {
     collegamento?: { prospectCalcioLazio: number; collegati: number; conCoordinate: number };
   };
   regioni: { regioneId: number; regione: string; prossimoStart: number; totale?: number; completata: boolean }[];
+}
+
+/**
+ * Quante società di calcio del Lazio hanno l'indirizzo del campo
+ * (GET /api/admin/prospect/copertura e POST /api/admin/prospect/collegamento).
+ */
+export interface CoperturaProspect {
+  prospectCalcioLazio: number;
+  collegati: number;
+  conCoordinate: number;
+  copertura: number;
+  perFonte: Partial<Record<FonteIndirizzo, number>>;
+  perConfidenza: Partial<Record<'ALTA' | 'MEDIA' | 'BASSA', number>>;
+}
+
+/** La ricerca degli indirizzi con OpenStreetMap, in sottofondo. */
+export interface StatoGeocodifica {
+  inCorso: boolean;
+  daCercare: number;
+  cercate: number;
+  trovate: number;
+  errori: number;
+  messaggio: string;
+}
+
+export interface AvvioGeocodifica {
+  avviato: boolean;
+  messaggio: string;
+  stato: StatoGeocodifica;
+}
+
+/** Il censimento degli impianti open data appena importato. */
+export interface EsitoOpenData {
+  fonte: string;
+  licenza: string;
+  righe: number;
+  impianti: number;
+  conCalcioA11: number;
 }
 
 /**
@@ -67,6 +105,43 @@ export class ProspectService {
   ferma(): Observable<StatoImportazioneProspect> {
     return this.conToken((headers) =>
       this.http.post<StatoImportazioneProspect>(`${this.url}/importazione/ferma`, null, { headers }),
+    );
+  }
+
+  copertura(): Observable<CoperturaProspect> {
+    return this.conToken((headers) =>
+      this.http.get<CoperturaProspect>(`${this.url}/copertura`, { headers }),
+    );
+  }
+
+  /** Il collegamento ai campi LND e al censimento open data, subito (senza OpenStreetMap). */
+  collega(): Observable<CoperturaProspect> {
+    return this.conToken((headers) =>
+      this.http.post<CoperturaProspect>(`${this.url}/collegamento`, null, { headers }),
+    );
+  }
+
+  /** La ricerca su OpenStreetMap per chi è ancora senza indirizzo, in sottofondo. */
+  geocodifica(): Observable<AvvioGeocodifica> {
+    return this.conToken((headers) =>
+      this.http.post<AvvioGeocodifica>(`${this.url}/geocodifica`, null, { headers }),
+    );
+  }
+
+  statoGeocodifica(): Observable<StatoGeocodifica> {
+    return this.conToken((headers) =>
+      this.http.get<StatoGeocodifica>(`${this.url}/geocodifica`, { headers }),
+    );
+  }
+
+  /** (Re)importa il censimento degli impianti sportivi in open data. */
+  importaOpenData(): Observable<EsitoOpenData> {
+    return this.conToken((headers) =>
+      this.http.post<EsitoOpenData>(
+        `${environment.apiUrl}/api/admin/indirizzi/impianti-open-data`,
+        null,
+        { headers },
+      ),
     );
   }
 

@@ -13,31 +13,30 @@ import org.springframework.stereotype.Component;
  * campi e la ricerca degli indirizzi delle società
  * ({@code it.trovacampo.api.indirizzi}) possono girare insieme, e insieme
  * devono restare sotto il limite. Chi chiama Nominatim passa da qui prima di
- * ogni richiesta.
+ * ogni richiesta. Il conto lo tiene un {@link LimitatoreRichieste}, lo
+ * stesso del Registro RASD.
  */
 @Component
 public class RitmoNominatim {
 
-    private final long intervalloNanos;
-    private long ultima = Long.MIN_VALUE;
+    private final LimitatoreRichieste limitatore;
 
     @Autowired
     public RitmoNominatim(@Value("${trovacampo.nominatim.intervallo:PT1.1S}") Duration intervallo) {
-        this.intervalloNanos = intervallo.toNanos();
+        this(new LimitatoreRichieste(intervallo));
+    }
+
+    /** Per i test, con un limitatore che non dorme davvero. */
+    public RitmoNominatim(LimitatoreRichieste limitatore) {
+        this.limitatore = limitatore;
     }
 
     /** Aspetta, se serve, che dall'ultima richiesta sia passato l'intervallo. */
-    public synchronized void attendi() {
-        if (ultima != Long.MIN_VALUE) {
-            long attesa = ultima + intervalloNanos - System.nanoTime();
-            if (attesa > 0) {
-                try {
-                    Thread.sleep(Duration.ofNanos(attesa));
-                } catch (InterruptedException eccezione) {
-                    Thread.currentThread().interrupt();
-                }
-            }
+    public void attendi() {
+        try {
+            limitatore.prima();
+        } catch (InterruptedException eccezione) {
+            Thread.currentThread().interrupt();
         }
-        ultima = System.nanoTime();
     }
 }
