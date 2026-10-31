@@ -62,6 +62,14 @@ services:
       # Ufficiali), per la stessa rete interna. I campi si importano a mano
       # da /admin/importazione.
       ANAGRAFICA_URL: http://presenze-backend:8080
+      # Il ritmo dell'importazione dal Registro RASD (DEPLOY.md, "Il ritmo
+      # dell'importazione"): si cambia nel .env; senza, i default prudenti.
+      # La finestra con "-" e non ":-", perche' vuota vuol dire "a ogni ora".
+      PROSPECT_RASD_PAUSA_MS: ${PROSPECT_RASD_PAUSA_MS:-3000}
+      PROSPECT_RASD_JITTER_MS: ${PROSPECT_RASD_JITTER_MS:-1000}
+      PROSPECT_RASD_FINESTRA: ${PROSPECT_RASD_FINESTRA-22:00-07:00}
+      PROSPECT_RASD_TETTO: ${PROSPECT_RASD_TETTO:-7000}
+      PROSPECT_RASD_DETTAGLIO_GIORNI: ${PROSPECT_RASD_DETTAGLIO_GIORNI:-30}
       # Senza un limite la JVM si prende un quarto della RAM dell'host, non
       # del container.
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75

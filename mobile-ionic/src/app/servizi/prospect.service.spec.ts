@@ -50,6 +50,23 @@ describe('ProspectService', () => {
     expect((await risposta).inCorso).toBeTrue();
   });
 
+  it('sceglie i dettagli e riprende l\'ultimo giro', async () => {
+    const avvio = firstValueFrom(service.avvia([], undefined, 'FIGC'));
+    await dopoIlToken();
+    const chiamata = http.expectOne((r) => r.url === `${url}/importazione`);
+    expect(chiamata.request.params.get('dettagli')).toBe('figc');
+    expect(chiamata.request.params.has('regioni')).toBeFalse();
+    chiamata.flush({ inCorso: true, ultimo: {}, regioni: [] });
+    await avvio;
+
+    const ripresa = firstValueFrom(service.riprendi());
+    await dopoIlToken();
+    const riprendi = http.expectOne(`${url}/importazione/riprendi`);
+    expect(riprendi.request.method).toBe('POST');
+    riprendi.flush({ inCorso: true, ultimo: {}, regioni: [] });
+    expect((await ripresa).inCorso).toBeTrue();
+  });
+
   it('senza il ruolo dice cosa manca', async () => {
     const risposta = firstValueFrom(service.sullaMappa()).catch((e: Error) => e);
     await dopoIlToken();
