@@ -59,3 +59,30 @@
     font-size: 0.9rem;
   }
 }
+
+.importazione .ambito {
+  max-width: 20rem;
+}
+
+.blocco ion-icon {
+  vertical-align: middle;
+  margin-right: 0.25rem;
+}
+
+.stato-importazione {
+  font-size: 0.9rem;
+
+  .fase {
+    margin: 0.25rem 0;
+    font-weight: 600;
+
+    ion-icon {
+      vertical-align: middle;
+    }
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 1.25rem;
+  }
+}

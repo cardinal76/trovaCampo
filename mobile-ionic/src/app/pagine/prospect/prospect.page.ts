@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import {
   Component,
   ElementRef,
@@ -27,7 +28,17 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { cloudDownload, link, location, play, refresh, stop, warning } from 'ionicons/icons';
+import {
+  cloudDownload,
+  link,
+  location,
+  pause,
+  play,
+  playForward,
+  refresh,
+  stop,
+  warning,
+} from 'ionicons/icons';
 import * as L from 'leaflet';
 import { campoSuCanvas, immagineCampo } from '../../mappa/icona-campo';
 import {
@@ -44,10 +55,13 @@ import {
   RUOLO_AMMINISTRATORE,
 } from '../../servizi/autenticazione.service';
 import {
+  AmbitoDettagli,
   CoperturaProspect,
   ProspectService,
   StatoGeocodifica,
   StatoImportazioneProspect,
+  TESTO_AMBITO,
+  durataLeggibile,
 } from '../../servizi/prospect.service';
 
 const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
@@ -67,6 +81,7 @@ const LAZIO = 12;
 @Component({
   selector: 'pagina-prospect',
   imports: [
+    DatePipe,
     IonBackButton,
     IonButton,
     IonButtons,
@@ -110,11 +125,46 @@ export class ProspectPage implements OnDestroy {
   readonly testoFonte = TESTO_FONTE;
   readonly fonti = Object.keys(TESTO_FONTE) as (keyof typeof TESTO_FONTE)[];
 
+  /** Per chi chiedere il dettaglio al prossimo lancio. */
+  readonly ambito = signal<AmbitoDettagli>('CALCIO');
+  readonly testoAmbito = TESTO_AMBITO;
+  readonly ambiti = Object.keys(TESTO_AMBITO) as AmbitoDettagli[];
+
+  /** La fase, detta per esteso: in pausa per la finestra, fermo per un blocco… */
+  readonly fase = computed(() => {
+    const s = this.stato();
+    if (!s) {
+      return null;
+    }
+    const fase = s.fase ?? (s.inCorso ? 'in corso' : s.ultimo.stato);
+    const alle = s.pausaFinoA ? orario(s.pausaFinoA) : '';
+    switch (fase) {
+      case 'in pausa: finestra oraria':
+        return `In pausa: fuori dalla finestra oraria (${s.ritmo?.finestra ?? ''}), riparte da sola${alle ? ' ' + alle : ''}`;
+      case 'in pausa: tetto giornaliero':
+        return `In pausa: raggiunto il tetto di ${s.ritmo?.tettoGiornaliero ?? ''} richieste di oggi, riparte da sola${alle ? ' ' + alle : ''}`;
+      case 'bloccata':
+        return 'Ferma per un blocco del registro: non riprova da sola';
+      case 'interrotta':
+        return 'Interrotta da un riavvio del backend: «Riprendi» la fa ripartire da dove era';
+      case 'mai':
+        return 'Mai lanciata';
+      default:
+        return fase.charAt(0).toUpperCase() + fase.slice(1);
+    }
+  });
+
+  /** «circa 14 giorni» al ritmo configurato, per quello che resta del giro. */
+  readonly tempoRimanente = computed(() => {
+    const stima = this.stato()?.stima;
+    return stima ? durataLeggibile(stima.secondi) : null;
+  });
+
   readonly opzioni = computed(() => opzioniFiltri(this.prospect()));
   readonly visibili = computed(() => filtraProspect(this.prospect(), this.filtri()));
 
   constructor() {
-    addIcons({ cloudDownload, link, location, play, refresh, stop, warning });
+    addIcons({ cloudDownload, link, location, pause, play, playForward, refresh, stop, warning });
     this.entra();
 
     effect(() => {
@@ -236,9 +286,18 @@ export class ProspectPage implements OnDestroy {
     this.avvia([]);
   }
 
+  /** L'ultimo giro, dalla posizione salvata: dopo un blocco lo decide una persona. */
+  riprendi(): void {
+    this.errore.set(null);
+    this.service.riprendi().subscribe({
+      next: (stato) => this.stato.set(stato),
+      error: (e: Error) => this.errore.set(e.message),
+    });
+  }
+
   private avvia(regioni: number[]): void {
     this.errore.set(null);
-    this.service.avvia(regioni).subscribe({
+    this.service.avvia(regioni, undefined, this.ambito()).subscribe({
       next: (stato) => this.stato.set(stato),
       error: (e: Error) => this.errore.set(e.message),
     });
@@ -295,6 +354,17 @@ export class ProspectPage implements OnDestroy {
       }, 200);
     });
   }
+}
+
+/** «alle 22:00» oggi, «il 16/10 alle 00:00» un altro giorno. */
+function orario(iso: string): string {
+  const quando = new Date(iso);
+  const ora = quando.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  if (quando.toDateString() === new Date().toDateString()) {
+    return `alle ${ora}`;
+  }
+  const giorno = quando.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' });
+  return `il ${giorno} alle ${ora}`;
 }
 
 function popup(p: Prospect): string {

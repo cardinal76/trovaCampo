@@ -86,6 +86,20 @@
           }
         }
 
+        <div class="importazione">
+          <ion-select
+            class="ambito"
+            label="Dettaglio (discipline, tesserati)"
+            labelPlacement="stacked"
+            interface="popover"
+            [value]="ambito()"
+            (ionChange)="ambito.set($event.detail.value)"
+          >
+            @for (a of ambiti; track a) {
+              <ion-select-option [value]="a">{{ testoAmbito[a] }}</ion-select-option>
+            }
+          </ion-select>
+        </div>
         <div class="azioni">
           <ion-button size="small" (click)="importaLazio()" [disabled]="stato()?.inCorso">
             <ion-icon slot="start" name="play"></ion-icon>
@@ -95,7 +109,24 @@
             <ion-icon slot="start" name="play"></ion-icon>
             Importa tutta Italia
           </ion-button>
-          <ion-button size="small" fill="outline" color="danger" (click)="ferma()" [disabled]="!stato()?.inCorso">
+          <ion-button
+            size="small"
+            fill="outline"
+            class="riprendi"
+            (click)="riprendi()"
+            [disabled]="stato()?.inCorso || !stato()?.riprendibile"
+          >
+            <ion-icon slot="start" name="play-forward"></ion-icon>
+            Riprendi
+          </ion-button>
+          <ion-button
+            size="small"
+            fill="outline"
+            color="danger"
+            class="ferma"
+            (click)="ferma()"
+            [disabled]="!stato()?.inCorso"
+          >
             <ion-icon slot="start" name="stop"></ion-icon>
             Ferma
           </ion-button>
@@ -110,21 +141,73 @@
         </div>
 
         @if (stato(); as s) {
-          <ion-note class="stato">
-            Ultima importazione: {{ s.inCorso ? 'in corso' : s.ultimo.stato }}
-            @if (s.ultimo.pagine) {
-              · {{ s.ultimo.pagine }} pagine, {{ s.ultimo.lette }} società lette, {{ s.ultimo.dettagli }} dettagli
-            }
-            @if (s.ultimo.regioneCorrente) {
-              · {{ s.ultimo.regioneCorrente }}
-            }
-            @if (s.ultimo.errore) {
-              <br />{{ s.ultimo.errore }}
-            }
-            @if (s.ultimo.collegamento; as c) {
-              <br />Lazio, calcio: {{ c.collegati }} su {{ c.prospectCalcioLazio }} con il campo
-            }
-          </ion-note>
+          @if (s.bloccata) {
+            <ion-card color="danger" class="blocco">
+              <ion-card-content>
+                <ion-icon name="warning"></ion-icon>
+                <strong>Il registro ha bloccato l'importazione</strong>
+                @if (s.bloccataIl) {
+                  ({{ s.bloccataIl | date: 'dd/MM HH:mm' }})
+                }: {{ s.motivo }}<br />
+                Non riprova da sola. Prima di «Riprendi», scrivere a Sport e Salute
+                (registro&#64;sportesalute.eu) o aspettare qualche giorno.
+              </ion-card-content>
+            </ion-card>
+          }
+          <div class="stato-importazione">
+            <p class="fase">
+              <ion-icon [name]="s.inCorso && !s.pausaFinoA ? 'play' : 'pause'"></ion-icon>
+              {{ fase() }}
+            </p>
+            <ul>
+              @if (s.regioneCorrente) {
+                <li class="regione">Regione: {{ s.regioneCorrente }}</li>
+              }
+              @if (s.opzioni; as o) {
+                <li>
+                  {{ o.regioni.length ? o.regioni.length + (o.regioni.length === 1 ? ' regione' : ' regioni') : 'Tutta Italia' }},
+                  dettaglio: {{ testoAmbito[o.dettagli] }}
+                </li>
+              }
+              <li class="richieste-oggi">
+                Richieste oggi: {{ s.richiesteOggi ?? 0 }}
+                @if (s.ritmo?.tettoGiornaliero) {
+                  su {{ s.ritmo?.tettoGiornaliero }}
+                }
+              </li>
+              @if (s.ritmo; as r) {
+                <li>
+                  Ritmo: una richiesta ogni {{ r.pausaMs / 1000 }}–{{ (r.pausaMs + r.jitterMs) / 1000 }} s
+                  @if (r.finestra) {
+                    , solo {{ r.finestra }} ({{ r.fuso }})
+                  }
+                </li>
+              }
+              @if (s.ultimo.pagine) {
+                <li>
+                  In questo giro: {{ s.ultimo.pagine }} pagine, {{ s.ultimo.lette }} società lette,
+                  {{ s.ultimo.dettagli }} dettagli
+                  @if (s.ultimo.dettagliSaltati) {
+                    ({{ s.ultimo.dettagliSaltati }} saltati perché recenti)
+                  }
+                </li>
+              }
+              @if (s.stima; as st) {
+                @if (st.richieste) {
+                  <li class="stima">
+                    Mancano circa {{ st.richieste }} richieste ({{ st.pagine }} pagine di elenco,
+                    {{ st.dettagli }} dettagli): {{ tempoRimanente() }}
+                  </li>
+                }
+              }
+              @if (s.ultimo.errore && !s.bloccata) {
+                <li class="errore-giro">{{ s.ultimo.errore }}</li>
+              }
+              @if (s.ultimo.collegamento; as c) {
+                <li>Lazio, calcio: {{ c.collegati }} su {{ c.prospectCalcioLazio }} con il campo</li>
+              }
+            </ul>
+          </div>
         }
 
         <div class="indirizzi">

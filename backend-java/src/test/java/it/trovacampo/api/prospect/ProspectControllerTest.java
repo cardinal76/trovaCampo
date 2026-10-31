@@ -53,7 +53,9 @@ class ProspectControllerTest {
     }
 
     private static ImportazioneProspect.Stato fermo() {
-        return new ImportazioneProspect.Stato(false, ImportazioneProspect.Avanzamento.mai(), List.of());
+        return new ImportazioneProspect.Stato(
+                false, "mai", null, null, 0, false, null, null, false, null, null, null,
+                ImportazioneProspect.Avanzamento.mai(), List.of());
     }
 
     @Test
@@ -104,7 +106,37 @@ class ProspectControllerTest {
                 .andExpect(status().isAccepted());
 
         verify(importazione)
-                .avvia(eq(new ImportazioneProspect.Opzioni(List.of(12), 2, false, true)), anyString());
+                .avvia(eq(new ImportazioneProspect.Opzioni(List.of(12), 2, false, AmbitoDettagli.CALCIO)), anyString());
+    }
+
+    @Test
+    void iDettagliSiScelgonoPerAmbito() throws Exception {
+        when(importazione.avvia(any(), anyString())).thenReturn(true);
+        when(importazione.stato()).thenReturn(fermo());
+
+        mockMvc.perform(post("/api/admin/prospect/importazione").param("dettagli", "figc").with(admin()))
+                .andExpect(status().isAccepted());
+        mockMvc.perform(post("/api/admin/prospect/importazione").param("dettagli", "tutte").with(admin()))
+                .andExpect(status().isAccepted());
+        mockMvc.perform(post("/api/admin/prospect/importazione").param("dettagli", "boh").with(admin()))
+                .andExpect(status().isBadRequest());
+
+        verify(importazione).avvia(eq(new ImportazioneProspect.Opzioni(List.of(), null, false, AmbitoDettagli.FIGC)), anyString());
+        verify(importazione).avvia(eq(new ImportazioneProspect.Opzioni(List.of(), null, false, AmbitoDettagli.TUTTE)), anyString());
+    }
+
+    @Test
+    void riprendiRipartedallUltimoGiroOppure404() throws Exception {
+        when(importazione.stato()).thenReturn(fermo());
+        when(importazione.riprendi(anyString())).thenReturn(java.util.Optional.of(true));
+        mockMvc.perform(post("/api/admin/prospect/importazione/riprendi").with(admin()))
+                .andExpect(status().isAccepted());
+
+        when(importazione.riprendi(anyString())).thenReturn(java.util.Optional.empty());
+        mockMvc.perform(post("/api/admin/prospect/importazione/riprendi").with(admin()))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(post("/api/admin/prospect/importazione/riprendi")).andExpect(status().isUnauthorized());
     }
 
     @Test

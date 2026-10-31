@@ -389,10 +389,35 @@ nazionale delle attività sportive dilettantistiche (Sport e Salute) nella
 collection `prospect`, con il campo di gioco per il calcio del Lazio, una
 mappa in `/admin/prospect` e l'export `prospect_italia.xlsx`. L'importazione
 parte **solo a mano**, dalla pagina o con `tools/prospect/prospect.sh`, gira
-in sottofondo nel backend a una richiesta al secondo e riprende da dove si
-era fermata. Il backend deve poter uscire verso `registro.sportesalute.eu`
-(come già verso Nominatim). Come lanciarla, limiti, GDPR e attribuzioni in
-`tools/prospect/README.md`. Gli indirizzi dei campi (campi LND, censimento
+in sottofondo nel backend a un ritmo lento e riprende da dove si era fermata.
+Il backend deve poter uscire verso `registro.sportesalute.eu` (come già verso
+Nominatim). Come lanciarla, limiti, GDPR e attribuzioni in
+`tools/prospect/README.md`.
+
+### Il ritmo dell'importazione
+
+Tutta Italia vuol dire giorni di lavoro, e la priorità è non farsi bloccare.
+Le proprietà sono in `application.yml` sotto `trovacampo.prospect.rasd`; in
+produzione si cambiano con queste variabili nel `.env` di `~/trovacampo`,
+che `docker-compose.prod.yml` passa al backend, poi `docker compose up -d`
+(nessuna serve: i default sono già quelli prudenti):
+
+| variabile | default | cosa |
+|---|---|---|
+| `PROSPECT_RASD_PAUSA_MS` | `3000` | pausa fra due richieste, mai sotto 1000 |
+| `PROSPECT_RASD_JITTER_MS` | `1000` | in più, a caso fra 0 e questo: una richiesta ogni 3-4 s |
+| `PROSPECT_RASD_FINESTRA` | `22:00-07:00` | ore di lavoro, ora italiana (`fuso: Europe/Rome`); fuori si mette in pausa da sola e riparte all'apertura. Vuota: a ogni ora |
+| `PROSPECT_RASD_TETTO` | `7000` | richieste per giorno di calendario, ora italiana; raggiunto, riparte a mezzanotte. `0`: nessun tetto |
+| `PROSPECT_RASD_DETTAGLIO_GIORNI` | `30` | il dettaglio di una società letto da meno di tanti giorni non si richiede |
+
+Al primo 401/403/407/429/503 o a una pagina HTML al posto del JSON
+l'importazione **si ferma, salva lo stato** (in `prospect_importazione` e
+`prospect_importazione_giro`) **e non riprova da sola**: la pagina
+`/admin/prospect` lo dice con il motivo, e si riparte solo con «Riprendi».
+Anche un rilascio interrompe il giro: dopo, «Riprendi» (o
+`tools/prospect/prospect.sh riprendi`) lo fa ripartire dalla pagina dove era.
+Ai default, «solo calcio» per tutta Italia sono circa 2 notti, «tutto» circa
+15: tempi e conti in `tools/prospect/README.md`, «Ritmo e tempi». Gli indirizzi dei campi (campi LND, censimento
 open data della Città metropolitana scaricato da
 `opendata.cittametropolitanaroma.it`, OpenStreetMap) si cercano dalla stessa
 pagina: fonti, licenze e ordine dei passi in `tools/prospect/INDIRIZZI_LAZIO.md`.
