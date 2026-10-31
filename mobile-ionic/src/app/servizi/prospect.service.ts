@@ -6,22 +6,74 @@ import { FonteIndirizzo, Prospect } from '../modelli/prospect';
 import { AutenticazioneService } from './autenticazione.service';
 import { messaggioErrore } from './errori-amministrazione';
 
+/** Per chi si legge il dettaglio (discipline, tesserati): una richiesta in più a società. */
+export type AmbitoDettagli = 'NESSUNO' | 'FIGC' | 'CALCIO' | 'TUTTE';
+
+export const TESTO_AMBITO: Record<AmbitoDettagli, string> = {
+  NESSUNO: 'nessun dettaglio',
+  FIGC: 'solo affiliate FIGC',
+  CALCIO: 'calcio',
+  TUTTE: 'tutte le società',
+};
+
 /** Come sta l'importazione dal registro (GET /api/admin/prospect/importazione). */
 export interface StatoImportazioneProspect {
   inCorso: boolean;
+  /**
+   * «in corso», «in pausa: finestra oraria», «in pausa: tetto giornaliero»,
+   * «bloccata», «fermata», «completata», «errore», «interrotta» (riavvio), «mai».
+   */
+  fase?: string;
+  pausaFinoA?: string;
+  regioneCorrente?: string;
+  richiesteOggi?: number;
+  bloccata?: boolean;
+  motivo?: string;
+  bloccataIl?: string;
+  riprendibile?: boolean;
+  opzioni?: { regioni: number[]; dettagli: AmbitoDettagli };
+  ritmo?: {
+    pausaMs: number;
+    jitterMs: number;
+    finestra: string;
+    fuso: string;
+    tettoGiornaliero: number;
+    richiestePerGiorno: number;
+  };
+  stima?: { pagine: number; dettagli: number; richieste: number; secondi: number; giorni: number };
   ultimo: {
     stato: string;
     iniziato?: string;
     finito?: string;
     pagine: number;
+    richieste?: number;
     lette: number;
     nuove: number;
     dettagli: number;
+    dettagliSaltati?: number;
     regioneCorrente?: string;
     errore?: string;
     collegamento?: { prospectCalcioLazio: number; collegati: number; conCoordinate: number };
   };
   regioni: { regioneId: number; regione: string; prossimoStart: number; totale?: number; completata: boolean }[];
+}
+
+/** Una durata in secondi detta come la direbbe una persona: «3 giorni e 4 ore», «25 minuti». */
+export function durataLeggibile(secondi: number): string {
+  if (secondi < 60) {
+    return 'meno di un minuto';
+  }
+  const minuti = Math.round(secondi / 60);
+  if (minuti < 60) {
+    return minuti === 1 ? '1 minuto' : `${minuti} minuti`;
+  }
+  const ore = Math.round(secondi / 3600);
+  if (ore < 48) {
+    return ore === 1 ? 'circa un\'ora' : `circa ${ore} ore`;
+  }
+  const giorni = Math.floor(ore / 24);
+  const resto = ore % 24;
+  return resto ? `circa ${giorni} giorni e ${resto} ore` : `circa ${giorni} giorni`;
 }
 
 /**
@@ -102,15 +154,32 @@ export class ProspectService {
     );
   }
 
-  /** Avvia l'importazione in sottofondo; `regioni` vuoto vuol dire tutta Italia. */
-  avvia(regioni: number[], maxPagine?: number): Observable<StatoImportazioneProspect> {
+  /**
+   * Avvia l'importazione in sottofondo; `regioni` vuoto vuol dire tutta
+   * Italia, `dettagli` per chi leggere il dettaglio (il backend usa CALCIO).
+   */
+  avvia(
+    regioni: number[],
+    maxPagine?: number,
+    dettagli?: AmbitoDettagli,
+  ): Observable<StatoImportazioneProspect> {
     let params = new HttpParams();
     regioni.forEach((r) => (params = params.append('regioni', String(r))));
     if (maxPagine) {
       params = params.set('maxPagine', String(maxPagine));
     }
+    if (dettagli) {
+      params = params.set('dettagli', dettagli.toLowerCase());
+    }
     return this.conToken((headers) =>
       this.http.post<StatoImportazioneProspect>(`${this.url}/importazione`, null, { headers, params }),
+    );
+  }
+
+  /** Riprende l'ultimo giro dalla posizione salvata: dopo un blocco è l'unico modo. */
+  riprendi(): Observable<StatoImportazioneProspect> {
+    return this.conToken((headers) =>
+      this.http.post<StatoImportazioneProspect>(`${this.url}/importazione/riprendi`, null, { headers }),
     );
   }
 

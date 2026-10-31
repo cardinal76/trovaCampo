@@ -3,9 +3,11 @@
 # terminale invece che dalla pagina /admin/prospect. Vedi README.md qui accanto.
 #
 #   TOKEN=... ./prospect.sh avvia [regione ...]   # vuoto = tutta Italia, 12 = Lazio
+#   DETTAGLI=figc TOKEN=... ./prospect.sh avvia   # dettagli: nessuno, figc, calcio (default), tutte
 #   TOKEN=... ./prospect.sh prova                 # Lazio, due pagine sole
 #   TOKEN=... ./prospect.sh stato
 #   TOKEN=... ./prospect.sh ferma
+#   TOKEN=... ./prospect.sh riprendi              # l'ultimo giro, dalla posizione salvata
 #   TOKEN=... ./prospect.sh collega               # campi LND e open data, subito
 #   TOKEN=... ./prospect.sh opendata [fonte]      # (re)importa un censimento open data: cmrc (Roma,
 #                                                 # di default) o veneto (comuni, ~2 minuti)
@@ -31,7 +33,7 @@ case "$comando" in
   avvia)
     parametri=""
     for regione in "$@"; do parametri+="&regioni=${regione}"; done
-    curl -fsS -X POST "${AUTH[@]}" "${URL}/importazione?dettagli=true${parametri}"
+    curl -fsS -X POST "${AUTH[@]}" "${URL}/importazione?dettagli=${DETTAGLI:-calcio}${parametri}"
     ;;
   prova)
     curl -fsS -X POST "${AUTH[@]}" "${URL}/importazione?regioni=12&maxPagine=2"
@@ -41,6 +43,9 @@ case "$comando" in
     ;;
   ferma)
     curl -fsS -X POST "${AUTH[@]}" "${URL}/importazione/ferma"
+    ;;
+  riprendi)
+    curl -fsS -X POST "${AUTH[@]}" "${URL}/importazione/riprendi"
     ;;
   collega)
     curl -fsS -X POST "${AUTH[@]}" "${URL}/collegamento"
@@ -64,7 +69,7 @@ case "$comando" in
     echo "Scritto $file"
     ;;
   *)
-    sed -n '2,19p' "$0"
+    sed -n '2,21p' "$0"
     exit 1
     ;;
 esac

@@ -105,8 +105,25 @@ trovacampo:
       url: ${RASD_URL:https://registro.sportesalute.eu}
       # Chi siamo, in ogni richiesta: niente finti browser.
       user-agent: "TrovaCampo-prospect/0.1 (+https://trovacampo.footballer.it)"
+      # Il minimo fra due richieste qualunque al registro, nel client HTTP.
       # Almeno 1000: sotto il secondo il limitatore non scende comunque.
       intervallo-ms: 1100
+      # Il ritmo dell'importazione: la priorita' e' non farsi bloccare, non
+      # la velocita'. Vedi tools/prospect/README.md, "Ritmo e tempi".
+      ritmo:
+        # Pausa fra una richiesta e l'altra, piu' un jitter casuale fra 0 e
+        # jitter-ms: di default fra 3 e 4 secondi. Sotto 1000 non si scende.
+        pausa-ms: ${PROSPECT_RASD_PAUSA_MS:3000}
+        jitter-ms: ${PROSPECT_RASD_JITTER_MS:1000}
+        # Le ore in cui si lavora, ora italiana; fuori l'importazione si mette
+        # in pausa da sola e riparte all'apertura. Vuota: a ogni ora.
+        finestra: "${PROSPECT_RASD_FINESTRA:22:00-07:00}"
+        fuso: Europe/Rome
+        # Al massimo tante richieste per giorno di calendario (ora italiana);
+        # raggiunto, si riprende a mezzanotte. 0: nessun tetto.
+        tetto-giornaliero: ${PROSPECT_RASD_TETTO:7000}
+      # Il dettaglio di una societa' letto da meno di tanti giorni non si richiede.
+      dettaglio-valido-giorni: ${PROSPECT_RASD_DETTAGLIO_GIORNI:30}
 
   # Notifiche push (Web Push) per chi segue una squadra o vuole le partite
   # vicine. Le chiavi VAPID, se VAPID_PUBBLICA e VAPID_PRIVATA non ci sono,

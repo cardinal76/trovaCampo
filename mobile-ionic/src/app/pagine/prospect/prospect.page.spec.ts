@@ -5,7 +5,7 @@ import { provideIonicAngular } from '@ionic/angular/standalone';
 import { of, throwError } from 'rxjs';
 import { Prospect } from '../../modelli/prospect';
 import { AutenticazioneService } from '../../servizi/autenticazione.service';
-import { ProspectService } from '../../servizi/prospect.service';
+import { ProspectService, StatoImportazioneProspect } from '../../servizi/prospect.service';
 import { ProspectPage } from './prospect.page';
 
 function prospect(cf: string, valori: Partial<Prospect>): Prospect {
@@ -40,6 +40,7 @@ describe('ProspectPage', () => {
       'stato',
       'avvia',
       'ferma',
+      'riprendi',
       'esporta',
       'copertura',
       'statoGeocodifica',
@@ -166,7 +167,7 @@ describe('ProspectPage', () => {
 
     pagina.importaLazio();
 
-    expect(servizio.avvia).toHaveBeenCalledWith([12]);
+    expect(servizio.avvia).toHaveBeenCalledWith([12], undefined, 'CALCIO');
     expect(pagina.stato()?.inCorso).toBeTrue();
   });
 
@@ -229,5 +230,118 @@ describe('ProspectPage', () => {
     expect(servizio.importaOpenData).toHaveBeenCalledWith('cmrc');
     expect(pagina.errore()).toContain('429');
     expect(pagina.avviso()).toBeNull();
+  });
+
+  describe('stato dell\'importazione', () => {
+    const base: StatoImportazioneProspect = {
+      inCorso: true,
+      fase: 'in corso',
+      regioneCorrente: 'Campania',
+      richiesteOggi: 1234,
+      bloccata: false,
+      riprendibile: false,
+      opzioni: { regioni: [], dettagli: 'FIGC' },
+      ritmo: {
+        pausaMs: 3000,
+        jitterMs: 1000,
+        finestra: '22:00-07:00',
+        fuso: 'Europe/Rome',
+        tettoGiornaliero: 7000,
+        richiestePerGiorno: 7000,
+      },
+      stima: { pagine: 600, dettagli: 7200, richieste: 7800, secondi: 96 * 3600, giorni: 4 },
+      ultimo: { stato: 'in corso', pagine: 40, lette: 4000, nuove: 3900, dettagli: 480, dettagliSaltati: 12 },
+      regioni: [],
+    };
+
+    function testo(): string {
+      return (fixture.nativeElement as HTMLElement).textContent ?? '';
+    }
+
+    function pulsante(classe: string): HTMLIonButtonElement {
+      return (fixture.nativeElement as HTMLElement).querySelector(`ion-button.${classe}`)!;
+    }
+
+    it('mostra fase, regione corrente, richieste di oggi e stima', async () => {
+      servizio.stato.and.returnValue(of(base));
+      await crea();
+
+      expect(testo()).toContain('In corso');
+      expect(testo()).toContain('Regione: Campania');
+      expect(testo()).toContain('Richieste oggi: 1234');
+      expect(testo()).toContain('su 7000');
+      expect(testo()).toContain('solo affiliate FIGC');
+      expect(testo()).toContain('22:00-07:00');
+      expect(testo()).toContain('circa 4 giorni');
+      expect(testo()).toContain('12 saltati perché recenti');
+      expect(pulsante('ferma').disabled).toBeFalse();
+      expect(pulsante('riprendi').disabled).toBeTrue();
+    });
+
+    it('dice quando è in pausa per la finestra oraria', async () => {
+      servizio.stato.and.returnValue(
+        of({ ...base, fase: 'in pausa: finestra oraria', pausaFinoA: '2026-10-31T21:00:00Z' }),
+      );
+      await crea();
+
+      expect(testo()).toContain('fuori dalla finestra oraria (22:00-07:00), riparte da sola');
+    });
+
+    it('dice quando è in pausa per il tetto giornaliero', async () => {
+      servizio.stato.and.returnValue(
+        of({ ...base, fase: 'in pausa: tetto giornaliero', richiesteOggi: 7000 }),
+      );
+      await crea();
+
+      expect(testo()).toContain('raggiunto il tetto di 7000 richieste');
+    });
+
+    it('fermo per un blocco lo dice, non riparte da solo, e «Riprendi» lo chiede una persona', async () => {
+      const bloccata: StatoImportazioneProspect = {
+        ...base,
+        inCorso: false,
+        fase: 'bloccata',
+        bloccata: true,
+        riprendibile: true,
+        motivo: 'Il registro ha risposto 429 a /api/istruttoria/lista/',
+        bloccataIl: '2026-10-30T23:10:00Z',
+      };
+      servizio.stato.and.returnValue(of(bloccata));
+      servizio.riprendi.and.returnValue(of({ ...base, inCorso: true }));
+      await crea();
+
+      expect(testo()).toContain('Ferma per un blocco del registro');
+      expect(testo()).toContain('429');
+      expect((fixture.nativeElement as HTMLElement).querySelector('.blocco')).not.toBeNull();
+      expect(pulsante('ferma').disabled).toBeTrue();
+      expect(pulsante('riprendi').disabled).toBeFalse();
+      expect(servizio.riprendi).not.toHaveBeenCalled();
+
+      pagina.riprendi();
+      expect(servizio.riprendi).toHaveBeenCalled();
+      expect(pagina.stato()?.inCorso).toBeTrue();
+    });
+
+    it('«Ferma» chiama il backend', async () => {
+      servizio.stato.and.returnValue(of(base));
+      servizio.ferma.and.returnValue(of({ ...base, inCorso: false, fase: 'fermata', riprendibile: true }));
+      await crea();
+
+      pagina.ferma();
+      fixture.detectChanges();
+
+      expect(servizio.ferma).toHaveBeenCalled();
+      expect(testo()).toContain('Fermata');
+    });
+
+    it('lancia con l\'ambito dei dettagli scelto', async () => {
+      servizio.avvia.and.returnValue(of(base));
+      await crea();
+
+      pagina.ambito.set('TUTTE');
+      pagina.importaItalia();
+
+      expect(servizio.avvia).toHaveBeenCalledWith([], undefined, 'TUTTE');
+    });
   });
 });

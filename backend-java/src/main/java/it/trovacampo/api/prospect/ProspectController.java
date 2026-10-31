@@ -87,26 +87,50 @@ public class ProspectController {
     /**
      * Avvia l'importazione in sottofondo e risponde subito (202); lo stato si
      * legge con la GET. Con un'importazione già in corso risponde 409.
+     * {@code dettagli} è per chi leggere il dettaglio: {@code nessuno},
+     * {@code figc}, {@code calcio} (il default) o {@code tutte}; {@code true}
+     * e {@code false} valgono come prima, calcio o niente.
      */
     @PostMapping("/importazione")
     public ResponseEntity<ImportazioneProspect.Stato> avvia(
             @RequestParam(name = "regioni", required = false) List<Integer> regioni,
             @RequestParam(name = "maxPagine", required = false) Integer maxPagine,
             @RequestParam(name = "ricomincia", defaultValue = "false") boolean ricomincia,
-            @RequestParam(name = "dettagli", defaultValue = "true") boolean dettagli,
+            @RequestParam(name = "dettagli", defaultValue = "calcio") String dettagli,
             Authentication chi) {
         if (regioni != null && !RegistroRasd.REGIONI.keySet().containsAll(regioni)) {
             return ResponseEntity.badRequest().build();
         }
+        AmbitoDettagli ambito;
+        try {
+            ambito = AmbitoDettagli.da(dettagli);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        }
         boolean avviata =
                 importazione.avvia(
-                        new ImportazioneProspect.Opzioni(regioni, maxPagine, ricomincia, dettagli),
+                        new ImportazioneProspect.Opzioni(regioni, maxPagine, ricomincia, ambito),
                         chi.getName());
         return ResponseEntity.status(avviata ? HttpStatus.ACCEPTED : HttpStatus.CONFLICT)
                 .body(importazione.stato());
     }
 
-    /** Si ferma dopo la richiesta in corso; la prossima importazione riparte da lì. */
+    /**
+     * Riprende l'ultimo giro con le sue opzioni, dalla posizione salvata: dopo
+     * un «Ferma», un riavvio o un blocco del registro (che da solo non si
+     * riprova). 202 se riparte, 409 se ce n'è già uno, 404 se non c'è niente
+     * da riprendere.
+     */
+    @PostMapping("/importazione/riprendi")
+    public ResponseEntity<ImportazioneProspect.Stato> riprendi(Authentication chi) {
+        return importazione
+                .riprendi(chi.getName())
+                .map(avviata -> ResponseEntity.status(avviata ? HttpStatus.ACCEPTED : HttpStatus.CONFLICT)
+                        .body(importazione.stato()))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(importazione.stato()));
+    }
+
+    /** Si ferma dopo la richiesta (o durante la pausa) in corso; «riprendi» riparte da lì. */
     @PostMapping("/importazione/ferma")
     public ImportazioneProspect.Stato ferma() {
         importazione.ferma();
