@@ -55,7 +55,10 @@ public class EsportazioneProspect {
                     "CAMPO_TROVACAMPO: campi di TrovaCampo (comunicati ufficiali LND, file importati, correzioni a mano).",
                     "CAMPO_PRESENZE: anagrafica di presenze, dai Comunicati Ufficiali del Comitato Regionale Lazio LND.",
                     "OPEN_DATA: Censimento impianti sportivi di Roma e Provincia, Città metropolitana di Roma Capitale,"
-                            + " licenza CC0 1.0 (https://opendata.cittametropolitanaroma.it).",
+                            + " licenza CC0 1.0 (https://opendata.cittametropolitanaroma.it); impianti sportivi"
+                            + " dei comuni del Veneto (Verona, Schio, Thiene, Valdagno, Malo, Monte di Malo,"
+                            + " Isola Vicentina, Villaverla, Santorso, Zugliano, San Vito di Leguzzano),"
+                            + " licenza CC BY 4.0 (https://dati.veneto.it).",
                     "GEOCODIFICA: campo trovato su OpenStreetMap per nome e comune, posizione indicativa"
                             + " (confidenza bassa).",
                     "Coordinate e indirizzi geocodificati: © OpenStreetMap contributors, dati ODbL"

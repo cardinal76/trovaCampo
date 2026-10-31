@@ -122,6 +122,9 @@ public class FonteImpiantiOpenData {
                 punteggio,
                 impianto.nome(),
                 impianto.nome(),
-                regola);
+                impianto.attribuzioneDaMostrare(),
+                regola,
+                null,
+                null);
     }
 }

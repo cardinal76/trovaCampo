@@ -81,9 +81,39 @@ describe('ProspectService', () => {
 
     const openData = firstValueFrom(service.importaOpenData());
     await dopoIlToken();
-    const importa = http.expectOne(`${environment.apiUrl}/api/admin/indirizzi/impianti-open-data`);
+    const importa = http.expectOne(`${environment.apiUrl}/api/admin/indirizzi/impianti-open-data?fonte=cmrc`);
     expect(importa.request.method).toBe('POST');
-    importa.flush({ fonte: 'cmrc-censimento', licenza: 'CC0 1.0', righe: 6636, impianti: 1007, conCalcioA11: 480 });
+    importa.flush({
+      fonte: 'cmrc-censimento',
+      licenza: 'CC0 1.0',
+      righe: 6636,
+      impianti: 1007,
+      conCalcioA11: 480,
+      conCoordinate: 0,
+      nonLetti: [],
+    });
     expect((await openData).impianti).toBe(1007);
+  });
+
+  it('importa gli impianti del Veneto con il parametro della fonte', async () => {
+    const openData = firstValueFrom(service.importaOpenData('veneto'));
+    await dopoIlToken();
+    const importa = http.expectOne(
+      (richiesta) =>
+        richiesta.url === `${environment.apiUrl}/api/admin/indirizzi/impianti-open-data` &&
+        richiesta.params.get('fonte') === 'veneto',
+    );
+    expect(importa.request.method).toBe('POST');
+    expect(importa.request.headers.has('Authorization')).toBeTrue();
+    importa.flush({
+      fonte: 'veneto-comuni',
+      licenza: 'CC BY 4.0',
+      righe: 180,
+      impianti: 97,
+      conCalcioA11: 60,
+      conCoordinate: 67,
+      nonLetti: [],
+    });
+    expect((await openData).licenza).toBe('CC BY 4.0');
   });
 });

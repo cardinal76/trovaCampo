@@ -45,6 +45,8 @@ import {
 } from '../../servizi/autenticazione.service';
 import {
   CoperturaProspect,
+  FONTI_OPEN_DATA,
+  FonteOpenData,
   ProspectService,
   StatoGeocodifica,
   StatoImportazioneProspect,
@@ -107,6 +109,9 @@ export class ProspectPage implements OnDestroy {
   readonly geocodifica = signal<StatoGeocodifica | null>(null);
   /** L'esito dell'ultima azione sugli indirizzi, da mostrare sotto i pulsanti. */
   readonly avviso = signal<string | null>(null);
+  readonly fontiOpenData = FONTI_OPEN_DATA;
+  /** Il censimento open data da importare: Roma, come prima che ci fossero gli altri. */
+  readonly fonteOpenData = signal<FonteOpenData>('cmrc');
   readonly testoFonte = TESTO_FONTE;
   readonly fonti = Object.keys(TESTO_FONTE) as (keyof typeof TESTO_FONTE)[];
 
@@ -201,14 +206,32 @@ export class ProspectPage implements OnDestroy {
     });
   }
 
+  scegliFonteOpenData(fonte: FonteOpenData): void {
+    this.fonteOpenData.set(fonte);
+  }
+
   importaOpenData(): void {
+    const fonte = this.fonteOpenData();
     this.errore.set(null);
-    this.service.importaOpenData().subscribe({
-      next: (esito) =>
+    this.avviso.set(
+      fonte === 'veneto'
+        ? 'Importazione in corso: un file per comune, dieci secondi l\'uno dall\'altro (un paio di minuti)…'
+        : 'Importazione in corso…',
+    );
+    this.service.importaOpenData(fonte).subscribe({
+      next: (esito) => {
+        const nonLetti = esito.nonLetti?.length
+          ? ` Non letti: ${esito.nonLetti.length} (${esito.nonLetti.join('; ')}).`
+          : '';
         this.avviso.set(
-          `Censimento importato: ${esito.impianti} impianti con calcio (${esito.licenza}). Ora «Collega ai campi».`,
-        ),
-      error: (e: Error) => this.errore.set(e.message),
+          `Censimento importato: ${esito.impianti} impianti con calcio, ${esito.conCoordinate ?? 0} con la ` +
+            `posizione (${esito.licenza}).${nonLetti} Ora «Collega ai campi».`,
+        );
+      },
+      error: (e: Error) => {
+        this.avviso.set(null);
+        this.errore.set(e.message);
+      },
     });
   }
 

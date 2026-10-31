@@ -14,10 +14,13 @@ Il codice: `backend-java/.../indirizzi` (fonti, normalizzazione dei nomi,
 Tutto dall'amministrazione, `/admin/prospect` (riquadro «Indirizzi del calcio
 nel Lazio»), o con `prospect.sh`; serve il ruolo `trovacampo-admin`.
 
-1. **Importa impianti open data** (`./prospect.sh opendata`, `POST
-   /api/admin/indirizzi/impianti-open-data`): scarica il censimento CC0 e lo
-   mette in `impianto_open_data`. Una richiesta sola; si rifà quando l'ente
-   aggiorna il file.
+1. **Importa impianti open data** (`./prospect.sh opendata [fonte]`, `POST
+   /api/admin/indirizzi/impianti-open-data?fonte=cmrc|veneto`, nella pagina
+   con la scelta «Censimento open data»): scarica un censimento e lo mette in
+   `impianto_open_data`. `cmrc` (di default) è quello CC0 di Roma, una
+   richiesta sola; `veneto` sono i comuni del Veneto, un file per comune a
+   dieci secondi l'uno dall'altro (un paio di minuti). Si rifà quando l'ente
+   aggiorna i file. Vedi «Gli altri censimenti» più sotto.
 2. **Collega ai campi** (`./prospect.sh collega`, `POST
    /api/admin/prospect/collegamento`): campi LND e open data, subito, senza
    chiamare Nominatim. Parte da solo anche a fine importazione del Lazio.
@@ -55,12 +58,15 @@ localizzatoreSocieta.trova(societa, LocalizzatoreSocieta.Opzioni.SENZA_RETE); //
 | `CAMPO_TROVACAMPO` | schede di TrovaCampo: Comunicati Ufficiali LND, file importati, correzioni a mano | Comunicati Ufficiali LND - Comitato Regionale Lazio |
 | `CAMPO_PRESENZE` | anagrafica di presenze, `/api/pubblico/anagrafica/impianti` (393 impianti, 538 società con il campo) | Comunicati Ufficiali LND - Comitato Regionale Lazio |
 | `OPEN_DATA` | [Censimento impianti sportivi di Roma e Provincia](https://opendata.cittametropolitanaroma.it/dataset/censimento-impianti-sportivi-di-roma-e-provincia), Città metropolitana di Roma Capitale | **CC0 1.0** (citiamo comunque la fonte) |
+| `OPEN_DATA` | Impianti sportivi di 11 comuni del Veneto su [dati.veneto.it](https://dati.veneto.it) (Verona e Alto Vicentino) | **CC BY 4.0**: «Comune di X - Impianti sportivi, dati.veneto.it (CC BY 4.0)» |
 | `GEOCODIFICA` | OpenStreetMap via Nominatim | **ODbL 1.0**, «© OpenStreetMap contributors» |
 
 Le coordinate di un indirizzo open data (il censimento non ne ha) vengono
 dalla geocodifica di TrovaCampo (`NominatimGeocoding`): anche loro ODbL.
 L'attribuzione viaggia con ogni esito (`IndirizzoMigliore.attribuzione`), ed è
-nel foglio «Fonti» dell'export e in fondo alla pagina.
+nel foglio «Fonti» dell'export e in fondo alla pagina. Per l'open data è quella
+del dataset preciso, salvata in ogni impianto (`ImpiantoOpenData.attribuzione`,
+per il Veneto il comune); gli impianti importati prima la ricavano dalla fonte.
 
 ### Il censimento open data
 
@@ -81,7 +87,73 @@ Cercati e scartati (30 ottobre 2026):
   scolastiche, nessun campo da calcio.
 - Su dati.gov.it nient'altro per Lazio, Latina, Frosinone, Viterbo, Rieti.
 
-### OpenStreetMap
+#### Gli altri censimenti (31 ottobre 2026)
+
+Stesso importatore (`ImportatoreImpiantiOpenData`, fonti in `FonteOpenData`),
+stesso `LettoreCsv` (UTF-8 o Windows-1252, `;` o `,`), stessa normalizzazione
+dei nomi e dei comuni per l'id e per l'abbinamento. Lo lancia l'admin a mano,
+niente scheduler. Una risposta 401, 403, 407, 429, 503 o una pagina HTML al
+posto del CSV ferma tutto (503 con il motivo), senza riprovare; un file che va
+in timeout o risponde 404 finisce in `nonLetti` e gli altri si importano.
+User-Agent quello di TrovaCampo (`trovacampo.nominatim.user-agent`).
+
+**Veneto** (`?fonte=veneto`, sigla `veneto-comuni`). dati.veneto.it non ha un
+censimento regionale degli impianti: ha i dataset di 11 comuni, tutti **CC BY
+4.0**, in CSV dal datastore CKAN del portale (`/SpodCkanApi/api/3/datastore/dump/<id>.csv`,
+elenco e URL in `application.yml`, `trovacampo.indirizzi.open-data.veneto`).
+Le note legali del portale rimandano alla licenza di ogni scheda; il
+robots.txt chiede `Crawl-delay: 10`, quindi dieci secondi fra un file e
+l'altro (`OpenDataVeneto.intervallo`, sotto i dieci non si scende). Due
+modelli: Verona (`DENOMINAZIONE EDIFICIO`, `INDIRIZZO`, `TIPOLOGIA ATTIVITA'
+SPORTIVA`, coordinate, senza il comune) e quello dell'Alto Vicentino
+(`Impianto_*`, `Latitudine`/`Longitudine`). Il secondo ha anche
+`Impianto_Contatto` e `Impianto_Contatto_Email`, spesso di persone: **non si
+leggono**, come tutte le colonne che non servono (un test lo controlla).
+
+| Dataset (dati.veneto.it) | Aggiornato | Righe | Con calcio | Con coordinate |
+|---|---|---:|---:|---:|
+| Comune di Verona - Impianti sportivi | 2022-06-21 | 67 | 52 | 52 |
+| Comune di Schio - Impianti Sportivi | 2021-08-26 | 29 | 11 | 11 |
+| Comune di Thiene - Impianti Sportivi | 2021-07-22 | 30 | 15 | 0 |
+| Comune di Malo - Impianti sportivi | 2021-07-26 | 12 | 6 | 0 |
+| Comune di Monte di Malo - Impianti sportivi | 2021-07-27 | 4 | 4 | 0 |
+| Comune di Isola Vicentina - Impianti Sportivi | 2021-11-19 | 10 | 5 | 0 |
+| Comune di Villaverla - Impianti sportivi | 2022-05-20 | 7 | 4 | 4 |
+| Comune di Santorso - Impianti Sportivi | 2022-05-20 | 4 | 2 | 2 |
+| Comune di Zugliano - Impianti Sportivi | 2021-11-19 | 8 | 2 | 0 |
+| Comune di San Vito di Leguzzano - Impianti Sportivi | 2022-05-20 | 2 | 1 | 1 |
+| Comune di Valdagno - Impianti Sportivi | 2021-07-23 | non letto | | |
+| **Totale** | | **173** | **102** (71 con un campo a 11) | **70** |
+
+«Con calcio» conta anche palestre e piastre con il calcio a 5. Le discipline
+prendono i nomi del censimento di Roma (Calcio-11, Calcio-5, Calcio-7): un
+«calcio» senza numero in un campo o in uno stadio conta come campo a 11. Alcuni
+file hanno perso lettere accentate e trattini già alla fonte («Via dei Bold?»):
+i trattini si rimettono nei nomi, gli indirizzi restano come sono. Valdagno è
+andato in timeout (60 secondi senza risposta) ed è rimasto fuori dalla prova;
+è nella configurazione, e un'importazione dal server lo riprova.
+
+Il collegamento automatico dei prospect (`CollegamentoCampi`) resta sul Lazio:
+gli impianti veneti servono già a `LocalizzatoreSocieta.trova` e a `POST
+/api/admin/indirizzi/trova`, e al collegamento quando si estenderà al Veneto.
+
+**Richieste fatte il 30-31 ottobre 2026** (User-Agent
+`TrovaCampo-opendata/0.1 (+https://trovacampo.footballer.it; ...)`, una
+ogni 10 secondi, ogni file scaricato una volta sola e poi cancellato):
+
+| Portale | Richieste | Esito |
+|---|---:|---|
+| dati.veneto.it | 28 | robots.txt, ricerca nel catalogo (prima di trovare l'API CKAN su `/SpodCkanApi`), note legali, 10 CSV; un timeout (Valdagno), nessun blocco |
+| dati.comune.milano.it | 1 | il robots.txt risponde con la pagina «Accesso non consentito»: **fermi, da riprovare** |
+| www.dati.gov.it | 1 | **403** (dal sito, non dal proxy): **fermi, da riprovare** |
+| dati.regione.sicilia.it | 2 | due connessioni chiuse di fila: **fermi, da riprovare** |
+
+Quindi **Comune di Milano** e **Regione Siciliana** non hanno un importatore:
+licenza, formato e numeri dei loro dataset non si sono potuti verificare. Da
+riprovare da un'altra rete (il server di produzione) o scrivendo ai portali.
+Niente siti terzi non open data, niente motori di ricerca.
+
+## OpenStreetMap
 
 Due ricerche al massimo per società, `format=jsonv2`, `countrycodes=it`,
 riquadro del Lazio (`bounded=1`):
@@ -160,6 +232,8 @@ Servono circa 80 società in più (576 su 823). In ordine di resa:
    nella fonte 1 come quelli del calcio a 11.
 2. **Il dataset della Regione Lazio**, quando torna scaricabile: copre tutte e
    cinque le province, il censimento della Città metropolitana solo Roma.
+   Fuori dal Lazio: Milano e Sicilia da riprovare (sopra), altri comuni veneti
+   (Padova, Venezia, Vicenza) se pubblicano su portali propri.
 3. **Correzioni a mano** dall'amministrazione delle società di Roma senza
    campo: sono il grosso delle mancanti.
 4. OpenStreetMap per il resto, con confidenza bassa.

@@ -143,6 +143,18 @@
             </ul>
           }
           <div class="azioni">
+            <ion-select
+              class="fonte-open-data"
+              label="Censimento open data"
+              labelPlacement="stacked"
+              interface="popover"
+              [value]="fonteOpenData()"
+              (ionChange)="scegliFonteOpenData($event.detail.value)"
+            >
+              @for (fonte of fontiOpenData; track fonte.valore) {
+                <ion-select-option [value]="fonte.valore">{{ fonte.nome }}</ion-select-option>
+              }
+            </ion-select>
             <ion-button size="small" fill="outline" (click)="importaOpenData()">
               <ion-icon slot="start" name="cloud-download"></ion-icon>
               Importa impianti open data
@@ -173,7 +185,8 @@
           Dati delle società: Registro nazionale delle attività sportive dilettantistiche (Sport e
           Salute), parte pubblica; solo dati della persona giuridica. Campi: comunicati ufficiali LND
           (TrovaCampo e presenze); Censimento impianti sportivi di Roma e Provincia, Città
-          metropolitana di Roma Capitale (CC0). Mappa e geocodifica © OpenStreetMap contributors, ODbL.
+          metropolitana di Roma Capitale (CC0); impianti sportivi dei comuni del Veneto, dati.veneto.it
+          (CC BY 4.0). Mappa e geocodifica © OpenStreetMap contributors, ODbL.
         </ion-note>
       }
     }
