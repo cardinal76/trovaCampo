@@ -9,7 +9,8 @@
 #   TOKEN=... ./prospect.sh ferma
 #   TOKEN=... ./prospect.sh riprendi              # l'ultimo giro, dalla posizione salvata
 #   TOKEN=... ./prospect.sh collega               # campi LND e open data, subito
-#   TOKEN=... ./prospect.sh opendata              # (re)importa il censimento impianti open data
+#   TOKEN=... ./prospect.sh opendata [fonte]      # (re)importa un censimento open data: cmrc (Roma,
+#                                                 # di default) o veneto (comuni, ~2 minuti)
 #   TOKEN=... ./prospect.sh geocodifica [limite]  # OpenStreetMap per chi manca, in sottofondo
 #   TOKEN=... ./prospect.sh geostato              # a che punto e' la geocodifica
 #   TOKEN=... ./prospect.sh copertura             # quanti hanno l'indirizzo, per fonte
@@ -50,7 +51,7 @@ case "$comando" in
     curl -fsS -X POST "${AUTH[@]}" "${URL}/collegamento"
     ;;
   opendata)
-    curl -fsS -X POST "${AUTH[@]}" "${BASE}/indirizzi/impianti-open-data"
+    curl -fsS -X POST "${AUTH[@]}" "${BASE}/indirizzi/impianti-open-data?fonte=${1:-cmrc}"
     ;;
   geocodifica)
     limite="${1:+?limite=$1}"

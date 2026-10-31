@@ -83,6 +83,7 @@ anche ripetuto, `maxPagine`, `ricomincia`, `dettagli` = `nessuno` | `figc` |
 | `GET  /api/admin/prospect/importazione` | stato: fase, richieste di oggi, blocco, stima, ripresa per regione |
 | `POST /api/admin/prospect/importazione/ferma` | ferma dopo la richiesta in corso |
 | `POST /api/admin/prospect/importazione/riprendi` | riprende l'ultimo giro, 202; 409 se ce n'è già uno, 404 se non c'è niente |
+| `POST /api/admin/indirizzi/impianti-open-data?fonte=cmrc\|veneto` | (re)importa un censimento degli impianti open data |
 | `POST /api/admin/prospect/collegamento` | collega il calcio laziale ai campi LND e al censimento open data |
 | `GET  /api/admin/prospect/copertura` | quanti hanno l'indirizzo, per fonte e confidenza |
 | `POST /api/admin/prospect/geocodifica` | OpenStreetMap per chi manca, in sottofondo (`ritenta`, `limite`) |
@@ -198,7 +199,9 @@ In ordine di preferenza, con la fonte scritta in `fonteIndirizzo`:
    l'anagrafica di presenze (`/api/pubblico/anagrafica/impianti`). Fatto per il
    Lazio (`CollegamentoCampi`).
 2. **`OPEN_DATA`**: il «Censimento impianti sportivi di Roma e Provincia»
-   della Città metropolitana (CC0), nel collegamento insieme ai campi LND.
+   della Città metropolitana (CC0), nel collegamento insieme ai campi LND; e
+   gli impianti sportivi di 11 comuni del Veneto su dati.veneto.it (CC BY
+   4.0), importati con `?fonte=veneto`.
 3. **`GEOCODIFICA`**: un campo su OpenStreetMap per nome e comune (Nominatim,
    una richiesta al secondo, ODbL), in sottofondo, confidenza bassa.
 4. Il Registro Imprese è a pagamento: **non si usa**.
@@ -229,6 +232,11 @@ ottobre sale al **60,3%** senza rete: dettagli in `INDIRIZZI_LAZIO.md`.
   Sport e Salute S.p.A. (parte pubblica).
 - Campi: Comunicati Ufficiali LND, Comitato Regionale Lazio, tramite
   TrovaCampo e presenze.
+- Impianti open data: Censimento impianti sportivi di Roma e Provincia,
+  Città metropolitana di Roma Capitale (CC0 1.0); «Comune di X - Impianti
+  sportivi», dati.veneto.it (CC BY 4.0), per Verona, Schio, Thiene, Valdagno,
+  Malo, Monte di Malo, Isola Vicentina, Villaverla, Santorso, Zugliano e San
+  Vito di Leguzzano.
 - Mappa e geocodifica: © OpenStreetMap contributors, dati ODbL
   (<https://www.openstreetmap.org/copyright>).
 

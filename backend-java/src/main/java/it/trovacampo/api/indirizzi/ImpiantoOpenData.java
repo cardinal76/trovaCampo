@@ -19,6 +19,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
  * @param sport le discipline di calcio dichiarate (Calcio-11, Calcio-5...)
  * @param lat nulla quando il dataset non ha coordinate: allora le dà la
  *     geocodifica dell'indirizzo, al momento dell'abbinamento
+ * @param attribuzione la riga di attribuzione del dataset da cui viene (per
+ *     il Veneto, il comune); nulla negli impianti importati prima che ci
+ *     fosse, che usano quella della fonte
  */
 @Document(collection = "impianto_open_data")
 public record ImpiantoOpenData(
@@ -32,10 +35,21 @@ public record ImpiantoOpenData(
         List<String> sport,
         Double lat,
         Double lng,
-        Instant importatoIl) {
+        Instant importatoIl,
+        String attribuzione) {
 
     /** Un campo a 11: quello che serve a una società che fa un campionato LND. */
     public boolean haCalcioA11() {
         return sport != null && sport.stream().anyMatch(disciplina -> disciplina.contains("11"));
+    }
+
+    /** La riga da mostrare accanto all'indirizzo, come chiede la licenza del dataset. */
+    public String attribuzioneDaMostrare() {
+        if (attribuzione != null && !attribuzione.isBlank()) {
+            return attribuzione;
+        }
+        return FonteOpenData.daSigla(fonte)
+                .map(FonteOpenData::attribuzione)
+                .orElseGet(() -> fonte + (licenza == null ? "" : " (" + licenza + ")"));
     }
 }

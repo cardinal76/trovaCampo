@@ -13,8 +13,12 @@ public enum FonteIndirizzo {
     CAMPO_TROVACAMPO("Comunicati Ufficiali LND - Comitato Regionale Lazio, tramite TrovaCampo"),
     /** Il campo dell'anagrafica di presenze, letto dai Comunicati Ufficiali del Lazio. */
     CAMPO_PRESENZE("Comunicati Ufficiali LND - Comitato Regionale Lazio, tramite l'anagrafica di presenze"),
-    /** Un censimento degli impianti in open data (collection impianto_open_data). */
-    OPEN_DATA("Censimento impianti sportivi di Roma e Provincia, Città metropolitana di Roma Capitale (CC0 1.0)"),
+    /**
+     * Un censimento degli impianti in open data (collection impianto_open_data):
+     * l'attribuzione del dataset preciso è quella di {@link ImpiantoOpenData#attribuzioneDaMostrare()}.
+     */
+    OPEN_DATA("Censimenti open data degli impianti sportivi (Città metropolitana di Roma Capitale, CC0 1.0;"
+            + " comuni del Veneto su dati.veneto.it, CC BY 4.0)"),
     /** Un campo trovato su OpenStreetMap per nome e comune: posizione indicativa. */
     GEOCODIFICA("© OpenStreetMap contributors, ODbL 1.0 (ricerca Nominatim)");
 

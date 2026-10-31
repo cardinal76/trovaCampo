@@ -105,6 +105,14 @@ export interface AvvioGeocodifica {
   stato: StatoGeocodifica;
 }
 
+/** I censimenti degli impianti open data che si possono importare (il parametro `fonte`). */
+export type FonteOpenData = 'cmrc' | 'veneto';
+
+export const FONTI_OPEN_DATA: readonly { valore: FonteOpenData; nome: string }[] = [
+  { valore: 'cmrc', nome: 'Roma e provincia (Città metropolitana, CC0)' },
+  { valore: 'veneto', nome: 'Comuni del Veneto (dati.veneto.it, CC BY 4.0)' },
+];
+
 /** Il censimento degli impianti open data appena importato. */
 export interface EsitoOpenData {
   fonte: string;
@@ -112,6 +120,10 @@ export interface EsitoOpenData {
   righe: number;
   impianti: number;
   conCalcioA11: number;
+  /** Quanti hanno già la posizione nel dataset. */
+  conCoordinate: number;
+  /** I file che non si sono potuti leggere, con il motivo: gli altri sono importati. */
+  nonLetti: string[];
 }
 
 /**
@@ -203,13 +215,17 @@ export class ProspectService {
     );
   }
 
-  /** (Re)importa il censimento degli impianti sportivi in open data. */
-  importaOpenData(): Observable<EsitoOpenData> {
+  /**
+   * (Re)importa un censimento degli impianti sportivi in open data. Il Veneto
+   * sono una decina di file a dieci secondi l'uno dall'altro: la risposta
+   * arriva dopo un paio di minuti.
+   */
+  importaOpenData(fonte: FonteOpenData = 'cmrc'): Observable<EsitoOpenData> {
     return this.conToken((headers) =>
       this.http.post<EsitoOpenData>(
         `${environment.apiUrl}/api/admin/indirizzi/impianti-open-data`,
         null,
-        { headers },
+        { headers, params: { fonte } },
       ),
     );
   }

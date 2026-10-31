@@ -1,5 +1,6 @@
 package it.trovacampo.api.indirizzi;
 
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -7,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import it.trovacampo.api.config.ConfigurazioneSicurezza;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,14 +47,49 @@ class IndirizziControllerTest {
 
     @Test
     void importaIlCensimento() throws Exception {
-        when(importatore.importa())
+        when(importatore.importa(FonteOpenData.CMRC))
                 .thenReturn(new ImportatoreImpiantiOpenData.Esito(
-                        "cmrc-censimento", "CC0 1.0", "https://x", 6636, 1007, 480));
+                        "cmrc-censimento", "CC0 1.0", "https://x", 6636, 1007, 480, 0, List.of()));
 
+        // Senza fonte, Roma: come prima che ci fossero le altre.
         mockMvc.perform(post("/api/admin/indirizzi/impianti-open-data").with(amministratore()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.impianti").value(1007))
                 .andExpect(jsonPath("$.licenza").value("CC0 1.0"));
+    }
+
+    @Test
+    void importaIlVenetoConIlParametroDellaFonte() throws Exception {
+        when(importatore.importa(FonteOpenData.VENETO))
+                .thenReturn(new ImportatoreImpiantiOpenData.Esito(
+                        "veneto-comuni", "CC BY 4.0", "https://dati.veneto.it", 180, 97, 60, 67,
+                        List.of("Comune di Valdagno - Impianti Sportivi: timeout")));
+
+        mockMvc.perform(post("/api/admin/indirizzi/impianti-open-data?fonte=veneto").with(amministratore()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.fonte").value("veneto-comuni"))
+                .andExpect(jsonPath("$.licenza").value("CC BY 4.0"))
+                .andExpect(jsonPath("$.conCoordinate").value(67))
+                .andExpect(jsonPath("$.nonLetti[0]").value("Comune di Valdagno - Impianti Sportivi: timeout"));
+    }
+
+    @Test
+    void unaFonteSconosciutaE400() throws Exception {
+        mockMvc.perform(post("/api/admin/indirizzi/impianti-open-data?fonte=marte").with(amministratore()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errore").value(org.hamcrest.Matchers.containsString("cmrc, veneto")));
+        verifyNoInteractions(importatore);
+    }
+
+    @Test
+    void unPortaleCheBloccaE503ConIlMotivo() throws Exception {
+        when(importatore.importa(FonteOpenData.VENETO))
+                .thenThrow(new ImportatoreImpiantiOpenData.OpenDataBloccatoException(
+                        "dati.veneto.it ha risposto 429: importazione fermata, senza riprovare."));
+
+        mockMvc.perform(post("/api/admin/indirizzi/impianti-open-data?fonte=veneto").with(amministratore()))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.errore").value(org.hamcrest.Matchers.containsString("429")));
     }
 
     @Test

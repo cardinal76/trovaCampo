@@ -170,7 +170,7 @@ class CollegamentoCampiTest {
         when(openData.findAll())
                 .thenReturn(List.of(new ImpiantoOpenData(
                         "k", "cmrc-censimento", "CC0 1.0", "Centro Sportivo Kolbe Ponte Mammolo", "ROMA", null,
-                        "Via Casal de' Pazzi, 16", List.of("Calcio-11"), null, null, null)));
+                        "Via Casal de' Pazzi, 16", List.of("Calcio-11"), null, null, null, null)));
 
         CollegamentoCampi.Esito esito = collegamento.collega();
 

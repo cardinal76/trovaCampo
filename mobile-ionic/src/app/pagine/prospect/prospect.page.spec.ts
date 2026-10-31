@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { signal } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular/standalone';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { Prospect } from '../../modelli/prospect';
 import { AutenticazioneService } from '../../servizi/autenticazione.service';
 import { ProspectService, StatoImportazioneProspect } from '../../servizi/prospect.service';
@@ -188,6 +188,48 @@ describe('ProspectPage', () => {
     pagina.cercaSuOsm();
     expect(pagina.geocodifica()?.inCorso).toBeTrue();
     expect(pagina.avviso()).toBe('Ricerca avviata su 300 società');
+  });
+
+  it('importa il censimento della fonte scelta e dice cosa non ha letto', async () => {
+    servizio.importaOpenData.and.returnValue(
+      of({
+        fonte: 'veneto-comuni',
+        licenza: 'CC BY 4.0',
+        righe: 180,
+        impianti: 97,
+        conCalcioA11: 60,
+        conCoordinate: 67,
+        nonLetti: ['Comune di Valdagno - Impianti Sportivi: timeout'],
+      }),
+    );
+    await crea();
+    const opzioni = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('.fonte-open-data ion-select-option'),
+    ).map((opzione) => opzione.textContent?.trim());
+    expect(opzioni).toEqual([
+      'Roma e provincia (Città metropolitana, CC0)',
+      'Comuni del Veneto (dati.veneto.it, CC BY 4.0)',
+    ]);
+
+    pagina.scegliFonteOpenData('veneto');
+    pagina.importaOpenData();
+
+    expect(servizio.importaOpenData).toHaveBeenCalledWith('veneto');
+    expect(pagina.avviso()).toContain('97 impianti con calcio, 67 con la posizione (CC BY 4.0)');
+    expect(pagina.avviso()).toContain('Non letti: 1 (Comune di Valdagno');
+  });
+
+  it('senza scegliere importa Roma, e un blocco del portale finisce fra gli errori', async () => {
+    servizio.importaOpenData.and.returnValue(
+      throwError(() => new Error('dati.veneto.it ha risposto 429: importazione fermata, senza riprovare.')),
+    );
+    await crea();
+
+    pagina.importaOpenData();
+
+    expect(servizio.importaOpenData).toHaveBeenCalledWith('cmrc');
+    expect(pagina.errore()).toContain('429');
+    expect(pagina.avviso()).toBeNull();
   });
 
   describe('stato dell\'importazione', () => {
