@@ -568,7 +568,7 @@ describe('SchedaPage', () => {
       return pagina.querySelector('ion-accordion[value=campionati]') as HTMLElement;
     }
 
-    it('con il portale LND fermo dice a quale comunicato sono aggiornati i risultati', () => {
+    it('con il portale fermo dice a quale comunicato sono aggiornati i risultati, senza nominare la lega', () => {
       const pagina = apri(SOCIETA, [], [
         {
           ...ECCELLENZA,
@@ -582,8 +582,9 @@ describe('SchedaPage', () => {
       ]);
 
       expect(campionati(pagina).querySelector('.avviso-risultati')?.textContent).toContain(
-        'Il portale LND non è raggiungibile',
+        'I risultati sono aggiornati ai Comunicati Ufficiali',
       );
+      expect(campionati(pagina).querySelector('.avviso-risultati')?.textContent).not.toContain('LND');
       expect(campionati(pagina).querySelector('.aggiornamento-risultati')?.textContent?.trim()).toBe(
         'Risultati aggiornati al Comunicato Ufficiale n. 55 del 24/09',
       );
