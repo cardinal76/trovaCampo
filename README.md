@@ -25,6 +25,30 @@ Come descritto nei documenti di analisi, alcune idee per evoluzioni successive d
 - inserimento dei risultati delle partite da parte delle società, con classifiche aggiornate quasi in tempo reale;
 - una mappa delle partite in corso nelle vicinanze, utile per osservatori e scout giovanili.
 
+## Come si usa
+
+**1. Cerca la società.** Dalla home scrivi il nome della società (o un indirizzo) e premi *vai*.
+
+<p>
+  <img src="grafica/home.jpg" alt="Home: campo di ricerca per nome società o indirizzo" width="420">
+  <img src="grafica/FunzioneUnoSchermataUno.jpg" alt="Schermata di ricerca su telefono" width="170">
+</p>
+
+**2. Guarda il campo sulla mappa.** Il risultato è un segnaposto con il nome della società e il tempo a piedi dalla tua posizione.
+
+<img src="grafica/FunzioneUnoSchermataDue.jpg" alt="Campo della società sulla mappa" width="170">
+
+**3. Apri la scheda della società.** Trovi sede, impianto, contatti, presidente e i campionati a cui partecipa, con il girone.
+
+<img src="grafica/anagraficaSociet%C3%A0.jpg" alt="Scheda anagrafica della società con i campionati" width="420">
+
+> Le immagini sono i mockup di progetto (cartella `grafica/`), non schermate
+> dell'app: vanno sostituite con quelle reali.
+
+Altre pagine pubbliche: `/campi` e `/mappa` (elenco e mappa dei campi),
+`/risultati`, `/prossime-partite` e `/notifiche` (squadre seguite e partite
+vicine). `/accedi` e `/admin/...` sono solo per l'amministrazione.
+
 ## Deploy
 
 L'app gira sullo stesso server di presenze, dietro il suo Caddy, su
