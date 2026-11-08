@@ -33,7 +33,8 @@ import {
   statoNotifiche,
   statoPosizione,
 } from '../../servizi/posizione/istruzioni';
-import { NotificheService, RAGGI_KM } from '../../servizi/notifiche/notifiche.service';
+import { NotificheService } from '../../servizi/notifiche/notifiche.service';
+import { RAGGI_KM } from '../../servizi/notifiche/preferenze-notifiche';
 
 /**
  * "oggi alle 14:32", "ieri alle 9:05", "il 21 settembre alle 18:00": quando

@@ -1,41 +1,19 @@
-import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
-import { environment } from '../../../environments/environment';
 import { ElencoProssime } from '../../modelli/prossime';
+import { NotificheApi } from './notifiche-api';
+import {
+  PosizioneSalvata,
+  PreferenzeNotifiche,
+  RAGGIO_PREDEFINITO_KM,
+  RAGGI_KM,
+  arrotonda,
+  preferenzeRicordate,
+  salvaPreferenze,
+} from './preferenze-notifiche';
 import { AmbientePush, SupportoPush } from './ambiente-push';
 import { DiagnosiService } from '../posizione/diagnosi.service';
 import { PosizioneService } from '../posizione/posizione.service';
 import { SquadraSeguita, SquadreSeguiteService } from './squadre-seguite.service';
-
-const CHIAVE = 'trovacampo.notifiche';
-
-/** I raggi fra cui scegliere per le partite vicine. */
-export const RAGGI_KM = [5, 10, 20] as const;
-export const RAGGIO_PREDEFINITO_KM = 10;
-
-/** La posizione mandata al server, e quando: la pagina lo mostra. */
-export interface PosizioneSalvata {
-  lat: number;
-  lng: number;
-  /** ISO 8601. */
-  il: string;
-}
-
-/** Le scelte di chi usa l'app, sul dispositivo. Entrambi gli avvisi partono spenti. */
-export interface PreferenzeNotifiche {
-  avvisoSquadre: boolean;
-  avvisoVicino: boolean;
-  raggioKm: number;
-  posizione: PosizioneSalvata | null;
-}
-
-const PREDEFINITE: PreferenzeNotifiche = {
-  avvisoSquadre: false,
-  avvisoVicino: false,
-  raggioKm: RAGGIO_PREDEFINITO_KM,
-  posizione: null,
-};
 
 /**
  * Il browser non è riuscito a iscriversi al suo servizio push: navigazione
@@ -62,16 +40,15 @@ export type Esito = 'fatto' | 'permesso-negato' | 'posizione-negata' | 'troppe' 
  */
 @Injectable({ providedIn: 'root' })
 export class NotificheService {
-  private readonly http = inject(HttpClient);
+  private readonly api = inject(NotificheApi);
   private readonly ambiente = inject(AmbientePush);
   private readonly gps = inject(PosizioneService);
   private readonly squadre = inject(SquadreSeguiteService);
   private readonly diagnosi = inject(DiagnosiService);
-  private readonly base = `${environment.apiUrl}/api/notifiche`;
 
   readonly supporto = signal<SupportoPush>(this.ambiente.supporto());
   readonly permesso = signal<NotificationPermission>(this.ambiente.permesso());
-  readonly preferenze = signal<PreferenzeNotifiche>(ricordate());
+  readonly preferenze = signal<PreferenzeNotifiche>(preferenzeRicordate());
   /** Un'operazione in corso: la pagina spegne gli interruttori nel frattempo. */
   readonly occupato = signal(false);
   /** L'ultimo problema, da mostrare; null se è andato tutto bene. */
@@ -243,14 +220,12 @@ export class NotificheService {
       preferenze.avvisoVicino && preferenze.posizione
         ? { lat: arrotonda(preferenze.posizione.lat), lng: arrotonda(preferenze.posizione.lng) }
         : null;
-    return firstValueFrom(
-      this.http.post<ElencoProssime>(`${this.base}/prossime`, {
-        squadre: this.squadre.chiavi(),
-        posizione,
-        raggioKm: preferenze.raggioKm,
-        endpoint,
-      }),
-    );
+    return this.api.prossime({
+      squadre: this.squadre.chiavi(),
+      posizione,
+      raggioKm: preferenze.raggioKm,
+      endpoint,
+    });
   }
 
   /**
@@ -389,27 +364,23 @@ export class NotificheService {
   }
 
   private async mandaAlServer(): Promise<void> {
-    const { chiave } = await firstValueFrom(
-      this.http.get<{ chiave: string }>(`${this.base}/chiave`),
-    );
+    const chiave = await this.api.chiaveVapid();
     const iscrizione = await this.ambiente.iscrivi(chiave).catch((errore: unknown) => {
       throw new ErroreIscrizione(String(errore));
     });
     this.diagnosi.segnalaIscrizioneRiuscita();
     const preferenze = this.preferenze();
-    await firstValueFrom(
-      this.http.put(`${this.base}/iscrizione`, {
-        ...iscrizione,
-        squadre: this.squadre.chiavi(),
-        avvisoSquadre: preferenze.avvisoSquadre,
-        avvisoVicino: preferenze.avvisoVicino,
-        posizione:
-          preferenze.avvisoVicino && preferenze.posizione
-            ? { lat: preferenze.posizione.lat, lng: preferenze.posizione.lng }
-            : null,
-        raggioKm: preferenze.raggioKm,
-      }),
-    );
+    await this.api.salvaIscrizione({
+      ...iscrizione,
+      squadre: this.squadre.chiavi(),
+      avvisoSquadre: preferenze.avvisoSquadre,
+      avvisoVicino: preferenze.avvisoVicino,
+      posizione:
+        preferenze.avvisoVicino && preferenze.posizione
+          ? { lat: preferenze.posizione.lat, lng: preferenze.posizione.lng }
+          : null,
+      raggioKm: preferenze.raggioKm,
+    });
   }
 
   /**
@@ -422,48 +393,12 @@ export class NotificheService {
     if (!iscrizione) {
       return;
     }
-    await firstValueFrom(
-      this.http.delete(`${this.base}/iscrizione`, { body: { endpoint: iscrizione.endpoint } }),
-    );
+    await this.api.cancellaIscrizione(iscrizione.endpoint);
     await this.ambiente.disiscrivi();
   }
 
   private salva(preferenze: PreferenzeNotifiche): void {
     this.preferenze.set(preferenze);
-    try {
-      localStorage.setItem(CHIAVE, JSON.stringify(preferenze));
-    } catch {
-      // Archivio bloccato: le scelte valgono finché la pagina resta aperta.
-    }
-  }
-}
-
-/** Tre decimali, un centinaio di metri: come IscrizioniService.arrotonda nel backend. */
-function arrotonda(gradi: number): number {
-  return Math.round(gradi * 1000) / 1000;
-}
-
-function ricordate(): PreferenzeNotifiche {
-  try {
-    const lette = JSON.parse(
-      localStorage.getItem(CHIAVE) ?? 'null',
-    ) as Partial<PreferenzeNotifiche> | null;
-    if (!lette || typeof lette !== 'object') {
-      return PREDEFINITE;
-    }
-    const posizione = lette.posizione;
-    return {
-      avvisoSquadre: lette.avvisoSquadre === true,
-      avvisoVicino: lette.avvisoVicino === true,
-      raggioKm: (RAGGI_KM as readonly number[]).includes(lette.raggioKm ?? -1)
-        ? lette.raggioKm!
-        : RAGGIO_PREDEFINITO_KM,
-      posizione:
-        posizione && typeof posizione.lat === 'number' && typeof posizione.lng === 'number'
-          ? posizione
-          : null,
-    };
-  } catch {
-    return PREDEFINITE;
+    salvaPreferenze(preferenze);
   }
 }
