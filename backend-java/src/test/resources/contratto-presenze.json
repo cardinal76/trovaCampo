@@ -1,0 +1,29 @@
+{
+  "descrizione": "I campi dell'API pubblica di presenze (/api/pubblico/...) che TrovaCampo legge. Il file e' identico in TrovaCampo (backend-java/src/test/resources/contratto-presenze.json) e in presenze (backend/src/test/resources/contratto-trovacampo.json): se cambia da una parte, si copia nell'altra. Lato TrovaCampo il client deve leggere esattamente questi campi; lato presenze i DTO devono emetterli tutti.",
+  "voci": [
+    {"client": "Impianto", "dto": "com.cardinali.presenze.anagrafica.dto.ImpiantoPubblicoDto",
+     "campi": ["id", "nome", "indirizzo", "comune", "lat", "lng", "societa"]},
+    {"client": "Riferimento", "dto": "com.cardinali.presenze.anagrafica.dto.ImpiantoPubblicoDto$Societa",
+     "campi": ["id", "denominazione", "logoUrl"]},
+    {"client": "Riferimento", "dto": "com.cardinali.presenze.anagrafica.dto.RisultatiSocietaDto$Societa",
+     "campi": ["id", "denominazione"]},
+    {"client": "SocietaConCampo", "dto": "com.cardinali.presenze.anagrafica.dto.SocietaPubblicaDto",
+     "campi": ["id", "denominazione", "campo", "logoUrl"]},
+    {"client": "Scheda", "dto": "com.cardinali.presenze.anagrafica.dto.SchedaSocietaPubblicaDto",
+     "campi": ["id", "denominazione", "campi", "squadre"]},
+    {"client": "Campo", "dto": "com.cardinali.presenze.anagrafica.dto.CampoPubblicoDto",
+     "campi": ["id", "nome", "indirizzo", "comune"]},
+    {"client": "Squadra", "dto": "com.cardinali.presenze.anagrafica.dto.SchedaSocietaPubblicaDto$Squadra",
+     "campi": ["campionato", "ente", "stagione", "girone", "squadra", "fuoriClassifica", "campoId", "risultatiDaComunicato"]},
+    {"client": "RisultatiDaComunicato", "dto": "com.cardinali.presenze.anagrafica.dto.RisultatiDaComunicatoDto",
+     "campi": ["numero", "data", "ente", "portaleNonDisponibileDal"]},
+    {"client": "Risultati", "dto": "com.cardinali.presenze.anagrafica.dto.RisultatiSocietaDto",
+     "campi": ["societa", "risultati"]},
+    {"client": "Risultato", "dto": "com.cardinali.presenze.anagrafica.dto.RisultatiSocietaDto$Risultato",
+     "campi": ["partitaId", "squadraIscrittaId", "data", "campionatoId", "campionato", "ente", "stagione", "gironeId", "girone", "giornata", "ritorno", "squadra", "casa", "ospite", "golCasa", "golOspite", "inCasa", "esito"]},
+    {"client": "Partita", "dto": "com.cardinali.presenze.anagrafica.dto.PartitaSulCampoDto",
+     "campi": ["id", "dataOra", "stato", "impiantoId", "casa", "ospite", "campionatoId", "campionato", "ente", "gironeId", "girone", "giornata", "casaSocietaId", "ospiteSocietaId", "casaSquadra", "ospiteSquadra", "live"]},
+    {"client": "Live", "dto": "com.cardinali.presenze.campionato.live.LiveDto",
+     "campi": ["golCasa", "golOspite"]}
+  ]
+}

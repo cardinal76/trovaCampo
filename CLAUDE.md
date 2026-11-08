@@ -13,6 +13,25 @@ Le notifiche push (anonime, dalla pagina `/notifiche`: squadre seguite e
 partite vicine) sono spiegate in DEPLOY.md, con rilascio e importazione dei
 campi.
 
+## Contratto con l'API pubblica di presenze
+
+I campi di `/api/pubblico/...` che il client `AnagraficaPresenze` legge sono
+elencati in `backend-java/src/test/resources/contratto-presenze.json`, **file
+identico a `backend/src/test/resources/contratto-trovacampo.json` nel repo di
+presenze**. Qui `ContrattoPresenzeTest` controlla che il client legga
+esattamente quei campi; in presenze `ContrattoTrovaCampoTest` che i DTO li
+emettano tutti. Se il client ha bisogno di un campo nuovo, o presenze ne
+toglie o rinomina uno, si cambia il file e lo si copia dall'altra parte
+nello stesso giro: un test rosso da una sola parte vuol dire che le due
+copie non sono piu' uguali.
+
+## Moduli del backend
+
+Ogni pacchetto sotto `it.trovacampo.api` e' un modulo, e `ArchitetturaModuliTest`
+(Spring Modulith, solo test) fallisce se due moduli dipendono l'uno dall'altro
+in cerchio. Un pezzo usato da due moduli va in quello da cui dipendono
+entrambi, non si allenta il test.
+
 ## Macchine e tunnel
 
 - **Server di produzione** (Hetzner, `46.225.239.144`, utente `marco`):
