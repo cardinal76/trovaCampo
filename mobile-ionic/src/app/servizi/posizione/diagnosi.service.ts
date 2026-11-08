@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { AmbientePush, SupportoPush } from './ambiente-push';
+import { AmbientePush, SupportoPush } from '../notifiche/ambiente-push';
 import { ErrorePosizione } from './posizione.service';
 import { SONDE_BROWSER, riconosciPiattaforma } from './sonde-browser';
 
@@ -198,7 +198,11 @@ export class DiagnosiService {
    */
   async esitoPosizione(errore: unknown): Promise<void> {
     this.ultimaLettura.set(
-      errore === null ? 'ok' : errore instanceof ErrorePosizione ? errore.motivo : 'non-disponibile',
+      errore === null
+        ? 'ok'
+        : errore instanceof ErrorePosizione
+          ? errore.motivo
+          : 'non-disponibile',
     );
     await this.aggiornaPosizione();
   }

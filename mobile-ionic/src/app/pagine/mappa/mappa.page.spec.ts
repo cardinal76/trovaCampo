@@ -4,13 +4,17 @@ import { provideIonicAngular } from '@ionic/angular/standalone';
 import { Observable, of, throwError } from 'rxjs';
 import { Partita, PartitePerCampo } from '../../modelli/partita';
 import { Societa } from '../../modelli/societa';
-import { ricordaAmministratore } from '../../servizi/amministratore-ricordato';
-import { NumeroViciniService } from '../../servizi/numero-vicini.service';
-import { ErrorePosizione, PosizioneService, errorePerCodice } from '../../servizi/posizione.service';
-import { SONDE_BROWSER } from '../../servizi/sonde-browser';
-import { AGENTI, SondeFinte } from '../../servizi/sonde-finte.spec';
-import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
-import { SocietaService } from '../../servizi/societa.service';
+import { ricordaAmministratore } from '../../servizi/amministrazione/amministratore-ricordato';
+import { NumeroViciniService } from '../../servizi/preferenze/numero-vicini.service';
+import {
+  ErrorePosizione,
+  PosizioneService,
+  errorePerCodice,
+} from '../../servizi/posizione/posizione.service';
+import { SONDE_BROWSER } from '../../servizi/posizione/sonde-browser';
+import { AGENTI, SondeFinte } from '../../servizi/posizione/sonde-finte.spec';
+import { ProvinciaSceltaService } from '../../servizi/preferenze/provincia-scelta.service';
+import { SocietaService } from '../../servizi/societa/societa.service';
 import { ZOOM_STEMMI } from '../../mappa/icona-campo';
 import { MappaPage } from './mappa.page';
 
@@ -131,7 +135,9 @@ describe('MappaPage', () => {
       crea();
 
       expect(riepilogo()).toBe('3 campi sulla mappa · 1 ancora senza posizione');
-      expect(fixture.nativeElement.querySelector('.riepilogo a').getAttribute('href')).toBe('/campi');
+      expect(fixture.nativeElement.querySelector('.riepilogo a').getAttribute('href')).toBe(
+        '/campi',
+      );
     });
 
     it('si adegua rientrando nella pagina dopo il login', () => {
@@ -487,7 +493,9 @@ describe('MappaPage', () => {
 
       expect(posizione).not.toHaveBeenCalled();
       expect(modulo.querySelector('input')!.placeholder).toBe('La mia posizione');
-      expect(link(modulo).href).toBe('https://www.google.com/maps/dir/?api=1&destination=41.89,12.48');
+      expect(link(modulo).href).toBe(
+        'https://www.google.com/maps/dir/?api=1&destination=41.89,12.48',
+      );
       expect(link(modulo).target).toBe('_blank');
       expect(link(modulo).rel).toBe('noopener');
     });
@@ -516,7 +524,9 @@ describe('MappaPage', () => {
 
       expect(posizione).toHaveBeenCalledTimes(1);
       expect(link(modulo).href).toContain('&origin=41.892,12.482&');
-      expect(modulo.querySelector('.nota-percorso')!.textContent).toContain('tua posizione attuale');
+      expect(modulo.querySelector('.nota-percorso')!.textContent).toContain(
+        'tua posizione attuale',
+      );
       expect(link(apriPopup()).href).toContain('&origin=41.892,12.482&');
       // L'errore del percorso non è quello di "Vicino a me".
       expect(pagina.erroreVicini()).toBeNull();

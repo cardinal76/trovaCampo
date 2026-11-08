@@ -33,12 +33,12 @@ import {
 } from 'ionicons/icons';
 import { EsitoImportazione } from '../../modelli/importazione';
 import { Esclusione } from '../../modelli/societa';
-import { AmministrazioneService } from '../../servizi/amministrazione.service';
+import { AmministrazioneService } from '../../servizi/amministrazione/amministrazione.service';
 import {
   AutenticazioneService,
   RUOLO_AMMINISTRATORE,
-} from '../../servizi/autenticazione.service';
-import { ImportazioneService } from '../../servizi/importazione.service';
+} from '../../servizi/amministrazione/autenticazione.service';
+import { ImportazioneService } from '../../servizi/amministrazione/importazione.service';
 
 /**
  * Importazione di campi, da Excel o dal PDF di un comunicato, per chi
@@ -105,9 +105,7 @@ export class ImportazionePage {
   readonly annullamento = signal<string | null>(null);
 
   readonly esito = computed(() => this.salvato() ?? this.prova());
-  readonly pronto = computed(
-    () => this.autenticazione.amministratore() && this.file() !== null,
-  );
+  readonly pronto = computed(() => this.autenticazione.amministratore() && this.file() !== null);
   readonly daScrivere = computed(() => {
     const esito = this.prova();
     return esito ? esito.inserite + esito.aggiornate : 0;

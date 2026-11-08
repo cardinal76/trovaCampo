@@ -4,12 +4,12 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular/standalone';
 import { environment } from '../../../environments/environment';
-import { AmbientePush } from '../../servizi/ambiente-push';
-import { AmbientePushFinto, attendi } from '../../servizi/ambiente-push-finto.spec';
-import { NotificheService } from '../../servizi/notifiche.service';
-import { PosizioneService, errorePerCodice } from '../../servizi/posizione.service';
-import { SONDE_BROWSER } from '../../servizi/sonde-browser';
-import { AGENTI, SondeFinte } from '../../servizi/sonde-finte.spec';
+import { AmbientePush } from '../../servizi/notifiche/ambiente-push';
+import { AmbientePushFinto, attendi } from '../../servizi/notifiche/ambiente-push-finto.spec';
+import { NotificheService } from '../../servizi/notifiche/notifiche.service';
+import { PosizioneService, errorePerCodice } from '../../servizi/posizione/posizione.service';
+import { SONDE_BROWSER } from '../../servizi/posizione/sonde-browser';
+import { AGENTI, SondeFinte } from '../../servizi/posizione/sonde-finte.spec';
 import { NotifichePage, quandoSalvata } from './notifiche.page';
 
 describe('NotifichePage', () => {
@@ -69,9 +69,7 @@ describe('NotifichePage', () => {
   }
 
   function stato(pagina: HTMLElement, permesso: 'notifiche' | 'posizione'): string | null {
-    return (
-      pagina.querySelector(`[data-permesso=${permesso}] strong`)?.textContent?.trim() ?? null
-    );
+    return pagina.querySelector(`[data-permesso=${permesso}] strong`)?.textContent?.trim() ?? null;
   }
 
   async function aggiorna(): Promise<void> {
@@ -147,7 +145,9 @@ describe('NotifichePage', () => {
     expect(interruttore(pagina, 'squadre').disabled).toBeTrue();
     expect(interruttore(pagina, 'vicino').disabled).toBeTrue();
     // La posizione invece si può dare anche da qui.
-    expect(pagina.querySelector('.aggiorna-posizione')?.textContent).toContain('Usa la mia posizione');
+    expect(pagina.querySelector('.aggiorna-posizione')?.textContent).toContain(
+      'Usa la mia posizione',
+    );
   });
 
   it('il raggio si sceglie con tre pillole, e quella scelta è accesa', async () => {
@@ -251,7 +251,9 @@ describe('NotifichePage', () => {
       await aggiorna();
 
       expect(riquadro(pagina, 'posizione')).toBeNull();
-      expect(pagina.querySelector('.stato-posizione')?.textContent).toContain('Posizione salvata oggi');
+      expect(pagina.querySelector('.stato-posizione')?.textContent).toContain(
+        'Posizione salvata oggi',
+      );
     });
   }
 
@@ -270,7 +272,9 @@ describe('NotifichePage', () => {
       expect(toggle.checked).toBeFalse();
       expect(caso(pagina, 'notifiche')).toBe('bloccate');
       expect(sezione(riquadro(pagina, 'notifiche'))).toBe('titolo-vicine');
-      expect(pagina.querySelector('.stato-posizione')?.textContent).toContain('Posizione salvata oggi');
+      expect(pagina.querySelector('.stato-posizione')?.textContent).toContain(
+        'Posizione salvata oggi',
+      );
       expect(stato(pagina, 'posizione')).toBe('consentita');
     });
 
@@ -359,14 +363,18 @@ describe('NotifichePage', () => {
     fixture.detectChanges();
 
     expect(TestBed.inject(NotificheService).preferenze().avvisoVicino).toBeTrue();
-    expect(pagina.querySelector('.stato-posizione')?.textContent).toContain('Posizione salvata oggi');
+    expect(pagina.querySelector('.stato-posizione')?.textContent).toContain(
+      'Posizione salvata oggi',
+    );
     expect(pagina.querySelector('.aggiorna-posizione')).not.toBeNull();
   });
 
   it('dice quando è stata salvata la posizione', () => {
     const adesso = new Date(2026, 8, 24, 18, 0);
 
-    expect(quandoSalvata(new Date(2026, 8, 24, 14, 32).toISOString(), adesso)).toBe('oggi alle 14:32');
+    expect(quandoSalvata(new Date(2026, 8, 24, 14, 32).toISOString(), adesso)).toBe(
+      'oggi alle 14:32',
+    );
     expect(quandoSalvata(new Date(2026, 8, 23, 9, 5).toISOString(), adesso)).toBe('ieri alle 9:05');
     expect(quandoSalvata(new Date(2026, 8, 20, 18, 0).toISOString(), adesso)).toBe(
       'il 20 settembre alle 18:00',

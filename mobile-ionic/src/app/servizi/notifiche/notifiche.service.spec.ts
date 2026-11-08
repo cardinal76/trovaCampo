@@ -1,14 +1,14 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment';
 import { AmbientePush } from './ambiente-push';
 import { AmbientePushFinto, ISCRIZIONE_FINTA, attendi } from './ambiente-push-finto.spec';
-import { DiagnosiService } from './diagnosi.service';
+import { DiagnosiService } from '../posizione/diagnosi.service';
 import { NotificheService } from './notifiche.service';
-import { ErrorePosizione, PosizioneService, errorePerCodice } from './posizione.service';
-import { SONDE_BROWSER } from './sonde-browser';
-import { SondeFinte } from './sonde-finte.spec';
+import { ErrorePosizione, PosizioneService, errorePerCodice } from '../posizione/posizione.service';
+import { SONDE_BROWSER } from '../posizione/sonde-browser';
+import { SondeFinte } from '../posizione/sonde-finte.spec';
 import { SquadraSeguita } from './squadre-seguite.service';
 
 const API = `${environment.apiUrl}/api/notifiche`;
@@ -270,7 +270,11 @@ describe('NotificheService', () => {
   it('cambiando il raggio aggiorna l iscrizione', async () => {
     localStorage.setItem(
       'trovacampo.notifiche',
-      JSON.stringify({ avvisoVicino: true, raggioKm: 10, posizione: { lat: 41.9, lng: 12.5, il: '' } }),
+      JSON.stringify({
+        avvisoVicino: true,
+        raggioKm: 10,
+        posizione: { lat: 41.9, lng: 12.5, il: '' },
+      }),
     );
     ambiente.permessoAttuale = 'granted';
 
@@ -386,7 +390,10 @@ describe('NotificheService', () => {
   });
 
   it('ignora preferenze salvate non valide', () => {
-    localStorage.setItem('trovacampo.notifiche', JSON.stringify({ raggioKm: 999, posizione: 'qui' }));
+    localStorage.setItem(
+      'trovacampo.notifiche',
+      JSON.stringify({ raggioKm: 999, posizione: 'qui' }),
+    );
 
     expect(servizio().preferenze().raggioKm).toBe(10);
     expect(servizio().preferenze().posizione).toBeNull();

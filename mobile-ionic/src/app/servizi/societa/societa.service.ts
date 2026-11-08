@@ -1,11 +1,11 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { environment } from '../../environments/environment';
-import { Partita, PartitePerCampo, PunteggioLive } from '../modelli/partita';
-import { Risultati } from '../modelli/risultato';
-import { NuovoCampo, Societa } from '../modelli/societa';
-import { Squadra } from '../modelli/squadra';
+import { environment } from '../../../environments/environment';
+import { Partita, PartitePerCampo, PunteggioLive } from '../../modelli/partita';
+import { Risultati } from '../../modelli/risultato';
+import { NuovoCampo, Societa } from '../../modelli/societa';
+import { Squadra } from '../../modelli/squadra';
 
 @Injectable({ providedIn: 'root' })
 export class SocietaService {

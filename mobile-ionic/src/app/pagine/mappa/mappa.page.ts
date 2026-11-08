@@ -36,7 +36,6 @@ import {
   Societa,
   SocietaGeolocalizzata,
   haCoordinate,
-  indirizzoCompleto,
   nomeCompleto,
   testoSicuro,
 } from '../../modelli/societa';
@@ -44,18 +43,14 @@ import {
   GIORNI_PARTITE_MAPPA,
   PartitePerCampo,
   RILETTURA_IN_DIRETTA_MS,
-  campionatoPartita,
   daSeguire,
   fondiLive,
   partiteDelCampo,
-  punteggioLive,
-  quandoPartita,
-  squadrePartita,
 } from '../../modelli/partita';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
-import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
+import { amministratoreRicordato } from '../../servizi/amministrazione/amministratore-ricordato';
 import { RiquadroDiagnosiComponent } from '../../componenti/riquadro-diagnosi/riquadro-diagnosi.component';
-import { DiagnosiService } from '../../servizi/diagnosi.service';
+import { DiagnosiService } from '../../servizi/posizione/diagnosi.service';
 import {
   nellaProvincia,
   opzioniProvincia,
@@ -68,12 +63,12 @@ import {
   partiteNelPopup,
   popupCampo,
 } from '../../mappa/popup-campo';
-import { NumeroViciniService } from '../../servizi/numero-vicini.service';
-import { RichiestaPosizione } from '../../servizi/richiesta-posizione';
-import { linkPercorso, suggerimentoPartenza } from '../../modelli/percorso';
-import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
-import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
-import { SocietaService } from '../../servizi/societa.service';
+import { NumeroViciniService } from '../../servizi/preferenze/numero-vicini.service';
+import { RichiestaPosizione } from '../../servizi/posizione/richiesta-posizione';
+import { suggerimentoPartenza } from '../../modelli/percorso';
+import { CampiCambiatiService } from '../../servizi/societa/campi-cambiati.service';
+import { ProvinciaSceltaService } from '../../servizi/preferenze/provincia-scelta.service';
+import { SocietaService } from '../../servizi/societa/societa.service';
 import {
   TipoSegnaposto,
   ZOOM_ICONE,

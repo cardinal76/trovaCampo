@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { numeroViciniValido } from '../modelli/vicini';
+import { numeroViciniValido } from '../../modelli/vicini';
 
 const CHIAVE = 'trovacampo.numeroVicini';
 

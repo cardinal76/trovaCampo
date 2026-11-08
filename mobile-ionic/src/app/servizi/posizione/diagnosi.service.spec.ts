@@ -198,9 +198,9 @@ describe('DiagnosiService', () => {
     it('pagina non in HTTPS, o browser senza geolocalizzazione', async () => {
       expect(casoPosizione(false, true, 'prompt', null)).toBe('non-sicura');
       expect(casoPosizione(true, false, 'prompt', null)).toBe('non-supportata');
-      expect(
-        casoPosizione(true, true, null, new ErrorePosizione('non-sicura', '').motivo),
-      ).toBe('non-sicura');
+      expect(casoPosizione(true, true, null, new ErrorePosizione('non-sicura', '').motivo)).toBe(
+        'non-sicura',
+      );
     });
 
     it('un errore sconosciuto vale come posizione non disponibile', async () => {

@@ -1,4 +1,4 @@
-import { supportoPush } from './ambiente-push';
+import { supportoPush } from '../notifiche/ambiente-push';
 import { AGENTI, SondeFinte } from './sonde-finte.spec';
 import { APP_GENERICA, riconosciPiattaforma, sondeReali } from './sonde-browser';
 

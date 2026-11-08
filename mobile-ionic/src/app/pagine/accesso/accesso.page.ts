@@ -22,7 +22,7 @@ import { logOut, warning } from 'ionicons/icons';
 import {
   AutenticazioneService,
   RUOLO_AMMINISTRATORE,
-} from '../../servizi/autenticazione.service';
+} from '../../servizi/amministrazione/autenticazione.service';
 
 /**
  * Login dalla voce "Accedi" del menu utente, sul Keycloak di presenze.

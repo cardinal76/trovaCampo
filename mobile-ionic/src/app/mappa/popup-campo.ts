@@ -14,7 +14,7 @@ import {
   quandoPartita,
   squadrePartita,
 } from '../modelli/partita';
-import { linkPercorso, suggerimentoPartenza } from '../modelli/percorso';
+import { linkPercorso } from '../modelli/percorso';
 import { Posizione, testoDistanza } from '../modelli/vicini';
 
 /**

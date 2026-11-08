@@ -1,8 +1,8 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, from, switchMap, throwError } from 'rxjs';
-import { environment } from '../../environments/environment';
-import { FonteIndirizzo, Prospect } from '../modelli/prospect';
+import { environment } from '../../../environments/environment';
+import { FonteIndirizzo, Prospect } from '../../modelli/prospect';
 import { AutenticazioneService } from './autenticazione.service';
 import { messaggioErrore } from './errori-amministrazione';
 
@@ -55,7 +55,13 @@ export interface StatoImportazioneProspect {
     errore?: string;
     collegamento?: { prospectCalcioLazio: number; collegati: number; conCoordinate: number };
   };
-  regioni: { regioneId: number; regione: string; prossimoStart: number; totale?: number; completata: boolean }[];
+  regioni: {
+    regioneId: number;
+    regione: string;
+    prossimoStart: number;
+    totale?: number;
+    completata: boolean;
+  }[];
 }
 
 /** Una durata in secondi detta come la direbbe una persona: «3 giorni e 4 ore», «25 minuti». */
@@ -69,7 +75,7 @@ export function durataLeggibile(secondi: number): string {
   }
   const ore = Math.round(secondi / 3600);
   if (ore < 48) {
-    return ore === 1 ? 'circa un\'ora' : `circa ${ore} ore`;
+    return ore === 1 ? "circa un'ora" : `circa ${ore} ore`;
   }
   const giorni = Math.floor(ore / 24);
   const resto = ore % 24;
@@ -172,20 +178,27 @@ export class ProspectService {
       params = params.set('dettagli', dettagli.toLowerCase());
     }
     return this.conToken((headers) =>
-      this.http.post<StatoImportazioneProspect>(`${this.url}/importazione`, null, { headers, params }),
+      this.http.post<StatoImportazioneProspect>(`${this.url}/importazione`, null, {
+        headers,
+        params,
+      }),
     );
   }
 
   /** Riprende l'ultimo giro dalla posizione salvata: dopo un blocco è l'unico modo. */
   riprendi(): Observable<StatoImportazioneProspect> {
     return this.conToken((headers) =>
-      this.http.post<StatoImportazioneProspect>(`${this.url}/importazione/riprendi`, null, { headers }),
+      this.http.post<StatoImportazioneProspect>(`${this.url}/importazione/riprendi`, null, {
+        headers,
+      }),
     );
   }
 
   ferma(): Observable<StatoImportazioneProspect> {
     return this.conToken((headers) =>
-      this.http.post<StatoImportazioneProspect>(`${this.url}/importazione/ferma`, null, { headers }),
+      this.http.post<StatoImportazioneProspect>(`${this.url}/importazione/ferma`, null, {
+        headers,
+      }),
     );
   }
 

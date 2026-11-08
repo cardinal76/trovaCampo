@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment';
 import { SocietaService } from './societa.service';
 
 describe('SocietaService', () => {
@@ -85,9 +85,7 @@ describe('SocietaService', () => {
     let risposta: unknown;
     service.risultati('abc 1').subscribe((dati) => (risposta = dati));
 
-    http
-      .expectOne(`${base}/abc%201/risultati`)
-      .flush({ stato: 'DISPONIBILI', risultati: [] });
+    http.expectOne(`${base}/abc%201/risultati`).flush({ stato: 'DISPONIBILI', risultati: [] });
     expect(risposta).toEqual({ stato: 'DISPONIBILI', risultati: [] });
   });
 });

@@ -1,11 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { environment } from '../../environments/environment';
-import { ElencoProssime } from '../modelli/prossime';
+import { environment } from '../../../environments/environment';
+import { ElencoProssime } from '../../modelli/prossime';
 import { AmbientePush, SupportoPush } from './ambiente-push';
-import { DiagnosiService } from './diagnosi.service';
-import { PosizioneService } from './posizione.service';
+import { DiagnosiService } from '../posizione/diagnosi.service';
+import { PosizioneService } from '../posizione/posizione.service';
 import { SquadraSeguita, SquadreSeguiteService } from './squadre-seguite.service';
 
 const CHIAVE = 'trovacampo.notifiche';
@@ -153,7 +153,11 @@ export class NotificheService {
     return this.cambia(async () => {
       if (!acceso) {
         // Spento, la posizione non serve più: si dimentica anche qui, non solo sul server.
-        return this.salvaESincronizza({ ...this.preferenze(), avvisoVicino: false, posizione: null });
+        return this.salvaESincronizza({
+          ...this.preferenze(),
+          avvisoVicino: false,
+          posizione: null,
+        });
       }
       const notificheOk = await this.assicuraPermesso();
       const posizione = await this.leggiPosizione();
@@ -171,7 +175,9 @@ export class NotificheService {
   }
 
   async impostaRaggio(raggioKm: number): Promise<Esito> {
-    const valido = (RAGGI_KM as readonly number[]).includes(raggioKm) ? raggioKm : RAGGIO_PREDEFINITO_KM;
+    const valido = (RAGGI_KM as readonly number[]).includes(raggioKm)
+      ? raggioKm
+      : RAGGIO_PREDEFINITO_KM;
     return this.cambia(() => this.salvaESincronizza({ ...this.preferenze(), raggioKm: valido }));
   }
 
@@ -321,9 +327,7 @@ export class NotificheService {
       if (permesso === 'default') {
         // Chrome chiude la richiesta senza risposta se la si ignora o la si
         // chiude con la X: non è un blocco, basta riprovare.
-        this.errore.set(
-          'Hai chiuso la richiesta senza scegliere: riprova e tocca «Consenti».',
-        );
+        this.errore.set('Hai chiuso la richiesta senza scegliere: riprova e tocca «Consenti».');
       }
     }
     this.permesso.set(permesso);
@@ -385,7 +389,9 @@ export class NotificheService {
   }
 
   private async mandaAlServer(): Promise<void> {
-    const { chiave } = await firstValueFrom(this.http.get<{ chiave: string }>(`${this.base}/chiave`));
+    const { chiave } = await firstValueFrom(
+      this.http.get<{ chiave: string }>(`${this.base}/chiave`),
+    );
     const iscrizione = await this.ambiente.iscrivi(chiave).catch((errore: unknown) => {
       throw new ErroreIscrizione(String(errore));
     });
@@ -439,7 +445,9 @@ function arrotonda(gradi: number): number {
 
 function ricordate(): PreferenzeNotifiche {
   try {
-    const lette = JSON.parse(localStorage.getItem(CHIAVE) ?? 'null') as Partial<PreferenzeNotifiche> | null;
+    const lette = JSON.parse(
+      localStorage.getItem(CHIAVE) ?? 'null',
+    ) as Partial<PreferenzeNotifiche> | null;
     if (!lette || typeof lette !== 'object') {
       return PREDEFINITE;
     }

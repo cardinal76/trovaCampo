@@ -1,10 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideIonicAngular } from '@ionic/angular/standalone';
-import { AmbientePush } from '../../servizi/ambiente-push';
-import { AmbientePushFinto } from '../../servizi/ambiente-push-finto.spec';
-import { PosizioneService, errorePerCodice } from '../../servizi/posizione.service';
-import { SONDE_BROWSER } from '../../servizi/sonde-browser';
-import { SondeFinte } from '../../servizi/sonde-finte.spec';
+import { AmbientePush } from '../../servizi/notifiche/ambiente-push';
+import { AmbientePushFinto } from '../../servizi/notifiche/ambiente-push-finto.spec';
+import { PosizioneService, errorePerCodice } from '../../servizi/posizione/posizione.service';
+import { SONDE_BROWSER } from '../../servizi/posizione/sonde-browser';
+import { SondeFinte } from '../../servizi/posizione/sonde-finte.spec';
 import { PercorsoCampoComponent } from './percorso-campo.component';
 
 /** "Partenza" e "Percorso" sotto la mappa della scheda. */

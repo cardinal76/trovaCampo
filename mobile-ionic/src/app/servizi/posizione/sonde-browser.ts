@@ -51,8 +51,9 @@ export function sondeReali(): SondeBrowser {
     sicura: () => !conFinestra || window.isSecureContext !== false,
     nativa: () =>
       conFinestra &&
-      (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.() ===
-        true,
+      (
+        window as { Capacitor?: { isNativePlatform?: () => boolean } }
+      ).Capacitor?.isNativePlatform?.() === true,
     conServiceWorker: () => conFinestra && 'serviceWorker' in navigator,
     conPushManager: () => conFinestra && 'PushManager' in window,
     permessoNotifiche: () => (typeof Notification === 'undefined' ? null : Notification.permission),

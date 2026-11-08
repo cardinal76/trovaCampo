@@ -3,11 +3,11 @@ import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular/standalone';
 import { of } from 'rxjs';
 import { Societa, SocietaSenzaCampo } from '../../modelli/societa';
-import { AmministrazioneService } from '../../servizi/amministrazione.service';
-import { ricordaAmministratore } from '../../servizi/amministratore-ricordato';
-import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
-import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
-import { SocietaService } from '../../servizi/societa.service';
+import { AmministrazioneService } from '../../servizi/amministrazione/amministrazione.service';
+import { ricordaAmministratore } from '../../servizi/amministrazione/amministratore-ricordato';
+import { CampiCambiatiService } from '../../servizi/societa/campi-cambiati.service';
+import { ProvinciaSceltaService } from '../../servizi/preferenze/provincia-scelta.service';
+import { SocietaService } from '../../servizi/societa/societa.service';
 import { ElencoPage } from './elenco.page';
 
 function campo(id: string, nomeSocieta: string, valori: Partial<Societa> = {}): Societa {
@@ -40,7 +40,10 @@ describe('ElencoPage', () => {
   let scaricati: Societa[];
   let senzaCampo: jasmine.Spy;
 
-  const ZAGAROLO: SocietaSenzaCampo = { anagraficaSocietaId: 383, denominazione: 'ASDPOL ZAGAROLO CALCIO' };
+  const ZAGAROLO: SocietaSenzaCampo = {
+    anagraficaSocietaId: 383,
+    denominazione: 'ASDPOL ZAGAROLO CALCIO',
+  };
   const CERVETERI: SocietaSenzaCampo = {
     anagraficaSocietaId: 9,
     denominazione: 'POLISPORTIVA CERVETERI',
@@ -187,7 +190,9 @@ describe('ElencoPage', () => {
     it('accesa elenca le società senza campo, chieste una volta, e la ricerca le filtra', () => {
       ricordaAmministratore(true);
       crea();
-      const pillola = fixture.nativeElement.querySelector('.filtro-senza-campo') as HTMLButtonElement;
+      const pillola = fixture.nativeElement.querySelector(
+        '.filtro-senza-campo',
+      ) as HTMLButtonElement;
 
       pillola.click();
       fixture.detectChanges();

@@ -162,6 +162,8 @@ export function doveSiGioca(campo: CampoPartita | null): string | null {
     return null;
   }
   const indirizzo = [campo.indirizzo, campo.localita].filter((parte) => !!parte?.trim()).join(', ');
-  const parti = [campo.nomeImpianto ?? campo.nomeSocieta, indirizzo].filter((parte) => !!parte?.trim());
+  const parti = [campo.nomeImpianto ?? campo.nomeSocieta, indirizzo].filter(
+    (parte) => !!parte?.trim(),
+  );
   return parti.length > 0 ? parti.join(' · ') : null;
 }

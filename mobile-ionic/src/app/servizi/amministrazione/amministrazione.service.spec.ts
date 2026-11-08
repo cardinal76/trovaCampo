@@ -2,11 +2,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
-import { environment } from '../../environments/environment';
-import { ModificaSocieta } from '../modelli/societa';
+import { environment } from '../../../environments/environment';
+import { ModificaSocieta } from '../../modelli/societa';
 import { AmministrazioneService } from './amministrazione.service';
 import { AutenticazioneService } from './autenticazione.service';
-import { CampiCambiatiService } from './campi-cambiati.service';
+import { CampiCambiatiService } from '../societa/campi-cambiati.service';
 
 describe('AmministrazioneService', () => {
   let service: AmministrazioneService;
@@ -96,7 +96,9 @@ describe('AmministrazioneService', () => {
     const cambiati = TestBed.inject(CampiCambiatiService);
     const prima = cambiati.versione();
 
-    const fallita = firstValueFrom(service.elimina('x'), { defaultValue: undefined }).catch((e: Error) => e);
+    const fallita = firstValueFrom(service.elimina('x'), { defaultValue: undefined }).catch(
+      (e: Error) => e,
+    );
     await Promise.resolve();
     await Promise.resolve();
     http
@@ -122,10 +124,14 @@ describe('AmministrazioneService', () => {
     const lettura = http.expectOne(`${environment.apiUrl}/api/admin/esclusioni`);
     expect(lettura.request.method).toBe('GET');
     expect(lettura.request.headers.get('Authorization')).toBe('Bearer abc');
-    lettura.flush([{ id: 'e1', nomeSocieta: 'POMEZIA CALCIO 1957', nomeImpianto: 'DA DESIGNARE (' }]);
+    lettura.flush([
+      { id: 'e1', nomeSocieta: 'POMEZIA CALCIO 1957', nomeImpianto: 'DA DESIGNARE (' },
+    ]);
     expect((await elenco)[0].id).toBe('e1');
 
-    const annullamento = firstValueFrom(service.annullaEsclusione('e1'), { defaultValue: undefined });
+    const annullamento = firstValueFrom(service.annullaEsclusione('e1'), {
+      defaultValue: undefined,
+    });
     await Promise.resolve();
     await Promise.resolve();
     const cancellazione = http.expectOne(`${environment.apiUrl}/api/admin/esclusioni/e1`);

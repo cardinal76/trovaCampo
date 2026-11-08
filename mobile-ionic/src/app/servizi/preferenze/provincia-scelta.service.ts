@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { TUTTE } from '../modelli/provincia';
+import { TUTTE } from '../../modelli/provincia';
 
 const CHIAVE = 'trovacampo.provincia';
 

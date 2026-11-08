@@ -4,8 +4,11 @@ import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular/standalone';
 import { of, throwError } from 'rxjs';
 import { Prospect } from '../../modelli/prospect';
-import { AutenticazioneService } from '../../servizi/autenticazione.service';
-import { ProspectService, StatoImportazioneProspect } from '../../servizi/prospect.service';
+import { AutenticazioneService } from '../../servizi/amministrazione/autenticazione.service';
+import {
+  ProspectService,
+  StatoImportazioneProspect,
+} from '../../servizi/amministrazione/prospect.service';
 import { ProspectPage } from './prospect.page';
 
 function prospect(cf: string, valori: Partial<Prospect>): Prospect {
@@ -22,7 +25,13 @@ function prospect(cf: string, valori: Partial<Prospect>): Prospect {
 const PROSPECT: Prospect[] = [
   prospect('A', { regione: 'Lazio', organismi: ['FIGC', 'CSI'], discipline: ['Calcio (a 11)'] }),
   prospect('B', { regione: 'Lazio', organismi: ['FIGC'], discipline: ['Calcio a 5'], lat: 41.5 }),
-  prospect('C', { regione: 'Toscana', organismi: ['UISP'], discipline: ['Calcio (a 11)'], lat: 43.7, lng: 11.2 }),
+  prospect('C', {
+    regione: 'Toscana',
+    organismi: ['UISP'],
+    discipline: ['Calcio (a 11)'],
+    lat: 43.7,
+    lng: 11.2,
+  }),
 ];
 
 describe('ProspectPage', () => {
@@ -123,9 +132,9 @@ describe('ProspectPage', () => {
 
     expect(pagina.visibili().length).toBe(3);
     expect((fixture.nativeElement as HTMLElement).querySelector('.mappa')).not.toBeNull();
-    expect((fixture.nativeElement as HTMLElement).querySelector('.conteggio')?.textContent).toContain(
-      '3',
-    );
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.conteggio')?.textContent,
+    ).toContain('3');
   });
 
   it('le opzioni dei filtri vengono dai prospect', async () => {
@@ -154,14 +163,18 @@ describe('ProspectPage', () => {
     expect(pagina.visibili().map((p) => p.codiceFiscale)).toEqual(['A', 'C']);
 
     fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).querySelector('.conteggio')?.textContent).toContain(
-      '2',
-    );
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.conteggio')?.textContent,
+    ).toContain('2');
   });
 
   it('«Importa il Lazio» chiede solo la regione 12', async () => {
     servizio.avvia.and.returnValue(
-      of({ inCorso: true, ultimo: { stato: 'in corso', pagine: 0, lette: 0, nuove: 0, dettagli: 0 }, regioni: [] }),
+      of({
+        inCorso: true,
+        ultimo: { stato: 'in corso', pagine: 0, lette: 0, nuove: 0, dettagli: 0 },
+        regioni: [],
+      }),
     );
     await crea();
 
@@ -176,7 +189,14 @@ describe('ProspectPage', () => {
       of({
         avviato: true,
         messaggio: 'Ricerca avviata su 300 società',
-        stato: { inCorso: true, daCercare: 300, cercate: 0, trovate: 0, errori: 0, messaggio: 'In corso' },
+        stato: {
+          inCorso: true,
+          daCercare: 300,
+          cercate: 0,
+          trovate: 0,
+          errori: 0,
+          messaggio: 'In corso',
+        },
       }),
     );
     await crea();
@@ -221,7 +241,9 @@ describe('ProspectPage', () => {
 
   it('senza scegliere importa Roma, e un blocco del portale finisce fra gli errori', async () => {
     servizio.importaOpenData.and.returnValue(
-      throwError(() => new Error('dati.veneto.it ha risposto 429: importazione fermata, senza riprovare.')),
+      throwError(
+        () => new Error('dati.veneto.it ha risposto 429: importazione fermata, senza riprovare.'),
+      ),
     );
     await crea();
 
@@ -232,7 +254,7 @@ describe('ProspectPage', () => {
     expect(pagina.avviso()).toBeNull();
   });
 
-  describe('stato dell\'importazione', () => {
+  describe("stato dell'importazione", () => {
     const base: StatoImportazioneProspect = {
       inCorso: true,
       fase: 'in corso',
@@ -250,7 +272,14 @@ describe('ProspectPage', () => {
         richiestePerGiorno: 7000,
       },
       stima: { pagine: 600, dettagli: 7200, richieste: 7800, secondi: 96 * 3600, giorni: 4 },
-      ultimo: { stato: 'in corso', pagine: 40, lette: 4000, nuove: 3900, dettagli: 480, dettagliSaltati: 12 },
+      ultimo: {
+        stato: 'in corso',
+        pagine: 40,
+        lette: 4000,
+        nuove: 3900,
+        dettagli: 480,
+        dettagliSaltati: 12,
+      },
       regioni: [],
     };
 
@@ -324,7 +353,9 @@ describe('ProspectPage', () => {
 
     it('«Ferma» chiama il backend', async () => {
       servizio.stato.and.returnValue(of(base));
-      servizio.ferma.and.returnValue(of({ ...base, inCorso: false, fase: 'fermata', riprendibile: true }));
+      servizio.ferma.and.returnValue(
+        of({ ...base, inCorso: false, fase: 'fermata', riprendibile: true }),
+      );
       await crea();
 
       pagina.ferma();
@@ -334,7 +365,7 @@ describe('ProspectPage', () => {
       expect(testo()).toContain('Fermata');
     });
 
-    it('lancia con l\'ambito dei dettagli scelto', async () => {
+    it("lancia con l'ambito dei dettagli scelto", async () => {
       servizio.avvia.and.returnValue(of(base));
       await crea();
 

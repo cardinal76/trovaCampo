@@ -1,4 +1,9 @@
-import { Squadra, aggiornamentoRisultati, dettaglioSquadra, portaleNonRaggiungibile } from './squadra';
+import {
+  Squadra,
+  aggiornamentoRisultati,
+  dettaglioSquadra,
+  portaleNonRaggiungibile,
+} from './squadra';
 
 describe('dettaglioSquadra', () => {
   const eccellenza: Squadra = {
@@ -38,20 +43,28 @@ describe('aggiornamentoRisultati', () => {
 
   it('dice numero e giorno del comunicato', () => {
     expect(
-      aggiornamentoRisultati({ ...eccellenza, risultatiDaComunicato: { numero: 12, data: '2026-10-02' } }),
+      aggiornamentoRisultati({
+        ...eccellenza,
+        risultatiDaComunicato: { numero: 12, data: '2026-10-02' },
+      }),
     ).toBe('Risultati aggiornati al Comunicato Ufficiale n. 12 del 02/10');
   });
 
   it('tace senza avviso, o senza un comunicato che abbia portato risultati', () => {
     expect(aggiornamentoRisultati(eccellenza)).toBeNull();
     expect(aggiornamentoRisultati({ ...eccellenza, risultatiDaComunicato: null })).toBeNull();
-    expect(aggiornamentoRisultati({ ...eccellenza, risultatiDaComunicato: { numero: null } })).toBeNull();
+    expect(
+      aggiornamentoRisultati({ ...eccellenza, risultatiDaComunicato: { numero: null } }),
+    ).toBeNull();
   });
 
   it('il portale non risponde se lo dice almeno una squadra', () => {
     expect(portaleNonRaggiungibile([eccellenza])).toBeFalse();
     expect(
-      portaleNonRaggiungibile([eccellenza, { ...eccellenza, risultatiDaComunicato: { numero: null } }]),
+      portaleNonRaggiungibile([
+        eccellenza,
+        { ...eccellenza, risultatiDaComunicato: { numero: null } },
+      ]),
     ).toBeTrue();
   });
 });

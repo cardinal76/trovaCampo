@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular/standalone';
-import { ricordaAmministratore } from '../../servizi/amministratore-ricordato';
+import { ricordaAmministratore } from '../../servizi/amministrazione/amministratore-ricordato';
 import { MenuUtenteComponent } from './menu-utente.component';
 
 describe('MenuUtenteComponent', () => {
@@ -29,7 +29,9 @@ describe('MenuUtenteComponent', () => {
     fixture.detectChanges();
 
     const voce = document.querySelector<HTMLElement>('ion-item.footballer');
-    const letta = voce ? { href: (voce as HTMLIonItemElement).href ?? null, testo: voce.textContent?.trim() ?? '' } : null;
+    const letta = voce
+      ? { href: (voce as HTMLIonItemElement).href ?? null, testo: voce.textContent?.trim() ?? '' }
+      : null;
     await popover.dismiss();
     fixture.destroy();
     fixture.nativeElement.remove();

@@ -5,8 +5,27 @@ import { ChangeDetectionStrategy, Component, computed, effect, input, signal } f
  * deve dare la P, non la A che hanno metà delle società del Lazio.
  */
 const SIGLE = new Set([
-  'ASD', 'SSD', 'APD', 'ASC', 'ASDC', 'SSDARL', 'ARL', 'SRL', 'SPA', 'SS', 'US', 'AC', 'GS', 'SC',
-  'AS', 'POL', 'CS', 'ACD', 'USD', 'FC', 'CD',
+  'ASD',
+  'SSD',
+  'APD',
+  'ASC',
+  'ASDC',
+  'SSDARL',
+  'ARL',
+  'SRL',
+  'SPA',
+  'SS',
+  'US',
+  'AC',
+  'GS',
+  'SC',
+  'AS',
+  'POL',
+  'CS',
+  'ACD',
+  'USD',
+  'FC',
+  'CD',
 ]);
 
 /**

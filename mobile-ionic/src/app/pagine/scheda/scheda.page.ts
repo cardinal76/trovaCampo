@@ -84,9 +84,9 @@ import {
 import { PercorsoCampoComponent } from '../../componenti/percorso-campo/percorso-campo.component';
 import { StemmaComponent } from '../../componenti/stemma/stemma.component';
 import { iconaCampo } from '../../mappa/icona-campo';
-import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
-import { NotificheService } from '../../servizi/notifiche.service';
-import { SocietaService } from '../../servizi/societa.service';
+import { amministratoreRicordato } from '../../servizi/amministrazione/amministratore-ricordato';
+import { NotificheService } from '../../servizi/notifiche/notifiche.service';
+import { SocietaService } from '../../servizi/societa/societa.service';
 
 type Stato = 'caricamento' | 'completata' | 'errore';
 
@@ -262,12 +262,12 @@ export class SchedaPage implements OnDestroy {
     const societa = this.societa();
     return Boolean(
       societa &&
-        (societa.presidente ||
-          societa.indirizzoSede ||
-          societa.telefono ||
-          societa.email ||
-          societa.sitoWeb ||
-          societa.matricola),
+      (societa.presidente ||
+        societa.indirizzoSede ||
+        societa.telefono ||
+        societa.email ||
+        societa.sitoWeb ||
+        societa.matricola),
     );
   });
 
@@ -384,7 +384,10 @@ export class SchedaPage implements OnDestroy {
       dettaglio: dettaglioSquadra(squadra),
     });
     if (esito === 'troppe') {
-      await this.avvisa('Segui già 30 squadre: smetti di seguirne una dalla pagina Notifiche.', true);
+      await this.avvisa(
+        'Segui già 30 squadre: smetti di seguirne una dalla pagina Notifiche.',
+        true,
+      );
     } else if (this.notifiche.preferenze().avvisoSquadre) {
       await this.avvisa(`Segui ${squadra.campionato}: avviso un’ora prima di ogni partita.`);
     } else {
@@ -548,8 +551,8 @@ export class SchedaPage implements OnDestroy {
    */
   private async serviziAmministrazione() {
     const [{ AmministrazioneService }, { AutenticazioneService }] = await Promise.all([
-      import('../../servizi/amministrazione.service'),
-      import('../../servizi/autenticazione.service'),
+      import('../../servizi/amministrazione/amministrazione.service'),
+      import('../../servizi/amministrazione/autenticazione.service'),
     ]);
     return {
       amministrazione: this.iniettore.get(AmministrazioneService),

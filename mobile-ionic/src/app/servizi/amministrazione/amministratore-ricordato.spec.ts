@@ -1,4 +1,8 @@
-import { amministratoreRicordato, nomeRicordato, ricordaAmministratore } from './amministratore-ricordato';
+import {
+  amministratoreRicordato,
+  nomeRicordato,
+  ricordaAmministratore,
+} from './amministratore-ricordato';
 
 describe('amministratoreRicordato', () => {
   afterEach(() => ricordaAmministratore(false));
@@ -7,7 +11,7 @@ describe('amministratoreRicordato', () => {
     expect(amministratoreRicordato()).toBeFalse();
   });
 
-  it('ricorda un amministratore e lo dimentica all\'uscita', () => {
+  it("ricorda un amministratore e lo dimentica all'uscita", () => {
     ricordaAmministratore(true);
     expect(amministratoreRicordato()).toBeTrue();
 
@@ -15,7 +19,7 @@ describe('amministratoreRicordato', () => {
     expect(amministratoreRicordato()).toBeFalse();
   });
 
-  it('ricorda il nome solo finché l\'amministratore resta entrato', () => {
+  it("ricorda il nome solo finché l'amministratore resta entrato", () => {
     ricordaAmministratore(true, 'Marco');
     expect(nomeRicordato()).toBe('Marco');
 

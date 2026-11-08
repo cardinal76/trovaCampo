@@ -1,10 +1,10 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, from, switchMap, tap, throwError } from 'rxjs';
-import { environment } from '../../environments/environment';
-import { EsitoImportazione } from '../modelli/importazione';
+import { environment } from '../../../environments/environment';
+import { EsitoImportazione } from '../../modelli/importazione';
 import { AutenticazioneService } from './autenticazione.service';
-import { CampiCambiatiService } from './campi-cambiati.service';
+import { CampiCambiatiService } from '../societa/campi-cambiati.service';
 import { messaggioErrore } from './errori-amministrazione';
 
 @Injectable({ providedIn: 'root' })

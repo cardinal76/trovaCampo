@@ -1,12 +1,12 @@
-import { CasoNotifiche, CasoPosizione } from './diagnosi.service';
+import { CasoNotifiche, CasoPosizione } from '../diagnosi.service';
 import {
   istruzioniNotifiche,
   istruzioniPosizione,
   statoNotifiche,
   statoPosizione,
-} from './istruzioni';
-import { APP_GENERICA, Piattaforma, riconosciPiattaforma } from './sonde-browser';
-import { AGENTI } from './sonde-finte.spec';
+} from './index';
+import { APP_GENERICA, Piattaforma, riconosciPiattaforma } from '../sonde-browser';
+import { AGENTI } from '../sonde-finte.spec';
 
 const ANDROID = riconosciPiattaforma(AGENTI.androidChrome, 5, false);
 const SAMSUNG = riconosciPiattaforma(AGENTI.androidSamsung, 5, false);
@@ -16,7 +16,11 @@ const IPHONE_CHROME = riconosciPiattaforma(AGENTI.iphoneChrome, 5, false);
 const COMPUTER = riconosciPiattaforma(AGENTI.desktopChrome, 0, false);
 
 /** Tutto il testo del riquadro, per cercarci dentro. */
-function testo(piattaforma: Piattaforma, caso: CasoPosizione | CasoNotifiche, di: 'n' | 'p'): string {
+function testo(
+  piattaforma: Piattaforma,
+  caso: CasoPosizione | CasoNotifiche,
+  di: 'n' | 'p',
+): string {
   const istruzioni =
     di === 'n'
       ? istruzioniNotifiche(caso as CasoNotifiche, piattaforma)
@@ -64,7 +68,9 @@ describe('istruzioni', () => {
       expect(testo(ANDROID, 'bloccate', 'n')).toContain('Autorizzazioni → Notifiche → Consenti');
       expect(testo(ANDROID, 'bloccate', 'n')).toContain('App → Chrome → Notifiche');
       expect(testo(SAMSUNG, 'bloccate', 'n')).toContain('App → Samsung Internet');
-      expect(testo(IPHONE_HOME, 'bloccate', 'n')).toContain('Impostazioni → Notifiche → TrovaCampo');
+      expect(testo(IPHONE_HOME, 'bloccate', 'n')).toContain(
+        'Impostazioni → Notifiche → TrovaCampo',
+      );
       expect(testo(COMPUTER, 'bloccate', 'n')).toContain('ricarica la pagina');
       expect(istruzioniNotifiche('bloccate', ANDROID)!.riprova).toBeTrue();
     });

@@ -33,12 +33,12 @@ import { StemmaComponent } from '../../componenti/stemma/stemma.component';
 import { SelettoreMappaComponent } from '../../componenti/selettore-mappa/selettore-mappa.component';
 import { leggiCoordinate, scriviCoordinate } from '../../modelli/coordinate';
 import { ModificaSocieta, Societa, TipoCampionato, daPresenze } from '../../modelli/societa';
-import { AmministrazioneService } from '../../servizi/amministrazione.service';
+import { AmministrazioneService } from '../../servizi/amministrazione/amministrazione.service';
 import {
   AutenticazioneService,
   RUOLO_AMMINISTRATORE,
-} from '../../servizi/autenticazione.service';
-import { SocietaService } from '../../servizi/societa.service';
+} from '../../servizi/amministrazione/autenticazione.service';
+import { SocietaService } from '../../servizi/societa/societa.service';
 
 /** Come lo accetta il server: un indirizzo https, senza spazi. */
 export function stemmaValido(indirizzo: string): boolean {
@@ -111,9 +111,7 @@ class Modulo {
    * dal filtro «Senza campo» dell'elenco, con nome, stemma e collegamento già
    * scritti. Il campo resta da scrivere: è il motivo per cui si è qui.
    */
-  static perSocietaSenzaCampo(parametri: {
-    get(nome: string): string | null;
-  }): Modulo {
+  static perSocietaSenzaCampo(parametri: { get(nome: string): string | null }): Modulo {
     const modulo = new Modulo();
     modulo.nomeSocieta = parametri.get('nomeSocieta') ?? '';
     modulo.logoUrl = parametri.get('logoUrl') ?? '';
@@ -300,7 +298,11 @@ export class ModificaPage {
   }
 
   private async avvisa(messaggio: string): Promise<void> {
-    const avviso = await this.toast.create({ message: messaggio, duration: 2000, color: 'success' });
+    const avviso = await this.toast.create({
+      message: messaggio,
+      duration: 2000,
+      color: 'success',
+    });
     await avviso.present();
   }
 

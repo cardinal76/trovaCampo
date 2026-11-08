@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { SONDE_BROWSER, SondeBrowser, riconosciPiattaforma } from './sonde-browser';
+import { SONDE_BROWSER, SondeBrowser, riconosciPiattaforma } from '../posizione/sonde-browser';
 
 /**
  * Cosa sa fare questo browser con le notifiche push:

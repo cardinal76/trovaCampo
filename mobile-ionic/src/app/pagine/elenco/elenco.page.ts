@@ -46,11 +46,11 @@ import {
   nomeCompleto,
   senzaPosizionePrecisa,
 } from '../../modelli/societa';
-import { AmministrazioneService } from '../../servizi/amministrazione.service';
-import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
-import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
-import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
-import { SocietaService } from '../../servizi/societa.service';
+import { AmministrazioneService } from '../../servizi/amministrazione/amministrazione.service';
+import { amministratoreRicordato } from '../../servizi/amministrazione/amministratore-ricordato';
+import { CampiCambiatiService } from '../../servizi/societa/campi-cambiati.service';
+import { ProvinciaSceltaService } from '../../servizi/preferenze/provincia-scelta.service';
+import { SocietaService } from '../../servizi/societa/societa.service';
 
 /** Quante righe si aggiungono ogni volta che si arriva in fondo. */
 const BLOCCO = 100;
@@ -159,7 +159,9 @@ export class ElencoPage {
   /** Le province dei campi scaricati, con "Tutte" in testa. */
   readonly opzioniProvincia = computed(() => opzioniProvincia(this.campi()));
   /** Sulla pillola chiusa: "Tutte" da solo non direbbe di cosa. */
-  readonly testoProvincia = computed(() => testoProvincia(this.provincia(), this.opzioniProvincia()));
+  readonly testoProvincia = computed(() =>
+    testoProvincia(this.provincia(), this.opzioniProvincia()),
+  );
   readonly provincia = computed(() =>
     provinciaValida(this.provinciaScelta.scelta(), this.opzioniProvincia()),
   );

@@ -15,7 +15,7 @@ import {
   shareOutline,
   timeOutline,
 } from 'ionicons/icons';
-import { Istruzioni } from '../../servizi/istruzioni';
+import { Istruzioni } from '../../servizi/posizione/istruzioni';
 
 /**
  * "Cosa blocca e come sbloccarlo": il titolo, due righe e i passi numerati

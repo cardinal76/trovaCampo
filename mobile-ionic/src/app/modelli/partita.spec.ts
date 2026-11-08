@@ -39,7 +39,9 @@ describe('partita', () => {
     expect(inFinestra(conId, orario + 136 * 60_000)).toBeFalse();
     // Senza l'id di presenze non si può chiedere il punteggio.
     expect(inFinestra(boreale, orario)).toBeFalse();
-    expect(daSeguire([conId, { ...boreale, id: 8, dataOra: '2026-09-20T11:00:00+02:00' }], orario)).toEqual([7]);
+    expect(
+      daSeguire([conId, { ...boreale, id: 8, dataOra: '2026-09-20T11:00:00+02:00' }], orario),
+    ).toEqual([7]);
   });
 
   it('fonde i punteggi solo nelle partite chieste, e toglie il live a chi non c e piu', () => {

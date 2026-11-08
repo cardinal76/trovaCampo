@@ -53,7 +53,7 @@ import { testoSicuro } from '../../modelli/societa';
 import {
   AutenticazioneService,
   RUOLO_AMMINISTRATORE,
-} from '../../servizi/autenticazione.service';
+} from '../../servizi/amministrazione/autenticazione.service';
 import {
   AmbitoDettagli,
   CoperturaProspect,
@@ -64,7 +64,7 @@ import {
   StatoImportazioneProspect,
   TESTO_AMBITO,
   durataLeggibile,
-} from '../../servizi/prospect.service';
+} from '../../servizi/amministrazione/prospect.service';
 
 const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
 /** L'id del Lazio nel registro: il primo lotto. */
@@ -250,7 +250,9 @@ export class ProspectPage implements OnDestroy {
     this.service.collega().subscribe({
       next: (copertura) => {
         this.copertura.set(copertura);
-        this.avviso.set(`Collegamento fatto: ${copertura.collegati} su ${copertura.prospectCalcioLazio}`);
+        this.avviso.set(
+          `Collegamento fatto: ${copertura.collegati} su ${copertura.prospectCalcioLazio}`,
+        );
       },
       error: (e: Error) => this.errore.set(e.message),
     });
@@ -265,7 +267,7 @@ export class ProspectPage implements OnDestroy {
     this.errore.set(null);
     this.avviso.set(
       fonte === 'veneto'
-        ? 'Importazione in corso: un file per comune, dieci secondi l\'uno dall\'altro (un paio di minuti)…'
+        ? "Importazione in corso: un file per comune, dieci secondi l'uno dall'altro (un paio di minuti)…"
         : 'Importazione in corso…',
     );
     this.service.importaOpenData(fonte).subscribe({
@@ -346,7 +348,11 @@ export class ProspectPage implements OnDestroy {
     });
   }
 
-  private disegna(contenitore: HTMLElement, prospect: Prospect[], immagine: HTMLImageElement): void {
+  private disegna(
+    contenitore: HTMLElement,
+    prospect: Prospect[],
+    immagine: HTMLImageElement,
+  ): void {
     this.zona.runOutsideAngular(() => {
       if (this.mappa?.getContainer() !== contenitore) {
         this.mappa?.remove();

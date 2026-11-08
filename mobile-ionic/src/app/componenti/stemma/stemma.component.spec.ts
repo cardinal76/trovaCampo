@@ -36,7 +36,7 @@ describe('StemmaComponent', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it("mostra lo stemma, senza alt e senza referrer, caricato quando serve", () => {
+  it('mostra lo stemma, senza alt e senza referrer, caricato quando serve', () => {
     const elemento = crea('A.S.D. PALOCCO', 'https://play.lnd.it/lndimg/1/1-web.png', 36);
     const img = elemento.querySelector('img')!;
 

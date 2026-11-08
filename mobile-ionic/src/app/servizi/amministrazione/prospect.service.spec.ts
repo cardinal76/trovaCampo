@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment';
 import { AutenticazioneService } from './autenticazione.service';
 import { ProspectService } from './prospect.service';
 
@@ -39,7 +39,7 @@ describe('ProspectService', () => {
     expect(await risposta).toEqual([]);
   });
 
-  it('avvia l\'importazione di una regione', async () => {
+  it("avvia l'importazione di una regione", async () => {
     const risposta = firstValueFrom(service.avvia([12], 2));
     await dopoIlToken();
     const chiamata = http.expectOne((r) => r.url === `${url}/importazione`);
@@ -50,7 +50,7 @@ describe('ProspectService', () => {
     expect((await risposta).inCorso).toBeTrue();
   });
 
-  it('sceglie i dettagli e riprende l\'ultimo giro', async () => {
+  it("sceglie i dettagli e riprende l'ultimo giro", async () => {
     const avvio = firstValueFrom(service.avvia([], undefined, 'FIGC'));
     await dopoIlToken();
     const chiamata = http.expectOne((r) => r.url === `${url}/importazione`);
@@ -79,12 +79,28 @@ describe('ProspectService', () => {
     await dopoIlToken();
     const chiamata = http.expectOne(`${url}/collegamento`);
     expect(chiamata.request.method).toBe('POST');
-    chiamata.flush({ prospectCalcioLazio: 10, collegati: 6, conCoordinate: 5, copertura: 60, perFonte: {}, perConfidenza: {} });
+    chiamata.flush({
+      prospectCalcioLazio: 10,
+      collegati: 6,
+      conCoordinate: 5,
+      copertura: 60,
+      perFonte: {},
+      perConfidenza: {},
+    });
     expect((await collegati).copertura).toBe(60);
 
     const copertura = firstValueFrom(service.copertura());
     await dopoIlToken();
-    http.expectOne(`${url}/copertura`).flush({ prospectCalcioLazio: 10, collegati: 6, conCoordinate: 5, copertura: 60, perFonte: { OPEN_DATA: 1 }, perConfidenza: {} });
+    http
+      .expectOne(`${url}/copertura`)
+      .flush({
+        prospectCalcioLazio: 10,
+        collegati: 6,
+        conCoordinate: 5,
+        copertura: 60,
+        perFonte: { OPEN_DATA: 1 },
+        perConfidenza: {},
+      });
     expect((await copertura).perFonte.OPEN_DATA).toBe(1);
   });
 
@@ -98,7 +114,9 @@ describe('ProspectService', () => {
 
     const openData = firstValueFrom(service.importaOpenData());
     await dopoIlToken();
-    const importa = http.expectOne(`${environment.apiUrl}/api/admin/indirizzi/impianti-open-data?fonte=cmrc`);
+    const importa = http.expectOne(
+      `${environment.apiUrl}/api/admin/indirizzi/impianti-open-data?fonte=cmrc`,
+    );
     expect(importa.request.method).toBe('POST');
     importa.flush({
       fonte: 'cmrc-censimento',

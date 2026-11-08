@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Posizione } from '../modelli/vicini';
+import { Posizione } from '../../modelli/vicini';
 
 /** Perché la posizione non è arrivata, con il messaggio da mostrare. */
 export class ErrorePosizione extends Error {

@@ -1,10 +1,10 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, from, switchMap, tap, throwError } from 'rxjs';
-import { environment } from '../../environments/environment';
-import { Esclusione, ModificaSocieta, Societa, SocietaSenzaCampo } from '../modelli/societa';
+import { environment } from '../../../environments/environment';
+import { Esclusione, ModificaSocieta, Societa, SocietaSenzaCampo } from '../../modelli/societa';
 import { AutenticazioneService } from './autenticazione.service';
-import { CampiCambiatiService } from './campi-cambiati.service';
+import { CampiCambiatiService } from '../societa/campi-cambiati.service';
 import { messaggioErrore } from './errori-amministrazione';
 
 /** Creazione, modifica e cancellazione delle schede, per chi ha il ruolo trovacampo-admin. */
@@ -45,12 +45,16 @@ export class AmministrazioneService {
 
   /** I campi di presenze eliminati, i più recenti prima. */
   esclusioni(): Observable<Esclusione[]> {
-    return this.conToken((headers) => this.http.get<Esclusione[]>(this.baseEsclusioni, { headers }));
+    return this.conToken((headers) =>
+      this.http.get<Esclusione[]>(this.baseEsclusioni, { headers }),
+    );
   }
 
   /** Le società di presenze senza campo, e quindi senza scheda qui. */
   societaSenzaCampo(): Observable<SocietaSenzaCampo[]> {
-    return this.conToken((headers) => this.http.get<SocietaSenzaCampo[]>(this.baseSenzaCampo, { headers }));
+    return this.conToken((headers) =>
+      this.http.get<SocietaSenzaCampo[]>(this.baseSenzaCampo, { headers }),
+    );
   }
 
   /** Il campo torna con la prossima sincronizzazione, se presenze lo manda ancora. */

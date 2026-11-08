@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import Keycloak from 'keycloak-js';
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment';
 import { ricordaAmministratore } from './amministratore-ricordato';
 
 /** Ruolo di realm, nel Keycloak di presenze, che apre l'importazione. */
@@ -73,7 +73,9 @@ export class AutenticazioneService {
   }
 
   private aggiornaUtente(keycloak: Keycloak): void {
-    const profilo = keycloak.tokenParsed as { preferred_username?: string; name?: string } | undefined;
+    const profilo = keycloak.tokenParsed as
+      | { preferred_username?: string; name?: string }
+      | undefined;
     const nome = profilo?.name ?? profilo?.preferred_username ?? null;
     this.nome.set(nome);
     this.ruoli.set(keycloak.realmAccess?.roles ?? []);

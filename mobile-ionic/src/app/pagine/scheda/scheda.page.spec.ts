@@ -13,13 +13,13 @@ import { Partita } from '../../modelli/partita';
 import { Risultati, Risultato } from '../../modelli/risultato';
 import { Societa } from '../../modelli/societa';
 import { Squadra } from '../../modelli/squadra';
-import { AmbientePush } from '../../servizi/ambiente-push';
-import { AmministrazioneService } from '../../servizi/amministrazione.service';
-import { ricordaAmministratore } from '../../servizi/amministratore-ricordato';
-import { AutenticazioneService } from '../../servizi/autenticazione.service';
-import { AmbientePushFinto, attendi } from '../../servizi/ambiente-push-finto.spec';
-import { NotificheService } from '../../servizi/notifiche.service';
-import { SocietaService } from '../../servizi/societa.service';
+import { AmbientePush } from '../../servizi/notifiche/ambiente-push';
+import { AmministrazioneService } from '../../servizi/amministrazione/amministrazione.service';
+import { ricordaAmministratore } from '../../servizi/amministrazione/amministratore-ricordato';
+import { AutenticazioneService } from '../../servizi/amministrazione/autenticazione.service';
+import { AmbientePushFinto, attendi } from '../../servizi/notifiche/ambiente-push-finto.spec';
+import { NotificheService } from '../../servizi/notifiche/notifiche.service';
+import { SocietaService } from '../../servizi/societa/societa.service';
 import { SchedaPage } from './scheda.page';
 
 const SOCIETA: Societa = {
@@ -105,7 +105,11 @@ describe('SchedaPage', () => {
     sessionStorage.removeItem('trovacampo.eliminaDopoAccesso');
   });
 
-  function apri(societa: Societa, partite: Partita[] = [PARTITA], squadre: Squadra[] = []): HTMLElement {
+  function apri(
+    societa: Societa,
+    partite: Partita[] = [PARTITA],
+    squadre: Squadra[] = [],
+  ): HTMLElement {
     messaggi = [];
     conferme = [];
     risposta = 'destructive';
@@ -257,9 +261,9 @@ describe('SchedaPage', () => {
     expect(partita.querySelector('.casa')?.textContent?.trim()).toBe('BOREALE');
     expect(partita.querySelector('.ospite')?.textContent?.trim()).toBe('VIGOR PERCONTI');
     expect(partita.querySelector('.nome-campionato')?.textContent?.trim()).toBe('ECCELLENZA');
-    expect(pagina.querySelector('ion-accordion[value=partite] ion-badge')?.textContent?.trim()).toBe(
-      '1',
-    );
+    expect(
+      pagina.querySelector('ion-accordion[value=partite] ion-badge')?.textContent?.trim(),
+    ).toBe('1');
   });
 
   it('una partita in diretta ha l etichetta LIVE rossa e il punteggio al posto del vs', () => {
@@ -344,11 +348,22 @@ describe('SchedaPage', () => {
      */
     it('il derby fra due squadre della societa mostra due righe', () => {
       const derbyInCasa: Risultato = {
-        ...VITTORIA, squadraIscrittaId: 50, casa: 'BOREALE', ospite: 'BOREALE B',
-        golCasa: 3, golOspite: 0, inCasa: true, esito: 'VITTORIA', squadra: '',
+        ...VITTORIA,
+        squadraIscrittaId: 50,
+        casa: 'BOREALE',
+        ospite: 'BOREALE B',
+        golCasa: 3,
+        golOspite: 0,
+        inCasa: true,
+        esito: 'VITTORIA',
+        squadra: '',
       };
       const derbyFuori: Risultato = {
-        ...derbyInCasa, squadraIscrittaId: 51, inCasa: false, esito: 'SCONFITTA', squadra: 'B',
+        ...derbyInCasa,
+        squadraIscrittaId: 51,
+        inCasa: false,
+        esito: 'SCONFITTA',
+        squadra: 'B',
       };
       rispostaRisultati = () => of({ stato: 'DISPONIBILI', risultati: [derbyInCasa, derbyFuori] });
 
@@ -514,7 +529,9 @@ describe('SchedaPage', () => {
     const SENZA_CHIAVE: Squadra = { ...PRIMA, campionato: 'UNDER 17', chiave: undefined };
 
     function campanelle(pagina: HTMLElement): HTMLElement[] {
-      return Array.from(pagina.querySelectorAll('ion-accordion[value=campionati] ion-button.segui'));
+      return Array.from(
+        pagina.querySelectorAll('ion-accordion[value=campionati] ion-button.segui'),
+      );
     }
 
     it('c è su ogni squadra che il backend sa riconoscere', () => {
@@ -569,29 +586,39 @@ describe('SchedaPage', () => {
     }
 
     it('con il portale fermo dice a quale comunicato sono aggiornati i risultati, senza nominare la lega', () => {
-      const pagina = apri(SOCIETA, [], [
-        {
-          ...ECCELLENZA,
-          risultatiDaComunicato: {
-            numero: 55,
-            data: '2026-09-24',
-            ente: 'Regionali',
-            portaleNonDisponibileDal: '2026-09-26T11:00:00Z',
+      const pagina = apri(
+        SOCIETA,
+        [],
+        [
+          {
+            ...ECCELLENZA,
+            risultatiDaComunicato: {
+              numero: 55,
+              data: '2026-09-24',
+              ente: 'Regionali',
+              portaleNonDisponibileDal: '2026-09-26T11:00:00Z',
+            },
           },
-        },
-      ]);
+        ],
+      );
 
       expect(campionati(pagina).querySelector('.avviso-risultati')?.textContent).toContain(
         'I risultati sono aggiornati ai Comunicati Ufficiali',
       );
-      expect(campionati(pagina).querySelector('.avviso-risultati')?.textContent).not.toContain('LND');
-      expect(campionati(pagina).querySelector('.aggiornamento-risultati')?.textContent?.trim()).toBe(
-        'Risultati aggiornati al Comunicato Ufficiale n. 55 del 24/09',
+      expect(campionati(pagina).querySelector('.avviso-risultati')?.textContent).not.toContain(
+        'LND',
       );
+      expect(
+        campionati(pagina).querySelector('.aggiornamento-risultati')?.textContent?.trim(),
+      ).toBe('Risultati aggiornati al Comunicato Ufficiale n. 55 del 24/09');
     });
 
     it('con il portale che risponde, o da un presenze che non lo dice, nessun avviso', () => {
-      const pagina = apri(SOCIETA, [], [ECCELLENZA, { ...ECCELLENZA, risultatiDaComunicato: null }]);
+      const pagina = apri(
+        SOCIETA,
+        [],
+        [ECCELLENZA, { ...ECCELLENZA, risultatiDaComunicato: null }],
+      );
 
       expect(campionati(pagina).querySelector('.avviso-risultati')).toBeNull();
       expect(campionati(pagina).querySelector('.aggiornamento-risultati')).toBeNull();

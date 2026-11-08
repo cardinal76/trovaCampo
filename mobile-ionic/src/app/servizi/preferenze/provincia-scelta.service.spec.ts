@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { TUTTE } from '../modelli/provincia';
+import { TUTTE } from '../../modelli/provincia';
 import { ProvinciaSceltaService } from './provincia-scelta.service';
 
 describe('ProvinciaSceltaService', () => {

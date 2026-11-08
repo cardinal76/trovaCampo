@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { firstValueFrom } from 'rxjs';
-import { environment } from '../../environments/environment';
+import { environment } from '../../../environments/environment';
 import { AutenticazioneService } from './autenticazione.service';
 import { ImportazioneService } from './importazione.service';
 
@@ -54,7 +54,9 @@ describe('ImportazioneService', () => {
     const { esito, http: chiamata } = await richiesta(false);
     chiamata.flush({}, { status: 403, statusText: 'Forbidden' });
 
-    expect(((await esito) as Error).message).toBe('Il tuo utente non ha il ruolo trovacampo-admin.');
+    expect(((await esito) as Error).message).toBe(
+      'Il tuo utente non ha il ruolo trovacampo-admin.',
+    );
   });
 
   it('dice quando la sessione è scaduta', async () => {
@@ -97,7 +99,7 @@ describe('ImportazioneService', () => {
     expect(await esito).toEqual(jasmine.objectContaining({ inserite: 3 }));
   });
 
-  it("mostra il motivo quando presenze non risponde", async () => {
+  it('mostra il motivo quando presenze non risponde', async () => {
     const esito = firstValueFrom(service.sincronizza(false)).catch((e: Error) => e);
     await Promise.resolve();
     await Promise.resolve();

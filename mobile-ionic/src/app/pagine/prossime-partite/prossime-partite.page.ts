@@ -35,7 +35,7 @@ import {
   perGiorno,
   statoAvviso,
 } from '../../modelli/prossime';
-import { NotificheService } from '../../servizi/notifiche.service';
+import { NotificheService } from '../../servizi/notifiche/notifiche.service';
 
 type Stato = 'caricamento' | 'completata' | 'errore';
 

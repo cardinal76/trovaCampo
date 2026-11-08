@@ -1,5 +1,5 @@
 import { computed, inject, signal } from '@angular/core';
-import { Posizione } from '../modelli/vicini';
+import { Posizione } from '../../modelli/vicini';
 import { DiagnosiService } from './diagnosi.service';
 import { istruzioniPosizione } from './istruzioni';
 import { ErrorePosizione, PosizioneService } from './posizione.service';
