@@ -25,6 +25,48 @@ Come descritto nei documenti di analisi, alcune idee per evoluzioni successive d
 - inserimento dei risultati delle partite da parte delle società, con classifiche aggiornate quasi in tempo reale;
 - una mappa delle partite in corso nelle vicinanze, utile per osservatori e scout giovanili.
 
+## Come si usa
+
+Nessuna registrazione: ricerca, elenco e mappa sono pubblici.
+
+<table>
+  <tr>
+    <td align="center" width="25%"><img src="docs/guida/1-home.png" alt="Home di TrovaCampo" width="200"></td>
+    <td align="center" width="25%"><img src="docs/guida/2-ricerca.png" alt="Ricerca per nome società" width="200"></td>
+    <td align="center" width="25%"><img src="docs/guida/3-mappa.png" alt="Mappa dei campi" width="200"></td>
+    <td align="center" width="25%"><img src="docs/guida/4-scheda.png" alt="Scheda società con percorso" width="200"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>1. Apri l'app</b><br>La home è una sola casella di ricerca.</td>
+    <td align="center"><b>2. Cerca</b><br>Scrivi il nome della società: i suggerimenti compaiono mentre digiti. Poi <i>Vai</i>.</td>
+    <td align="center"><b>3. Mappa</b><br>Tutti i campi sulla mappa. <i>Vicino a me</i> mostra i più vicini a te.</td>
+    <td align="center"><b>4. Scheda</b><br>Impianto, indirizzo e mappa. <i>Percorso</i> apre la navigazione.</td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center" width="30%"><img src="docs/guida/5-scheda-giu.png" alt="Campionati della società" width="200"></td>
+    <td valign="top">
+      <b>Più in basso nella scheda</b>
+      <ul>
+        <li><b>Campionati</b>: le squadre della società con girone e stagione.</li>
+        <li><b>Anagrafica</b>: presidente, sede, telefono, email e sito.</li>
+        <li><b>Ultima partita di ogni squadra</b> e prossime partite sul campo.</li>
+      </ul>
+      <b>Le altre schede in basso</b>
+      <ul>
+        <li><b>Elenco</b>: tutti i campi, filtrabili per provincia.</li>
+        <li><b>Notifiche</b>: segui una squadra o le partite vicine, senza account.</li>
+        <li><b>Non trovi un campo?</b> Dalla home puoi aggiungerlo.</li>
+      </ul>
+      L'accesso (icona in alto a destra) serve solo all'amministrazione.
+    </td>
+  </tr>
+</table>
+
+> Gli screenshot sono dell'app reale, con società e partite di esempio.
+
 ## Deploy
 
 L'app gira sullo stesso server di presenze, dietro il suo Caddy, su
