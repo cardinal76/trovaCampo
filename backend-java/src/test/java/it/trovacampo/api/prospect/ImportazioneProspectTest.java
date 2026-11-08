@@ -156,8 +156,8 @@ class ImportazioneProspectTest {
                 .andRespond(withSuccess(elenco(count, righe), MediaType.APPLICATION_JSON));
     }
 
-    private static ImportazioneProspect.Opzioni lazio(Integer maxPagine, boolean dettagli) {
-        return new ImportazioneProspect.Opzioni(
+    private static OpzioniImportazione lazio(Integer maxPagine, boolean dettagli) {
+        return new OpzioniImportazione(
                 List.of(12), maxPagine, false, dettagli ? AmbitoDettagli.CALCIO : AmbitoDettagli.NESSUNO);
     }
 
@@ -183,7 +183,7 @@ class ImportazioneProspectTest {
         // Il registro ne dichiara 250 ma la terza pagina è vuota: ci si ferma lì.
         pagina(12, 3, 250);
 
-        ImportazioneProspect.Avanzamento esito = importazione.esegui(lazio(null, false));
+        AvanzamentoImportazione esito = importazione.esegui(lazio(null, false));
 
         assertThat(esito.stato()).isEqualTo("completata");
         assertThat(esito.pagine()).isEqualTo(3);
@@ -212,7 +212,7 @@ class ImportazioneProspectTest {
     void conIlLimiteDiPagineSiFermaESalvaDoveRiprendere() {
         pagina(12, 0, 5, riga(1, "CF1", "UNO", "Roma", "CSI"), riga(2, "CF2", "DUE", "Roma", "CSI"));
 
-        ImportazioneProspect.Avanzamento esito = importazione.esegui(lazio(1, false));
+        AvanzamentoImportazione esito = importazione.esegui(lazio(1, false));
 
         assertThat(esito.stato()).isEqualTo("pausa");
         assertThat(statiSalvati.get(12).getProssimoStart()).isEqualTo(2);
@@ -278,7 +278,7 @@ class ImportazioneProspectTest {
         pagina(12, 0, 300, riga(1, "CF1", "UNO", "Roma", "CSI"));
         server.expect(requestTo(lista(12, 1))).andRespond(withStatus(HttpStatus.FORBIDDEN));
 
-        ImportazioneProspect.Avanzamento esito = importazione.esegui(lazio(null, false));
+        AvanzamentoImportazione esito = importazione.esegui(lazio(null, false));
 
         assertThat(esito.stato()).isEqualTo("bloccata");
         assertThat(esito.errore()).contains("403");
@@ -298,7 +298,7 @@ class ImportazioneProspectTest {
         paginaAlle(ore, 12, 2, 3, riga(3, "CF3", "TRE", "Roma", "CSI"));
 
         // A mezzogiorno non si chiede niente: si aspetta le 22.
-        ImportazioneProspect.Avanzamento esito = importazione.esegui(lazio(null, false));
+        AvanzamentoImportazione esito = importazione.esegui(lazio(null, false));
 
         assertThat(esito.stato()).isEqualTo("completata");
         assertThat(ore).containsExactly(LocalTime.of(22, 0), LocalTime.of(22, 0, 1), LocalTime.of(22, 0, 2));
@@ -335,7 +335,7 @@ class ImportazioneProspectTest {
                         new RitmoRasd(ritmo("22:00-07:00", 0), orologio, ms -> questa[0].ferma(), m -> m),
                         Duration.ofDays(30), null);
 
-        ImportazioneProspect.Avanzamento esito = questa[0].esegui(lazio(null, false));
+        AvanzamentoImportazione esito = questa[0].esegui(lazio(null, false));
 
         assertThat(esito.stato()).isEqualTo("fermata");
         assertThat(esito.richieste()).isZero();
@@ -351,7 +351,7 @@ class ImportazioneProspectTest {
         paginaAlle(ore, 12, 1, 300, riga(2, "CF2", "DUE", "Roma", "CSI"));
         paginaAlle(ore, 12, 2, 3, riga(3, "CF3", "TRE", "Roma", "CSI"));
 
-        ImportazioneProspect.Avanzamento esito = importazione.esegui(lazio(null, false));
+        AvanzamentoImportazione esito = importazione.esegui(lazio(null, false));
 
         assertThat(esito.stato()).isEqualTo("completata");
         assertThat(ore).containsExactly(LocalTime.of(12, 0), LocalTime.of(12, 0, 1), LocalTime.MIDNIGHT);
@@ -383,7 +383,7 @@ class ImportazioneProspectTest {
         pagina(12, 0, 300, riga(1, "CF1", "UNO", "Roma", "CSI"));
         server.expect(ExpectedCount.once(), requestTo(lista(12, 1))).andRespond(withStatus(HttpStatus.TOO_MANY_REQUESTS));
 
-        ImportazioneProspect.Avanzamento esito = importazione.esegui(lazio(null, false));
+        AvanzamentoImportazione esito = importazione.esegui(lazio(null, false));
 
         assertThat(esito.stato()).isEqualTo("bloccata");
         assertThat(esito.errore()).contains("429");
@@ -395,7 +395,7 @@ class ImportazioneProspectTest {
         verify(collegamento, never()).collega();
 
         // Dopo un riavvio (un'altra istanza) la pagina lo dice ancora, e aspetta una persona.
-        ImportazioneProspect.Stato stato = conRitmo(ritmo("", 0)).stato();
+        StatoImportazione stato = conRitmo(ritmo("", 0)).stato();
         assertThat(stato.inCorso()).isFalse();
         assertThat(stato.bloccata()).isTrue();
         assertThat(stato.fase()).isEqualTo("bloccata");
@@ -414,7 +414,7 @@ class ImportazioneProspectTest {
         server.expect(ExpectedCount.once(), requestTo(RegistroRasdTest.URL + "/api/istruttoria/11/sidebar/?chiamante=registroPubblico_n"))
                 .andRespond(withSuccess("<html>captcha</html>", MediaType.TEXT_HTML));
 
-        ImportazioneProspect.Avanzamento esito = importazione.esegui(lazio(null, true));
+        AvanzamentoImportazione esito = importazione.esegui(lazio(null, true));
 
         assertThat(esito.stato()).isEqualTo("bloccata");
         assertThat(archivio.get("CFA").getDettaglioLetto()).isNotNull();
@@ -431,7 +431,7 @@ class ImportazioneProspectTest {
         statiSalvati.put(12, new StatoImportazioneProspect(12, "Lazio").setCompletata(true).setTotale(12070));
         statiSalvati.put(13, new StatoImportazioneProspect(13, "Abruzzo").setProssimoStart(100).setTotale(102));
 
-        ImportazioneProspect.Stato prima = importazione.stato();
+        StatoImportazione prima = importazione.stato();
         assertThat(prima.fase()).isEqualTo("interrotta");
         assertThat(prima.riprendibile()).isTrue();
         // Restano due società dell'Abruzzo: una pagina, e il 12% di dettagli FIGC (arrotondato a zero).
@@ -440,9 +440,9 @@ class ImportazioneProspectTest {
         pagina(13, 100, 102, riga(201, "CF201", "A.S.D. PESCARA", "Pescara", "FIGC"), riga(202, "CF202", "SCHERMA", "Chieti", "FIS"));
         dettaglioDi(201, "CF201");
 
-        ImportazioneProspect.Opzioni opzioni = importazione.daRiprendere().orElseThrow();
-        assertThat(opzioni).isEqualTo(new ImportazioneProspect.Opzioni(List.of(12, 13), null, false, AmbitoDettagli.FIGC));
-        ImportazioneProspect.Avanzamento esito = importazione.esegui(opzioni);
+        OpzioniImportazione opzioni = importazione.daRiprendere().orElseThrow();
+        assertThat(opzioni).isEqualTo(new OpzioniImportazione(List.of(12, 13), null, false, AmbitoDettagli.FIGC));
+        AvanzamentoImportazione esito = importazione.esegui(opzioni);
 
         assertThat(esito.stato()).isEqualTo("completata");
         assertThat(archivio).containsOnlyKeys("CF201", "CF202");
@@ -466,8 +466,8 @@ class ImportazioneProspectTest {
         dettaglioDi(2, "CFVECCHIO");
         dettaglioDi(3, "CFNUOVO");
 
-        ImportazioneProspect.Avanzamento esito =
-                importazione.esegui(new ImportazioneProspect.Opzioni(List.of(15), null, false, AmbitoDettagli.TUTTE));
+        AvanzamentoImportazione esito =
+                importazione.esegui(new OpzioniImportazione(List.of(15), null, false, AmbitoDettagli.TUTTE));
 
         assertThat(esito.dettagli()).isEqualTo(2);
         assertThat(esito.dettagliSaltati()).isEqualTo(1);

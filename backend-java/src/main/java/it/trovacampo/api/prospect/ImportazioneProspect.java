@@ -50,8 +50,6 @@ public class ImportazioneProspect {
 
     static final int PAGINA = 100;
     static final int LAZIO = 12;
-    /** Società per regione quando il registro non ha ancora detto il totale: circa 100.000 / 20. */
-    static final int STIMA_PER_REGIONE = 5_000;
 
     static final String IN_CORSO = "in corso";
     static final String PAUSA_FINESTRA = "in pausa: finestra oraria";
@@ -70,7 +68,7 @@ public class ImportazioneProspect {
 
     private final AtomicBoolean inCorso = new AtomicBoolean(false);
     private volatile boolean fermati = false;
-    private volatile Avanzamento ultimo = Avanzamento.mai();
+    private volatile AvanzamentoImportazione ultimo = AvanzamentoImportazione.mai();
     private volatile String fase = IN_CORSO;
     private volatile Instant pausaFinoA;
     private volatile GiroImportazione giro;
@@ -119,76 +117,7 @@ public class ImportazioneProspect {
         this.esecutore = esecutore;
     }
 
-    /**
-     * Cosa importare: le regioni (vuoto = tutte, Lazio per primo), quante
-     * pagine al massimo in questo giro (nullo = fino in fondo; utile per una
-     * prova), se ripartire da zero e per chi leggere il dettaglio.
-     */
-    public record Opzioni(List<Integer> regioni, Integer maxPagine, boolean ricomincia, AmbitoDettagli dettagli) {
-
-        public Opzioni {
-            regioni = regioni == null ? List.of() : List.copyOf(regioni);
-            dettagli = dettagli == null ? AmbitoDettagli.NESSUNO : dettagli;
-        }
-
-        public static Opzioni tutto() {
-            return new Opzioni(List.of(), null, false, AmbitoDettagli.CALCIO);
-        }
-
-        List<Integer> regioniDaFare() {
-            return regioni.isEmpty() ? List.copyOf(RegistroRasd.REGIONI.keySet()) : regioni;
-        }
-    }
-
-    /** Come è andato (o come sta andando) l'ultimo giro, da quando il backend è acceso. */
-    public record Avanzamento(
-            String stato,
-            Instant iniziato,
-            Instant finito,
-            int pagine,
-            int richieste,
-            int lette,
-            int nuove,
-            int dettagli,
-            int dettagliSaltati,
-            String regioneCorrente,
-            String errore,
-            CollegamentoCampi.Esito collegamento) {
-
-        static Avanzamento mai() {
-            return new Avanzamento("mai", null, null, 0, 0, 0, 0, 0, 0, null, null, null);
-        }
-    }
-
-    /** Quanto manca, a stima: pagine di elenco, dettagli, e il tempo al ritmo configurato. */
-    public record Stima(long pagine, long dettagli, long richieste, long secondi, double giorni) {}
-
-    /** Il ritmo configurato, come lo vede la pagina. */
-    public record Ritmo(long pausaMs, long jitterMs, String finestra, String fuso, int tettoGiornaliero, long richiestePerGiorno) {}
-
-    /**
-     * Lo stato per la pagina admin: fase (in corso, in pausa per la finestra
-     * o per il tetto, bloccata, fermata, completata, interrotta da un
-     * riavvio), regione corrente, richieste di oggi, motivo di un blocco,
-     * stima del tempo rimanente e punto di ripresa di ogni regione.
-     */
-    public record Stato(
-            boolean inCorso,
-            String fase,
-            Instant pausaFinoA,
-            String regioneCorrente,
-            int richiesteOggi,
-            boolean bloccata,
-            String motivo,
-            Instant bloccataIl,
-            boolean riprendibile,
-            Opzioni opzioni,
-            Ritmo ritmo,
-            Stima stima,
-            Avanzamento ultimo,
-            List<StatoImportazioneProspect> regioni) {}
-
-    public Stato stato() {
+    public StatoImportazione stato() {
         boolean corre = inCorso.get();
         GiroImportazione g = corre && giro != null ? giro : giri.findById(GiroImportazione.ID).orElse(null);
         String faseOra;
@@ -205,10 +134,10 @@ public class ImportazioneProspect {
         if (g != null && g.getGiorno() != null && !corre) {
             ritmo.ripristina(LocalDate.parse(g.getGiorno()), g.getRichiesteGiorno());
         }
-        Opzioni opzioni = g == null ? null : new Opzioni(g.getRegioni(), null, false, g.getDettagli());
+        OpzioniImportazione opzioni = g == null ? null : new OpzioniImportazione(g.getRegioni(), null, false, g.getDettagli());
         List<StatoImportazioneProspect> regioni = stati.findAll();
         RitmoRasd.Configurazione c = ritmo.configurazione();
-        return new Stato(
+        return new StatoImportazione(
                 corre,
                 faseOra,
                 corre ? pausaFinoA : null,
@@ -219,45 +148,21 @@ public class ImportazioneProspect {
                 g == null ? null : g.getBloccataIl(),
                 !corre && g != null && !"completata".equals(faseOra),
                 opzioni,
-                new Ritmo(
-                        c.pausa().toMillis(), c.jitter().toMillis(), c.finestra(), c.fuso().getId(),
-                        c.tettoGiornaliero(), c.richiestePerGiorno()),
-                opzioni == null ? null : stima(opzioni, regioni),
+                RitmoImportazione.di(c),
+                opzioni == null ? null : StimaImportazione.di(opzioni, regioni, c, PAGINA),
                 ultimo,
                 regioni);
     }
 
-    /** Quanto manca alle regioni del giro, dai totali che il registro ha già detto. */
-    Stima stima(Opzioni opzioni, List<StatoImportazioneProspect> salvati) {
-        Map<Integer, StatoImportazioneProspect> perId =
-                salvati.stream().collect(Collectors.toMap(StatoImportazioneProspect::getRegioneId, Function.identity(), (a, b) -> a));
-        long pagine = 0;
-        long societa = 0;
-        for (Integer id : opzioni.regioniDaFare()) {
-            StatoImportazioneProspect s = perId.get(id);
-            if (s != null && s.isCompletata()) {
-                continue;
-            }
-            long totale = s != null && s.getTotale() != null ? s.getTotale() : STIMA_PER_REGIONE;
-            long restano = Math.max(0, totale - (s == null ? 0 : s.getProssimoStart()));
-            societa += restano;
-            pagine += (restano + PAGINA - 1) / PAGINA;
-        }
-        long dettagli = Math.round(societa * opzioni.dettagli().quota);
-        long richieste = pagine + dettagli;
-        Duration tempo = ritmo.configurazione().stima(richieste);
-        return new Stima(pagine, dettagli, richieste, tempo.toSeconds(), Math.round(tempo.toHours() / 2.4) / 10.0);
-    }
-
     /** Parte in sottofondo. Falso se ce n'è già una in corso. */
-    public boolean avvia(Opzioni opzioni, String chi) {
+    public boolean avvia(OpzioniImportazione opzioni, String chi) {
         if (!inCorso.compareAndSet(false, true)) {
             return false;
         }
         fermati = false;
         fase = IN_CORSO;
         pausaFinoA = null;
-        ultimo = new Avanzamento(IN_CORSO, adesso(), null, 0, 0, 0, 0, 0, 0, null, null, null);
+        ultimo = new AvanzamentoImportazione(IN_CORSO, adesso(), null, 0, 0, 0, 0, 0, 0, null, null, null);
         log.info("Importazione del registro RASD avviata da {}: {}", chi, opzioni);
         esecutore.submit(
                 () -> {
@@ -271,10 +176,10 @@ public class ImportazioneProspect {
     }
 
     /** Le opzioni dell'ultimo giro, per riprenderlo da dove si era fermato. */
-    public Optional<Opzioni> daRiprendere() {
+    public Optional<OpzioniImportazione> daRiprendere() {
         return giri.findById(GiroImportazione.ID)
                 .filter(g -> g.getFase() != null)
-                .map(g -> new Opzioni(g.getRegioni(), null, false, g.getDettagli()));
+                .map(g -> new OpzioniImportazione(g.getRegioni(), null, false, g.getDettagli()));
     }
 
     /**
@@ -295,7 +200,7 @@ public class ImportazioneProspect {
         return ritmo.orologio().instant();
     }
 
-    Avanzamento esegui(Opzioni opzioni) {
+    AvanzamentoImportazione esegui(OpzioniImportazione opzioni) {
         return esegui(opzioni, null);
     }
 
@@ -303,7 +208,7 @@ public class ImportazioneProspect {
      * Il giro vero, nel thread di chi chiama: lo usa {@link #avvia} e lo
      * usano i test.
      */
-    Avanzamento esegui(Opzioni opzioni, String chi) {
+    AvanzamentoImportazione esegui(OpzioniImportazione opzioni, String chi) {
         Contatori c = new Contatori();
         Instant iniziato = adesso();
         giro = giri.findById(GiroImportazione.ID).orElseGet(GiroImportazione::new);
@@ -368,8 +273,8 @@ public class ImportazioneProspect {
         giro.setFase(esito).setMotivo(errore);
         salvaGiro();
         pausaFinoA = null;
-        Avanzamento fatto =
-                new Avanzamento(
+        AvanzamentoImportazione fatto =
+                new AvanzamentoImportazione(
                         esito, iniziato, adesso(), c.pagine, c.richieste, c.lette, c.nuove,
                         c.dettagli, c.saltati, regioneCorrente, errore, collegati);
         ultimo = fatto;
@@ -430,7 +335,7 @@ public class ImportazioneProspect {
     }
 
     /** Vero se la regione è arrivata in fondo, falso se ci si è fermati prima. */
-    private boolean importaRegione(StatoImportazioneProspect stato, Opzioni opzioni, Contatori c)
+    private boolean importaRegione(StatoImportazioneProspect stato, OpzioniImportazione opzioni, Contatori c)
             throws InterruptedException {
         while (true) {
             if (fermati || (opzioni.maxPagine() != null && c.pagine >= opzioni.maxPagine())) {
@@ -457,7 +362,7 @@ public class ImportazioneProspect {
                     .setAggiornato(adesso());
             stati.save(stato);
             ultimo =
-                    new Avanzamento(
+                    new AvanzamentoImportazione(
                             IN_CORSO, ultimo.iniziato(), null, c.pagine, c.richieste, c.lette,
                             c.nuove, c.dettagli, c.saltati, stato.getRegione(), null, null);
             if (finita) {

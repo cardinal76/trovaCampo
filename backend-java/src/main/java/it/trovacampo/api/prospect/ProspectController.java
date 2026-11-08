@@ -80,7 +80,7 @@ public class ProspectController {
     }
 
     @GetMapping("/importazione")
-    public ImportazioneProspect.Stato stato() {
+    public StatoImportazione stato() {
         return importazione.stato();
     }
 
@@ -92,7 +92,7 @@ public class ProspectController {
      * e {@code false} valgono come prima, calcio o niente.
      */
     @PostMapping("/importazione")
-    public ResponseEntity<ImportazioneProspect.Stato> avvia(
+    public ResponseEntity<StatoImportazione> avvia(
             @RequestParam(name = "regioni", required = false) List<Integer> regioni,
             @RequestParam(name = "maxPagine", required = false) Integer maxPagine,
             @RequestParam(name = "ricomincia", defaultValue = "false") boolean ricomincia,
@@ -109,7 +109,7 @@ public class ProspectController {
         }
         boolean avviata =
                 importazione.avvia(
-                        new ImportazioneProspect.Opzioni(regioni, maxPagine, ricomincia, ambito),
+                        new OpzioniImportazione(regioni, maxPagine, ricomincia, ambito),
                         chi.getName());
         return ResponseEntity.status(avviata ? HttpStatus.ACCEPTED : HttpStatus.CONFLICT)
                 .body(importazione.stato());
@@ -122,7 +122,7 @@ public class ProspectController {
      * da riprendere.
      */
     @PostMapping("/importazione/riprendi")
-    public ResponseEntity<ImportazioneProspect.Stato> riprendi(Authentication chi) {
+    public ResponseEntity<StatoImportazione> riprendi(Authentication chi) {
         return importazione
                 .riprendi(chi.getName())
                 .map(avviata -> ResponseEntity.status(avviata ? HttpStatus.ACCEPTED : HttpStatus.CONFLICT)
@@ -132,7 +132,7 @@ public class ProspectController {
 
     /** Si ferma dopo la richiesta (o durante la pausa) in corso; «riprendi» riparte da lì. */
     @PostMapping("/importazione/ferma")
-    public ImportazioneProspect.Stato ferma() {
+    public StatoImportazione ferma() {
         importazione.ferma();
         return importazione.stato();
     }
