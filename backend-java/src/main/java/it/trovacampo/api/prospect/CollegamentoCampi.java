@@ -2,7 +2,7 @@ package it.trovacampo.api.prospect;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import it.trovacampo.api.indirizzi.Confidenza;
-import it.trovacampo.api.indirizzi.FonteCampiLnd;
+import it.trovacampo.api.integrazioni.FonteCampiLnd;
 import it.trovacampo.api.indirizzi.FonteIndirizzo;
 import it.trovacampo.api.indirizzi.IndirizzoMigliore;
 import it.trovacampo.api.indirizzi.LocalizzatoreSocieta;

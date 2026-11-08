@@ -1,4 +1,4 @@
-package it.trovacampo.api.anagrafica;
+package it.trovacampo.api.integrazioni;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.Duration;

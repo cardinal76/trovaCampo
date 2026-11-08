@@ -1,5 +1,11 @@
-package it.trovacampo.api.indirizzi;
+package it.trovacampo.api.integrazioni;
 
+import it.trovacampo.api.indirizzi.Comuni;
+import it.trovacampo.api.indirizzi.Confidenza;
+import it.trovacampo.api.indirizzi.FonteIndirizzo;
+import it.trovacampo.api.indirizzi.IndirizzoMigliore;
+import it.trovacampo.api.indirizzi.NomiSocieta;
+import it.trovacampo.api.indirizzi.SocietaDaLocalizzare;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import it.trovacampo.api.geocoding.RitmoNominatim;
 import java.time.Duration;

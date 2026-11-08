@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -66,7 +65,7 @@ public class SocietaService {
                 .ifPresent(
                         coordinate -> societa.setLat(coordinate.lat()).setLng(coordinate.lng()));
 
-        return repository.save(aggiornaTestoRicerca(societa));
+        return repository.save(TestoRicerca.aggiorna(societa));
     }
 
     /**
@@ -210,7 +209,7 @@ public class SocietaService {
             societa.setLogoUrl(oNull(richiesta.logoUrl()));
         }
 
-        return repository.save(aggiornaTestoRicerca(societa));
+        return repository.save(TestoRicerca.aggiorna(societa));
     }
 
     /** Le righe senza descrizione sono righe lasciate vuote nel modulo. */
@@ -240,21 +239,5 @@ public class SocietaService {
     /** Sigla, comitato, località e provincia restano "" come nei campi inseriti dall'app. */
     private static String oVuoto(String testo) {
         return testo == null ? "" : testo.strip();
-    }
-
-    /** Ricalcola la copia normalizzata dei campi su cui lavora la ricerca. */
-    public static Societa aggiornaTestoRicerca(Societa societa) {
-        String testo =
-                Stream.of(
-                                societa.getNomeSocieta(),
-                                societa.getNomeImpianto(),
-                                societa.getIndirizzoImpianto(),
-                                societa.getLocalitaImpianto())
-                        .map(Testo::normalizza)
-                        .filter(parte -> !parte.isEmpty())
-                        .reduce((a, b) -> a + " | " + b)
-                        .orElse("");
-
-        return societa.setTestoRicerca(testo);
     }
 }

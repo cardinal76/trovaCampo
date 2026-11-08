@@ -1,5 +1,7 @@
 package it.trovacampo.api.prospect;
 
+import it.trovacampo.api.prospect.RegistroRasd;
+import it.trovacampo.api.prospect.RitmoRasd;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;

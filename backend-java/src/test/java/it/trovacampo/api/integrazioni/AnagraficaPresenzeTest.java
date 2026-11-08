@@ -1,5 +1,6 @@
-package it.trovacampo.api.anagrafica;
+package it.trovacampo.api.integrazioni;
 
+import it.trovacampo.api.anagrafica.RisultatiSocieta;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;

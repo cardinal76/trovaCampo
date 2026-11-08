@@ -6,7 +6,7 @@ import static it.trovacampo.api.societa.TipoCampionato.SCUOLA_CALCIO;
 import it.trovacampo.api.societa.Campionato;
 import it.trovacampo.api.societa.Societa;
 import it.trovacampo.api.societa.SocietaRepository;
-import it.trovacampo.api.societa.SocietaService;
+import it.trovacampo.api.societa.TestoRicerca;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +42,7 @@ public class SeedDati implements CommandLineRunner {
         }
 
         List<Societa> esempi =
-                societaDiEsempio().stream().map(SocietaService::aggiornaTestoRicerca).toList();
+                societaDiEsempio().stream().map(TestoRicerca::aggiorna).toList();
 
         repository.saveAll(esempi);
         log.info("Caricate {} società di esempio", esempi.size());

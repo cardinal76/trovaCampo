@@ -1,5 +1,7 @@
 package it.trovacampo.api.indirizzi;
 
+import it.trovacampo.api.integrazioni.FonteCampiLnd;
+import it.trovacampo.api.integrazioni.RicercaCampiOsm;
 import it.trovacampo.api.geocoding.Geocoding;
 import it.trovacampo.api.importazione.GeocodificaAutomatica;
 import it.trovacampo.api.societa.Societa;

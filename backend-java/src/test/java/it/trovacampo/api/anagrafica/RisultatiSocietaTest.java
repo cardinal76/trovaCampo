@@ -1,5 +1,6 @@
 package it.trovacampo.api.anagrafica;
 
+import it.trovacampo.api.integrazioni.AnagraficaPresenze;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;

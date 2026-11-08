@@ -1,5 +1,6 @@
 package it.trovacampo.api.anagrafica;
 
+import it.trovacampo.api.integrazioni.AnagraficaPresenze;
 import it.trovacampo.api.societa.Societa;
 import it.trovacampo.api.societa.SocietaRepository;
 import it.trovacampo.api.societa.Testo;

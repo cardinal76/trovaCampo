@@ -7,7 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import it.trovacampo.api.anagrafica.AnagraficaPresenze;
+import it.trovacampo.api.integrazioni.AnagraficaPresenze;
 import it.trovacampo.api.societa.Esclusione;
 import it.trovacampo.api.societa.EsclusioniRepository;
 import it.trovacampo.api.societa.Societa;

@@ -1,5 +1,6 @@
 package it.trovacampo.api.prospect;
 
+import it.trovacampo.api.prospect.RispostaRasd;
 import static it.trovacampo.api.prospect.RispostaRasd.dettaglio;
 import static it.trovacampo.api.prospect.RispostaRasd.elenco;
 import static it.trovacampo.api.prospect.RispostaRasd.riga;

@@ -7,7 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import it.trovacampo.api.anagrafica.AnagraficaPresenze;
+import it.trovacampo.api.integrazioni.AnagraficaPresenze;
 import it.trovacampo.api.anagrafica.PartiteSuiCampi;
 import it.trovacampo.api.anagrafica.RisultatiSocieta;
 import it.trovacampo.api.anagrafica.SquadreSocieta;
@@ -189,7 +189,7 @@ class SocietaControllerTest {
                                 new SquadreSocieta.Squadra(
                                         "ECCELLENZA", "Regionali", "2026/2027", "A", "", false,
                                         "Campo Certosa", "42|eccellenza|regionali|",
-                                        new it.trovacampo.api.anagrafica.AnagraficaPresenze
+                                        new it.trovacampo.api.integrazioni.AnagraficaPresenze
                                                 .RisultatiDaComunicato(
                                                 55,
                                                 java.time.LocalDate.of(2026, 9, 24),

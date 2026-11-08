@@ -1,12 +1,15 @@
-package it.trovacampo.api.indirizzi;
+package it.trovacampo.api.integrazioni;
 
+import it.trovacampo.api.indirizzi.Confidenza;
+import it.trovacampo.api.indirizzi.FonteIndirizzo;
+import it.trovacampo.api.indirizzi.SocietaDaLocalizzare;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import it.trovacampo.api.anagrafica.AnagraficaPresenze;
+import it.trovacampo.api.integrazioni.AnagraficaPresenze;
 import it.trovacampo.api.societa.Societa;
 import it.trovacampo.api.societa.SocietaRepository;
 import java.util.List;

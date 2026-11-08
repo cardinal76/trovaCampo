@@ -1,5 +1,6 @@
 package it.trovacampo.api.prospect;
 
+import it.trovacampo.api.prospect.RegistroRasd;
 import it.trovacampo.api.indirizzi.FonteIndirizzo;
 import java.util.List;
 import org.springframework.http.ContentDisposition;
