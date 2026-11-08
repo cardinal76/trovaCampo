@@ -1,6 +1,6 @@
 package it.trovacampo.api.notifiche;
 
-import it.trovacampo.api.dominio.Testo;
+import it.trovacampo.api.societa.Testo;
 import java.util.Collection;
 import java.util.regex.Pattern;
 

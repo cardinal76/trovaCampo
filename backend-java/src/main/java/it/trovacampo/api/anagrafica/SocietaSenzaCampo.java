@@ -1,8 +1,8 @@
 package it.trovacampo.api.anagrafica;
 
-import it.trovacampo.api.dominio.Societa;
-import it.trovacampo.api.dominio.Testo;
-import it.trovacampo.api.repository.SocietaRepository;
+import it.trovacampo.api.societa.Societa;
+import it.trovacampo.api.societa.SocietaRepository;
+import it.trovacampo.api.societa.Testo;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;

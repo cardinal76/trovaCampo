@@ -1,8 +1,8 @@
 package it.trovacampo.api.indirizzi;
 
-import it.trovacampo.api.dominio.Societa;
+import it.trovacampo.api.geocoding.Geocoding;
 import it.trovacampo.api.importazione.GeocodificaAutomatica;
-import it.trovacampo.api.service.Geocoding;
+import it.trovacampo.api.societa.Societa;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 

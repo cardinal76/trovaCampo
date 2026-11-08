@@ -1,5 +1,7 @@
 package it.trovacampo.api.web;
 
+import it.trovacampo.api.societa.DatiNonValidiException;
+import it.trovacampo.api.societa.SocietaNonTrovataException;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;

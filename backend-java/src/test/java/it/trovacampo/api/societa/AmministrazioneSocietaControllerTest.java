@@ -1,0 +1,186 @@
+package it.trovacampo.api.societa;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import it.trovacampo.api.config.ConfigurazioneSicurezza;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+
+@WebMvcTest(AmministrazioneSocietaController.class)
+@Import(ConfigurazioneSicurezza.class)
+class AmministrazioneSocietaControllerTest {
+
+    private static final String MODULO =
+            """
+            {"siglaSocieta":"A.S.D.","nomeSocieta":"Certosa Calcio","nomeImpianto":"Campo Certosa",
+             "indirizzoImpianto":"Via della Certosa 12","localitaImpianto":"Roma","email":"info@certosa.it"}
+            """;
+
+    @Autowired private MockMvc mockMvc;
+
+    @MockitoBean private SocietaService service;
+
+    private static JwtRequestPostProcessor conRuolo(String ruolo) {
+        return jwt().jwt(token -> token.claim("preferred_username", "mario"))
+                .authorities(new SimpleGrantedAuthority("ROLE_" + ruolo));
+    }
+
+    @Test
+    void lAmministratoreModificaLaScheda() throws Exception {
+        when(service.modifica(eq("1"), any()))
+                .thenReturn(Optional.of(new Societa().setId("1").setNomeSocieta("Certosa Calcio")));
+
+        mockMvc.perform(
+                        put("/api/admin/societa/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(MODULO)
+                                .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nomeSocieta").value("Certosa Calcio"));
+    }
+
+    @Test
+    void senzaLoginRisponde401() throws Exception {
+        mockMvc.perform(put("/api/admin/societa/1").contentType(MediaType.APPLICATION_JSON).content(MODULO))
+                .andExpect(status().isUnauthorized());
+
+        verify(service, never()).modifica(any(), any());
+    }
+
+    @Test
+    void senzaIlRuoloRisponde403() throws Exception {
+        mockMvc.perform(
+                        put("/api/admin/societa/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(MODULO)
+                                .with(conRuolo("allenatore")))
+                .andExpect(status().isForbidden());
+
+        verify(service, never()).modifica(any(), any());
+    }
+
+    @Test
+    void rifiutaUnModuloSenzaIDatiObbligatori() throws Exception {
+        mockMvc.perform(
+                        put("/api/admin/societa/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"nomeSocieta\":\" \",\"email\":\"non-una-mail\"}")
+                                .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isBadRequest())
+                .andExpect(
+                        jsonPath("$.errore")
+                                .value(
+                                        "email non valida, indirizzoImpianto è obbligatorio,"
+                                                + " nomeImpianto è obbligatorio, nomeSocieta è obbligatorio"));
+    }
+
+    @Test
+    void rifiutaUnoStemmaCheNonEHttps() throws Exception {
+        mockMvc.perform(
+                        put("/api/admin/societa/1")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(MODULO.replace("}", ",\"logoUrl\":\"http://esempio.it/s.png\"}"))
+                                .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errore").value("lo stemma deve essere un indirizzo https"));
+
+        verify(service, never()).modifica(any(), any());
+    }
+
+    @Test
+    void unaSocietaCheNonEsisteRisponde404() throws Exception {
+        when(service.modifica(eq("x"), any())).thenReturn(Optional.empty());
+
+        mockMvc.perform(
+                        put("/api/admin/societa/x")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(MODULO)
+                                .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void lAmministratoreCreaUnaSocieta() throws Exception {
+        when(service.crea(any())).thenReturn(new Societa().setId("nuovo").setNomeSocieta("Certosa Calcio"));
+
+        mockMvc.perform(
+                        post("/api/admin/societa")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(MODULO)
+                                .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value("nuovo"));
+    }
+
+    @Test
+    void senzaIlRuoloNonSiCrea() throws Exception {
+        mockMvc.perform(
+                        post("/api/admin/societa")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(MODULO)
+                                .with(conRuolo("allenatore")))
+                .andExpect(status().isForbidden());
+
+        verify(service, never()).crea(any());
+    }
+
+    @Test
+    void lAmministratoreEliminaUnaSocieta() throws Exception {
+        when(service.elimina(eq("1"), any()))
+                .thenReturn(
+                        Optional.of(
+                                new SocietaService.Eliminazione(
+                                        new Societa().setId("1").setNomeSocieta("Certosa Calcio"), true)));
+
+        mockMvc.perform(
+                        delete("/api/admin/societa/1")
+                                .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isNoContent());
+
+        // Chi elimina resta scritto nell'esclusione: il nome viene dal token.
+        verify(service).elimina(eq("1"), eq("user"));
+    }
+
+    @Test
+    void eliminareUnaSocietaCheNonCeRisponde404() throws Exception {
+        when(service.elimina(eq("x"), any())).thenReturn(Optional.empty());
+
+        mockMvc.perform(
+                        delete("/api/admin/societa/x")
+                                .with(conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void senzaLoginNonSiElimina() throws Exception {
+        mockMvc.perform(delete("/api/admin/societa/1")).andExpect(status().isUnauthorized());
+
+        verify(service, never()).elimina(any(), any());
+    }
+
+    @Test
+    void senzaIlRuoloNonSiElimina() throws Exception {
+        mockMvc.perform(delete("/api/admin/societa/1").with(conRuolo("allenatore")))
+                .andExpect(status().isForbidden());
+
+        verify(service, never()).elimina(any(), any());
+    }
+}

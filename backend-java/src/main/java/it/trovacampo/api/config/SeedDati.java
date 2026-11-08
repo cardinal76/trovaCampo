@@ -1,12 +1,12 @@
 package it.trovacampo.api.config;
 
-import static it.trovacampo.api.dominio.TipoCampionato.AGONISTICA;
-import static it.trovacampo.api.dominio.TipoCampionato.SCUOLA_CALCIO;
+import static it.trovacampo.api.societa.TipoCampionato.AGONISTICA;
+import static it.trovacampo.api.societa.TipoCampionato.SCUOLA_CALCIO;
 
-import it.trovacampo.api.dominio.Campionato;
-import it.trovacampo.api.dominio.Societa;
-import it.trovacampo.api.repository.SocietaRepository;
-import it.trovacampo.api.service.SocietaService;
+import it.trovacampo.api.societa.Campionato;
+import it.trovacampo.api.societa.Societa;
+import it.trovacampo.api.societa.SocietaRepository;
+import it.trovacampo.api.societa.SocietaService;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

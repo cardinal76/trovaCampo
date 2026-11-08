@@ -1,8 +1,8 @@
 package it.trovacampo.api.anagrafica;
 
-import it.trovacampo.api.dominio.Societa;
-import it.trovacampo.api.dominio.Testo;
-import it.trovacampo.api.repository.SocietaRepository;
+import it.trovacampo.api.societa.Societa;
+import it.trovacampo.api.societa.SocietaRepository;
+import it.trovacampo.api.societa.Testo;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;

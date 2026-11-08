@@ -1,8 +1,8 @@
 package it.trovacampo.api.importazione;
 
-import it.trovacampo.api.dominio.Societa;
-import it.trovacampo.api.repository.SocietaRepository;
-import it.trovacampo.api.service.Geocoding;
+import it.trovacampo.api.geocoding.Geocoding;
+import it.trovacampo.api.societa.Societa;
+import it.trovacampo.api.societa.SocietaRepository;
 import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.List;

@@ -1,7 +1,7 @@
 package it.trovacampo.api.indirizzi;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import it.trovacampo.api.service.RitmoNominatim;
+import it.trovacampo.api.geocoding.RitmoNominatim;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;

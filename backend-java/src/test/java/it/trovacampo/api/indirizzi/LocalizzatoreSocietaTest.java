@@ -9,7 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import it.trovacampo.api.service.Geocoding;
+import it.trovacampo.api.geocoding.Geocoding;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 

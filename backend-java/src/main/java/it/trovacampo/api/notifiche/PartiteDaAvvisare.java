@@ -2,8 +2,8 @@ package it.trovacampo.api.notifiche;
 
 import it.trovacampo.api.anagrafica.AnagraficaPresenze.Partita;
 import it.trovacampo.api.anagrafica.PartiteSuiCampi;
-import it.trovacampo.api.dominio.Societa;
-import it.trovacampo.api.repository.SocietaRepository;
+import it.trovacampo.api.societa.Societa;
+import it.trovacampo.api.societa.SocietaRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;

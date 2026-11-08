@@ -1,11 +1,11 @@
 package it.trovacampo.api.importazione;
 
-import it.trovacampo.api.dominio.Esclusione;
-import it.trovacampo.api.dominio.ProvinciaDalComune;
-import it.trovacampo.api.dominio.Societa;
-import it.trovacampo.api.repository.EsclusioniRepository;
-import it.trovacampo.api.repository.SocietaRepository;
-import it.trovacampo.api.service.SocietaService;
+import it.trovacampo.api.societa.Esclusione;
+import it.trovacampo.api.societa.EsclusioniRepository;
+import it.trovacampo.api.societa.ProvinciaDalComune;
+import it.trovacampo.api.societa.Societa;
+import it.trovacampo.api.societa.SocietaRepository;
+import it.trovacampo.api.societa.SocietaService;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;

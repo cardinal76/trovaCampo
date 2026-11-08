@@ -6,8 +6,8 @@ import static org.mockito.Mockito.when;
 
 import it.trovacampo.api.anagrafica.AnagraficaPresenze.Campo;
 import it.trovacampo.api.anagrafica.AnagraficaPresenze.SocietaConCampo;
-import it.trovacampo.api.dominio.Societa;
-import it.trovacampo.api.repository.SocietaRepository;
+import it.trovacampo.api.societa.Societa;
+import it.trovacampo.api.societa.SocietaRepository;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

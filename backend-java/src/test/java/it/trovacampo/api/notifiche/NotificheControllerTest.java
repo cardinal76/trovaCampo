@@ -15,12 +15,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import it.trovacampo.api.anagrafica.AnagraficaPresenze.Partita;
 import it.trovacampo.api.anagrafica.PartiteSuiCampi;
 import it.trovacampo.api.config.ConfigurazioneSicurezza;
-import it.trovacampo.api.dominio.Societa;
-import it.trovacampo.api.repository.SocietaRepository;
+import it.trovacampo.api.societa.Societa;
+import it.trovacampo.api.societa.SocietaRepository;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.Set;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;

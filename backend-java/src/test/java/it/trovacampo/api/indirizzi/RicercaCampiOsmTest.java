@@ -6,8 +6,8 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
-import it.trovacampo.api.service.LimitatoreRichieste;
-import it.trovacampo.api.service.RitmoNominatim;
+import it.trovacampo.api.geocoding.LimitatoreRichieste;
+import it.trovacampo.api.geocoding.RitmoNominatim;
 import java.time.Duration;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;

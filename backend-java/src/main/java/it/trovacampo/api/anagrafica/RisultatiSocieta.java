@@ -1,6 +1,6 @@
 package it.trovacampo.api.anagrafica;
 
-import it.trovacampo.api.dominio.Societa;
+import it.trovacampo.api.societa.Societa;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;

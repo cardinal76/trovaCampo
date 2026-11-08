@@ -2,7 +2,7 @@ package it.trovacampo.api.prospect;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.trovacampo.api.service.LimitatoreRichieste;
+import it.trovacampo.api.geocoding.LimitatoreRichieste;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
