@@ -1,6 +1,6 @@
 package it.trovacampo.api.indirizzi;
 
-import it.trovacampo.api.integrazioni.FonteCampiLnd;
+
 /**
  * Quanto ci si può fidare di un indirizzo trovato.
  *

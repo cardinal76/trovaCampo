@@ -1,6 +1,5 @@
-package it.trovacampo.api.societa;
+package it.trovacampo.api.anagrafica;
 
-import it.trovacampo.api.anagrafica.SocietaSenzaCampo;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

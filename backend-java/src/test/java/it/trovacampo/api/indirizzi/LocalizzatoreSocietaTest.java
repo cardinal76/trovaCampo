@@ -1,7 +1,5 @@
 package it.trovacampo.api.indirizzi;
 
-import it.trovacampo.api.integrazioni.FonteCampiLnd;
-import it.trovacampo.api.integrazioni.RicercaCampiOsm;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;

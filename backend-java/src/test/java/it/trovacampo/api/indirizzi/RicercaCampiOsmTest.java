@@ -1,8 +1,5 @@
-package it.trovacampo.api.integrazioni;
+package it.trovacampo.api.indirizzi;
 
-import it.trovacampo.api.indirizzi.Confidenza;
-import it.trovacampo.api.indirizzi.FonteIndirizzo;
-import it.trovacampo.api.indirizzi.SocietaDaLocalizzare;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.queryParam;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;

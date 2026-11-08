@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Le fonti degli indirizzi, per chi amministra (ruolo trovacampo-admin, vedi
- * {@link it.trovacampo.api.config.ConfigurazioneSicurezza}). Il collegamento
+ * {@link it.trovacampo.api.sicurezza.ConfigurazioneSicurezza}). Il collegamento
  * dei prospect e la copertura stanno in {@code /api/admin/prospect}.
  *
  * <ul>

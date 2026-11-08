@@ -1,12 +1,11 @@
 package it.trovacampo.api.anagrafica;
 
-import it.trovacampo.api.integrazioni.AnagraficaPresenze;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import it.trovacampo.api.integrazioni.AnagraficaPresenze.Campo;
-import it.trovacampo.api.integrazioni.AnagraficaPresenze.SocietaConCampo;
+import it.trovacampo.api.anagrafica.AnagraficaPresenze.Campo;
+import it.trovacampo.api.anagrafica.AnagraficaPresenze.SocietaConCampo;
 import it.trovacampo.api.societa.Societa;
 import it.trovacampo.api.societa.SocietaRepository;
 import java.util.List;

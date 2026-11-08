@@ -1,6 +1,5 @@
 package it.trovacampo.api.prospect;
 
-import it.trovacampo.api.prospect.RegistroRasd;
 import it.trovacampo.api.indirizzi.Confidenza;
 import it.trovacampo.api.indirizzi.FonteIndirizzo;
 import java.time.Instant;

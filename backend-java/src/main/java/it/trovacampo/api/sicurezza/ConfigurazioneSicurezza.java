@@ -1,4 +1,4 @@
-package it.trovacampo.api.config;
+package it.trovacampo.api.sicurezza;
 
 import java.util.Collection;
 import java.util.List;

@@ -12,9 +12,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import it.trovacampo.api.integrazioni.AnagraficaPresenze.Partita;
+import it.trovacampo.api.anagrafica.AnagraficaPresenze.Partita;
 import it.trovacampo.api.anagrafica.PartiteSuiCampi;
-import it.trovacampo.api.config.ConfigurazioneSicurezza;
+import it.trovacampo.api.sicurezza.ConfigurazioneSicurezza;
 import it.trovacampo.api.societa.Societa;
 import it.trovacampo.api.societa.SocietaRepository;
 import java.time.OffsetDateTime;

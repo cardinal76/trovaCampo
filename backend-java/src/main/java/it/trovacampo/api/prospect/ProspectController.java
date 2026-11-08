@@ -1,6 +1,5 @@
 package it.trovacampo.api.prospect;
 
-import it.trovacampo.api.prospect.RegistroRasd;
 import it.trovacampo.api.indirizzi.FonteIndirizzo;
 import java.util.List;
 import org.springframework.http.ContentDisposition;
@@ -20,7 +19,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
  * La lista commerciale delle ASD/SSD: importazione dal registro, collegamento
  * ai campi, mappa ed export. Tutto sotto {@code /api/admin}, quindi solo con
  * il ruolo trovacampo-admin (vedi
- * {@link it.trovacampo.api.config.ConfigurazioneSicurezza}); niente di
+ * {@link it.trovacampo.api.sicurezza.ConfigurazioneSicurezza}); niente di
  * questo esce dalle API pubbliche.
  */
 @RestController

@@ -1,6 +1,7 @@
 package it.trovacampo.api.notifiche;
 
-import it.trovacampo.api.integrazioni.AnagraficaPresenze.Partita;
+import it.trovacampo.api.anagrafica.AnagraficaPresenze.Partita;
+import it.trovacampo.api.anagrafica.ChiaveSquadra;
 import it.trovacampo.api.anagrafica.PartiteSuiCampi;
 import it.trovacampo.api.societa.Societa;
 import it.trovacampo.api.societa.SocietaRepository;

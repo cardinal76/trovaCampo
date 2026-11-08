@@ -1,8 +1,5 @@
 package it.trovacampo.api.prospect;
 
-import it.trovacampo.api.prospect.RegistroRasd;
-import it.trovacampo.api.prospect.RegistroRasdTest;
-import it.trovacampo.api.prospect.RitmoRasd;
 import static it.trovacampo.api.prospect.RegistroRasdTest.lista;
 import static it.trovacampo.api.prospect.RispostaRasd.dettaglio;
 import static it.trovacampo.api.prospect.RispostaRasd.elenco;

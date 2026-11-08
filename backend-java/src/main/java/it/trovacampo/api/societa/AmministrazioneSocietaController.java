@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Creazione, modifica e cancellazione della scheda di una società. Sta sotto
- * /api/admin, quindi {@link it.trovacampo.api.config.ConfigurazioneSicurezza}
+ * /api/admin, quindi {@link it.trovacampo.api.sicurezza.ConfigurazioneSicurezza}
  * chiede il login sul Keycloak di presenze con il ruolo trovacampo-admin.
  */
 @RestController

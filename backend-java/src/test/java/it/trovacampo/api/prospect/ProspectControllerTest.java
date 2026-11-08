@@ -15,9 +15,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import it.trovacampo.api.config.ConfigurazioneSicurezza;
 import it.trovacampo.api.indirizzi.Confidenza;
 import it.trovacampo.api.indirizzi.FonteIndirizzo;
+import it.trovacampo.api.sicurezza.ConfigurazioneSicurezza;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

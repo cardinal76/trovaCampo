@@ -1,6 +1,6 @@
 package it.trovacampo.api.importazione;
 
-import it.trovacampo.api.integrazioni.AnagraficaPresenze;
+import it.trovacampo.api.anagrafica.AnagraficaPresenze;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;

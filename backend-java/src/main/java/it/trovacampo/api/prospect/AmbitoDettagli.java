@@ -1,6 +1,5 @@
 package it.trovacampo.api.prospect;
 
-import it.trovacampo.api.prospect.RegistroRasd;
 import java.util.Locale;
 
 /**

@@ -1,4 +1,4 @@
-package it.trovacampo.api.notifiche;
+package it.trovacampo.api.anagrafica;
 
 import it.trovacampo.api.societa.Testo;
 import java.util.Collection;

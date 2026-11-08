@@ -1,4 +1,4 @@
-package it.trovacampo.api.societa;
+package it.trovacampo.api.anagrafica;
 
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -7,8 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import it.trovacampo.api.anagrafica.SocietaSenzaCampo;
-import it.trovacampo.api.config.ConfigurazioneSicurezza;
+import it.trovacampo.api.sicurezza.ConfigurazioneSicurezza;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

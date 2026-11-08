@@ -1,5 +1,6 @@
 package it.trovacampo.api.indirizzi;
 
+
 /**
  * Il miglior indirizzo trovato per una società.
  *

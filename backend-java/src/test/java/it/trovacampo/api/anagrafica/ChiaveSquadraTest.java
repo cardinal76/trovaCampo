@@ -1,4 +1,4 @@
-package it.trovacampo.api.notifiche;
+package it.trovacampo.api.anagrafica;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

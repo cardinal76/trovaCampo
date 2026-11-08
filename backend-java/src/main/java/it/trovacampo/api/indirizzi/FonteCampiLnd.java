@@ -1,11 +1,6 @@
-package it.trovacampo.api.integrazioni;
+package it.trovacampo.api.indirizzi;
 
-import it.trovacampo.api.indirizzi.Confidenza;
-import it.trovacampo.api.indirizzi.FonteIndirizzo;
-import it.trovacampo.api.indirizzi.IndirizzoMigliore;
-import it.trovacampo.api.indirizzi.NomiSocieta;
-import it.trovacampo.api.indirizzi.SocietaDaLocalizzare;
-import it.trovacampo.api.integrazioni.AnagraficaPresenze;
+import it.trovacampo.api.anagrafica.AnagraficaPresenze;
 import it.trovacampo.api.societa.Societa;
 import it.trovacampo.api.societa.SocietaRepository;
 import java.time.Clock;

@@ -1,6 +1,5 @@
 package it.trovacampo.api.prospect;
 
-import it.trovacampo.api.prospect.RitmoRasd;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
