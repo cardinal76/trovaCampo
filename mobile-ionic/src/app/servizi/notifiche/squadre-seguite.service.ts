@@ -1,4 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
+import { archivioLocale } from '../archivio-locale';
 
 const CHIAVE = 'trovacampo.squadreSeguite';
 
@@ -54,27 +55,20 @@ export class SquadreSeguiteService {
 
   private salva(seguite: SquadraSeguita[]): void {
     this.seguite.set(seguite);
-    try {
-      localStorage.setItem(CHIAVE, JSON.stringify(seguite));
-    } catch {
-      // Navigazione privata o archivio bloccato: valgono finché la pagina
-      // resta aperta, e il server le ha comunque con l'iscrizione.
-    }
+    // Con l'archivio bloccato valgono finché la pagina resta aperta, e il
+    // server le ha comunque con l'iscrizione.
+    archivioLocale.scriviJson(CHIAVE, seguite);
   }
 }
 
 function ricordate(): SquadraSeguita[] {
-  try {
-    const lette: unknown = JSON.parse(localStorage.getItem(CHIAVE) ?? '[]');
-    // Quello che c'è nell'archivio l'ha scritto una versione dell'app, forse
-    // vecchia, forse toccata a mano: si tiene solo quello che ha la forma giusta.
-    return Array.isArray(lette)
-      ? lette.filter(
-          (squadra): squadra is SquadraSeguita =>
-            typeof squadra?.chiave === 'string' && typeof squadra?.societaId === 'string',
-        )
-      : [];
-  } catch {
-    return [];
-  }
+  const lette = archivioLocale.leggiJson(CHIAVE);
+  // Quello che c'è nell'archivio l'ha scritto una versione dell'app, forse
+  // vecchia, forse toccata a mano: si tiene solo quello che ha la forma giusta.
+  return Array.isArray(lette)
+    ? lette.filter(
+        (squadra): squadra is SquadraSeguita =>
+          typeof squadra?.chiave === 'string' && typeof squadra?.societaId === 'string',
+      )
+    : [];
 }

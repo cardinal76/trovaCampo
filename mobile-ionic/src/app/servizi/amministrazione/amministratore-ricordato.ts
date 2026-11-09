@@ -1,3 +1,5 @@
+import { archivioLocale } from '../archivio-locale';
+
 /**
  * Se su questo browser è entrato di recente qualcuno con il ruolo
  * trovacampo-admin.
@@ -16,36 +18,25 @@ const CHIAVE = 'trovacampo.amministratore';
 const CHIAVE_NOME = 'trovacampo.amministratore.nome';
 
 export function amministratoreRicordato(): boolean {
-  try {
-    return localStorage.getItem(CHIAVE) === 'si';
-  } catch {
-    // Navigazione privata o archivio bloccato: niente pulsante, si entra
-    // scrivendo l'indirizzo.
-    return false;
-  }
+  // Navigazione privata o archivio bloccato: niente pulsante, si entra
+  // scrivendo l'indirizzo.
+  return archivioLocale.leggi(CHIAVE) === 'si';
 }
 
 /** Il nome da mostrare nel menu utente, accanto a "Entrato come". */
 export function nomeRicordato(): string | null {
-  try {
-    return amministratoreRicordato() ? localStorage.getItem(CHIAVE_NOME) : null;
-  } catch {
-    return null;
-  }
+  return amministratoreRicordato() ? archivioLocale.leggi(CHIAVE_NOME) : null;
 }
 
 export function ricordaAmministratore(amministratore: boolean, nome?: string | null): void {
-  try {
-    if (amministratore) {
-      localStorage.setItem(CHIAVE, 'si');
-      if (nome) {
-        localStorage.setItem(CHIAVE_NOME, nome);
-      }
-    } else {
-      localStorage.removeItem(CHIAVE);
-      localStorage.removeItem(CHIAVE_NOME);
+  // Con l'archivio bloccato il pulsante semplicemente non comparirà.
+  if (amministratore) {
+    archivioLocale.scrivi(CHIAVE, 'si');
+    if (nome) {
+      archivioLocale.scrivi(CHIAVE_NOME, nome);
     }
-  } catch {
-    // Come sopra: il pulsante semplicemente non comparirà.
+  } else {
+    archivioLocale.togli(CHIAVE);
+    archivioLocale.togli(CHIAVE_NOME);
   }
 }

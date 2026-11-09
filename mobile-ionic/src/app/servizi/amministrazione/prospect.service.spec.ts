@@ -91,16 +91,14 @@ describe('ProspectService', () => {
 
     const copertura = firstValueFrom(service.copertura());
     await dopoIlToken();
-    http
-      .expectOne(`${url}/copertura`)
-      .flush({
-        prospectCalcioLazio: 10,
-        collegati: 6,
-        conCoordinate: 5,
-        copertura: 60,
-        perFonte: { OPEN_DATA: 1 },
-        perConfidenza: {},
-      });
+    http.expectOne(`${url}/copertura`).flush({
+      prospectCalcioLazio: 10,
+      collegati: 6,
+      conCoordinate: 5,
+      copertura: 60,
+      perFonte: { OPEN_DATA: 1 },
+      perConfidenza: {},
+    });
     expect((await copertura).perFonte.OPEN_DATA).toBe(1);
   });
 

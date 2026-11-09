@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { numeroViciniValido } from '../../modelli/vicini';
+import { archivioLocale } from '../archivio-locale';
 
 const CHIAVE = 'trovacampo.numeroVicini';
 
@@ -14,18 +15,11 @@ export class NumeroViciniService {
   scegli(numero: number): void {
     const valido = numeroViciniValido(numero);
     this.numero.set(valido);
-    try {
-      localStorage.setItem(CHIAVE, String(valido));
-    } catch {
-      // Navigazione privata o archivio bloccato: vale finché la pagina resta aperta.
-    }
+    // Con l'archivio bloccato la scelta vale finché la pagina resta aperta.
+    archivioLocale.scrivi(CHIAVE, String(valido));
   }
 }
 
 function ricordato(): number {
-  try {
-    return numeroViciniValido(localStorage.getItem(CHIAVE));
-  } catch {
-    return numeroViciniValido(null);
-  }
+  return numeroViciniValido(archivioLocale.leggi(CHIAVE));
 }
