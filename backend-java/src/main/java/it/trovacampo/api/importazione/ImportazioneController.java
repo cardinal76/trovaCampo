@@ -17,7 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Caricamento del file Excel, dalla pagina /admin/importazione dell'app.
- * L'accesso lo decide {@link it.trovacampo.api.config.ConfigurazioneSicurezza}:
+ * L'accesso lo decide {@link it.trovacampo.api.sicurezza.ConfigurazioneSicurezza}:
  * serve il login sul Keycloak di presenze con il ruolo trovacampo-admin.
  */
 @RestController

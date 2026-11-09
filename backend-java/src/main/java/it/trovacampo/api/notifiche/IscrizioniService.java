@@ -1,6 +1,6 @@
 package it.trovacampo.api.notifiche;
 
-import it.trovacampo.api.web.DatiNonValidiException;
+import it.trovacampo.api.societa.DatiNonValidiException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Clock;

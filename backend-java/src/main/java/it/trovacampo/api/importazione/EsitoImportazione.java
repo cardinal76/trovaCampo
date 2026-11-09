@@ -14,7 +14,7 @@ import java.util.List;
  * @param colonneIgnorate le intestazioni che non corrispondono a nessuna
  *     colonna nota, utili per accorgersi di un nome scritto diversamente
  * @param escluse le righe saltate perché il loro campo è stato eliminato da chi
- *     amministra (vedi {@link it.trovacampo.api.dominio.Esclusione})
+ *     amministra (vedi {@link it.trovacampo.api.societa.Esclusione})
  */
 public record EsitoImportazione(
         boolean prova,

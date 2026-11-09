@@ -1,4 +1,4 @@
-import type { CasoPosizione } from '../servizi/diagnosi.service';
+import type { CasoPosizione } from '../servizi/posizione/diagnosi.service';
 import { Posizione } from './vicini';
 
 /**
@@ -29,11 +29,7 @@ export function linkPercorso(
   posizione: Posizione | null | undefined,
 ): string {
   const scritto = indirizzo?.trim() ?? '';
-  const origine = scritto
-    ? encodeURIComponent(scritto)
-    : posizione
-      ? coordinate(posizione)
-      : null;
+  const origine = scritto ? encodeURIComponent(scritto) : posizione ? coordinate(posizione) : null;
   const partenza = origine === null ? '' : `&origin=${origine}`;
   return `${GOOGLE_MAPS_PERCORSO}${partenza}&destination=${coordinate(destinazione)}`;
 }

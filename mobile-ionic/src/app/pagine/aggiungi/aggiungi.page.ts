@@ -16,7 +16,7 @@ import {
   IonToolbar,
   ToastController,
 } from '@ionic/angular/standalone';
-import { SocietaService } from '../../servizi/societa.service';
+import { SocietaService } from '../../servizi/societa/societa.service';
 
 /**
  * Segnalazione di un campo mancante. I tre campi sono normali caselle di

@@ -1,7 +1,7 @@
 package it.trovacampo.api.anagrafica;
 
-import it.trovacampo.api.dominio.Societa;
-import it.trovacampo.api.repository.SocietaRepository;
+import it.trovacampo.api.societa.Societa;
+import it.trovacampo.api.societa.SocietaRepository;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;

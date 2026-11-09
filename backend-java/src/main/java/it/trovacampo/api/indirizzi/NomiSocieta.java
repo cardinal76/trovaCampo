@@ -1,6 +1,6 @@
 package it.trovacampo.api.indirizzi;
 
-import it.trovacampo.api.dominio.Testo;
+import it.trovacampo.api.societa.Testo;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;

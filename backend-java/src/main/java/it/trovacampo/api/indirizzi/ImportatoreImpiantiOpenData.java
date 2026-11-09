@@ -1,6 +1,6 @@
 package it.trovacampo.api.indirizzi;
 
-import it.trovacampo.api.service.LimitatoreRichieste;
+import it.trovacampo.api.geocoding.LimitatoreRichieste;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;

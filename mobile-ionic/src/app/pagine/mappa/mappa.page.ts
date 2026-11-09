@@ -36,7 +36,6 @@ import {
   Societa,
   SocietaGeolocalizzata,
   haCoordinate,
-  indirizzoCompleto,
   nomeCompleto,
   testoSicuro,
 } from '../../modelli/societa';
@@ -44,30 +43,32 @@ import {
   GIORNI_PARTITE_MAPPA,
   PartitePerCampo,
   RILETTURA_IN_DIRETTA_MS,
-  campionatoPartita,
   daSeguire,
   fondiLive,
   partiteDelCampo,
-  punteggioLive,
-  quandoPartita,
-  squadrePartita,
 } from '../../modelli/partita';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
-import { amministratoreRicordato } from '../../servizi/amministratore-ricordato';
+import { amministratoreRicordato } from '../../servizi/amministrazione/amministratore-ricordato';
 import { RiquadroDiagnosiComponent } from '../../componenti/riquadro-diagnosi/riquadro-diagnosi.component';
-import { DiagnosiService } from '../../servizi/diagnosi.service';
+import { DiagnosiService } from '../../servizi/posizione/diagnosi.service';
 import {
   nellaProvincia,
   opzioniProvincia,
   provinciaValida,
   testoProvincia,
 } from '../../modelli/provincia';
-import { NumeroViciniService } from '../../servizi/numero-vicini.service';
-import { RichiestaPosizione } from '../../servizi/richiesta-posizione';
-import { linkPercorso, suggerimentoPartenza } from '../../modelli/percorso';
-import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
-import { ProvinciaSceltaService } from '../../servizi/provincia-scelta.service';
-import { SocietaService } from '../../servizi/societa.service';
+import {
+  ContestoPopup,
+  collegaPercorso as collegaPercorsoDelPopup,
+  partiteNelPopup,
+  popupCampo,
+} from '../../mappa/popup-campo';
+import { NumeroViciniService } from '../../servizi/preferenze/numero-vicini.service';
+import { RichiestaPosizione } from '../../servizi/posizione/richiesta-posizione';
+import { suggerimentoPartenza } from '../../modelli/percorso';
+import { CampiCambiatiService } from '../../servizi/societa/campi-cambiati.service';
+import { ProvinciaSceltaService } from '../../servizi/preferenze/provincia-scelta.service';
+import { SocietaService } from '../../servizi/societa/societa.service';
 import {
   TipoSegnaposto,
   ZOOM_ICONE,
@@ -90,23 +91,6 @@ import {
 /** L'Italia intera, finché non ci sono campi da inquadrare. */
 
 const ITALIA = L.latLngBounds([36.6, 6.6], [47.1, 18.5]);
-
-/**
- * Un popup si allunga verso l'alto: quando una riga nuova (la nota del
- * percorso, un errore) lo fa uscire dalla mappa, sul telefono finirebbe
- * sotto i filtri con la sua X. Si sposta la mappa quel tanto che basta.
- * Non con popup.update(), che riscriverebbe il contenuto e staccherebbe
- * gli eventi.
- */
-function tieniDentro(elemento: HTMLElement, mappa: L.Map): void {
-  const popup = elemento.closest<HTMLElement>('.leaflet-popup') ?? elemento;
-  const margine = 10;
-  const sopra =
-    popup.getBoundingClientRect().top - mappa.getContainer().getBoundingClientRect().top - margine;
-  if (sopra < 0) {
-    mappa.panBy([0, sopra], { animate: true });
-  }
-}
 
 /**
  * Tutti i campi con una posizione, su una mappa sola.
@@ -210,7 +194,9 @@ export class MappaPage implements OnDestroy {
 
   /** Le province dei campi scaricati, con "Tutte" in testa. */
   readonly opzioniProvincia = computed(() => opzioniProvincia(this.campi()));
-  readonly testoProvincia = computed(() => testoProvincia(this.provincia(), this.opzioniProvincia()));
+  readonly testoProvincia = computed(() =>
+    testoProvincia(this.provincia(), this.opzioniProvincia()),
+  );
   readonly provincia = computed(() =>
     provinciaValida(this.provinciaScelta.scelta(), this.opzioniProvincia()),
   );
@@ -264,7 +250,9 @@ export class MappaPage implements OnDestroy {
    */
   readonly conRiepilogo = computed(
     () =>
-      this.posizione() !== null || (this.soloConPartite() && this.ciSonoPartite()) || this.amministratore(),
+      this.posizione() !== null ||
+      (this.soloConPartite() && this.ciSonoPartite()) ||
+      this.amministratore(),
   );
 
   /** A ogni ingresso: tornando dal login (o dopo l'uscita) il riepilogo si adegua. */
@@ -433,7 +421,7 @@ export class MappaPage implements OnDestroy {
       const campo = this.mostrati.find((c) => c.id === id);
       const elenco = segnaposto.getPopup()?.getElement()?.querySelector('.partite-popup');
       if (campo && elenco) {
-        elenco.outerHTML = this.partiteNelPopup(campo);
+        elenco.outerHTML = partiteNelPopup(campo, this.partite());
       }
     }
   }
@@ -675,68 +663,27 @@ export class MappaPage implements OnDestroy {
   }
 
   private conDettagli<T extends L.Layer>(livello: T, campo: SocietaGeolocalizzata): T {
-    return livello
-      .bindTooltip(testoSicuro(nomeCompleto(campo)))
-      // Una funzione e non un testo: il popup si scrive quando si apre, e
-      // così porta le partite anche se sono arrivate dopo i segnaposto.
-      .bindPopup(() => this.popup(campo));
+    return (
+      livello
+        .bindTooltip(testoSicuro(nomeCompleto(campo)))
+        // Una funzione e non un testo: il popup si scrive quando si apre, e
+        // così porta le partite anche se sono arrivate dopo i segnaposto.
+        .bindPopup(() => this.popup(campo))
+    );
   }
 
   private popup(campo: SocietaGeolocalizzata): string {
-    const distanza = this.distanze.get(campo.id);
-    const riga =
-      distanza === undefined ? '' : `<em>A ${testoDistanza(distanza)} da te, in linea d'aria</em><br />`;
-    return `
-      <strong>${testoSicuro(nomeCompleto(campo))}</strong><br />
-      ${riga}
-      ${testoSicuro(campo.nomeImpianto)}<br />
-      ${testoSicuro(indirizzoCompleto(campo))}<br />
-      ${this.partiteNelPopup(campo)}
-      ${this.percorsoNelPopup(campo)}
-      <button type="button" class="collegamento-scheda" data-societa="${testoSicuro(campo.id)}">
-        Vedi scheda società ›
-      </button>
-    `;
+    return popupCampo(campo, this.contestoPopup(campo));
   }
 
-  /**
-   * "Partenza" e "Percorso": lo stesso blocco della scheda, scritto a mano
-   * perché il popup è HTML di Leaflet e non un template. Il link è già
-   * pronto per il campo vuoto; lo aggiorna {@link collegaPercorso}.
-   *
-   * La posizione qui non si chiede: aprire un popup è toccare un campo per
-   * curiosità, e un permesso a ogni tocco sarebbe un fastidio. La chiede il
-   * pulsante accanto alla partenza; se non la si chiede, il campo vuoto
-   * lascia che sia Google a partire dalla posizione del dispositivo.
-   */
-  private percorsoNelPopup(campo: SocietaGeolocalizzata): string {
-    const posizione = this.posizioneNota();
-    const link = linkPercorso(campo, '', posizione);
-    const nota = posizione ? 'Parti dalla tua posizione attuale.' : '';
-    return `
-      <form class="percorso-popup" data-percorso data-lat="${campo.lat}" data-lng="${campo.lng}">
-        <label>
-          <span class="etichetta">Partenza</span>
-          <span class="riga-partenza">
-            <input
-              type="text"
-              name="partenza"
-              placeholder="${testoSicuro(suggerimentoPartenza(this.diagnosi.posizione()))}"
-              autocomplete="street-address"
-              enterkeyhint="go"
-            />
-            <button type="button" class="usa-posizione" data-usa-posizione
-              aria-label="Parti dalla mia posizione" title="Parti dalla mia posizione">
-              <ion-icon name="locate" aria-hidden="true"></ion-icon>
-            </button>
-          </span>
-        </label>
-        <p class="nota-percorso" aria-live="polite">${nota}</p>
-        <a class="apri-percorso" href="${testoSicuro(link)}" target="_blank" rel="noopener">
-          <ion-icon name="navigate-outline" aria-hidden="true"></ion-icon>
-          Percorso
-        </a>
-      </form>`;
+  /** Quel che un popup deve sapere della pagina, al momento in cui si apre. */
+  private contestoPopup(campo: SocietaGeolocalizzata): ContestoPopup {
+    return {
+      distanza: this.distanze.get(campo.id),
+      partite: this.partite(),
+      posizione: this.posizioneNota(),
+      suggerimento: suggerimentoPartenza(this.diagnosi.posizione()),
+    };
   }
 
   /** La posizione di chi guarda, se già nota: da "Vicino a me" o dal popup. */
@@ -744,78 +691,14 @@ export class MappaPage implements OnDestroy {
     return this.posizione() ?? this.posizionePercorso;
   }
 
-  /**
-   * Dà vita al blocco del percorso di un popup appena aperto: il link segue
-   * quello che si scrive, il pulsante chiede la posizione, e Invio apre il
-   * percorso come il link.
-   */
   private collegaPercorso(modulo: HTMLFormElement, mappa?: L.Map): void {
-    const destinazione = { lat: Number(modulo.dataset['lat']), lng: Number(modulo.dataset['lng']) };
-    const campo = modulo.querySelector<HTMLInputElement>('input[name="partenza"]');
-    const link = modulo.querySelector<HTMLAnchorElement>('.apri-percorso');
-    const nota = modulo.querySelector<HTMLElement>('.nota-percorso');
-    const usaPosizione = modulo.querySelector<HTMLButtonElement>('[data-usa-posizione]');
-    if (!campo || !link || !nota || !usaPosizione) {
-      return;
-    }
-    const scriviNota = (testo: string, errore = false) => {
-      nota.textContent = testo;
-      nota.classList.toggle('errore', errore);
-      if (mappa && modulo.isConnected) {
-        this.zona.runOutsideAngular(() => tieniDentro(modulo, mappa));
-      }
-    };
-    const aggiorna = () => {
-      link.href = linkPercorso(destinazione, campo.value, this.posizioneNota());
-      const dallaPosizione = campo.value.trim() === '' && this.posizioneNota() !== null;
-      scriviNota(dallaPosizione ? 'Parti dalla tua posizione attuale.' : '');
-    };
-    campo.addEventListener('input', aggiorna);
-    // Invio sulla tastiera del telefono ("Vai") apre il percorso come il
-    // link: dentro il gesto dell'utente, quindi in una nuova scheda e senza
-    // che il blocco dei popup lo fermi.
-    modulo.addEventListener('submit', (evento) => {
-      evento.preventDefault();
-      aggiorna();
-      link.click();
+    collegaPercorsoDelPopup(modulo, {
+      mappa,
+      fuoriZona: (azione) => this.zona.runOutsideAngular(azione),
+      posizioneNota: () => this.posizioneNota(),
+      chiediPosizione: () => this.richiestaPercorso.chiedi(),
+      erroreRichiesta: () => this.richiestaPercorso.errore(),
+      ricordaPosizione: (posizione) => (this.posizionePercorso = posizione),
     });
-    usaPosizione.addEventListener('click', async () => {
-      campo.value = '';
-      usaPosizione.disabled = true;
-      scriviNota('Cerco dove sei…');
-      const posizione = await this.richiestaPercorso.chiedi();
-      usaPosizione.disabled = false;
-      if (posizione) {
-        this.posizionePercorso = posizione;
-      }
-      aggiorna();
-      // Nel popup basta il messaggio, che già dice cosa fare: il riquadro con
-      // tutti i passi non ci starebbe. Il campo resta libero per scrivere
-      // l'indirizzo, e il link parte comunque dalla posizione del dispositivo.
-      const errore = this.richiestaPercorso.errore();
-      if (errore) {
-        scriviNota(errore, true);
-      }
-    });
-  }
-
-  /** Le prime partite della settimana su questo campo, o niente. */
-  private partiteNelPopup(campo: Societa): string {
-    const partite = partiteDelCampo(this.partite(), campo);
-    if (partite.length === 0) {
-      return '';
-    }
-    const righe = partite
-      .map(
-        (partita) => `
-          <li>
-            ${partita.live ? `<span class="live">LIVE ${testoSicuro(punteggioLive(partita) ?? '')}</span>` : ''}
-            <span class="quando">${testoSicuro(quandoPartita(partita))}</span>
-            ${testoSicuro(squadrePartita(partita))}
-            <small>${testoSicuro(campionatoPartita(partita))}</small>
-          </li>`,
-      )
-      .join('');
-    return `<ul class="partite-popup" aria-label="Prossime partite">${righe}</ul>`;
   }
 }

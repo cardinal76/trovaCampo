@@ -69,7 +69,9 @@ export function dettaglioSquadra(squadra: Squadra): string {
   }
   if (squadra.squadra) {
     parti.push(
-      squadra.fuoriClassifica ? `squadra ${squadra.squadra}, fuori classifica` : `squadra ${squadra.squadra}`,
+      squadra.fuoriClassifica
+        ? `squadra ${squadra.squadra}, fuori classifica`
+        : `squadra ${squadra.squadra}`,
     );
   } else if (squadra.fuoriClassifica) {
     parti.push('fuori classifica');

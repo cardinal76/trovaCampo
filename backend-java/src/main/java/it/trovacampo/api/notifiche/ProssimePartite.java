@@ -1,8 +1,8 @@
 package it.trovacampo.api.notifiche;
 
 import it.trovacampo.api.anagrafica.AnagraficaPresenze.Partita;
-import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.notifiche.PartiteDaAvvisare.Avviso;
+import it.trovacampo.api.societa.Societa;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;

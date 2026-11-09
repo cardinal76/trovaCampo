@@ -5,11 +5,11 @@ import { provideRouter } from '@angular/router';
 import { provideIonicAngular } from '@ionic/angular/standalone';
 import { environment } from '../../../environments/environment';
 import { ElencoProssime, ProssimaPartita } from '../../modelli/prossime';
-import { AmbientePush } from '../../servizi/ambiente-push';
-import { AmbientePushFinto, attendi } from '../../servizi/ambiente-push-finto.spec';
-import { PosizioneService } from '../../servizi/posizione.service';
-import { SONDE_BROWSER } from '../../servizi/sonde-browser';
-import { SondeFinte } from '../../servizi/sonde-finte.spec';
+import { AmbientePush } from '../../servizi/notifiche/ambiente-push';
+import { AmbientePushFinto, attendi } from '../../servizi/notifiche/ambiente-push-finto.spec';
+import { PosizioneService } from '../../servizi/posizione/posizione.service';
+import { SONDE_BROWSER } from '../../servizi/posizione/sonde-browser';
+import { SondeFinte } from '../../servizi/posizione/sonde-finte.spec';
 import { ProssimePartitePage } from './prossime-partite.page';
 
 const API = `${environment.apiUrl}/api/notifiche/prossime`;

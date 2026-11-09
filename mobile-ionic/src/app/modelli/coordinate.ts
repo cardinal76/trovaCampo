@@ -39,6 +39,9 @@ export function leggiCoordinate(testo: string): Coordinate | undefined | null {
 }
 
 /** Nello stesso formato che si incolla: "41.507315, 13.058757". */
-export function scriviCoordinate(lat: number | undefined | null, lng: number | undefined | null): string {
+export function scriviCoordinate(
+  lat: number | undefined | null,
+  lng: number | undefined | null,
+): string {
   return typeof lat === 'number' && typeof lng === 'number' ? `${lat}, ${lng}` : '';
 }

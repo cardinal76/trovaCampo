@@ -37,8 +37,8 @@ import {
   nomeCompleto,
   testoSicuro,
 } from '../../modelli/societa';
-import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
-import { SocietaService } from '../../servizi/societa.service';
+import { CampiCambiatiService } from '../../servizi/societa/campi-cambiati.service';
+import { SocietaService } from '../../servizi/societa/societa.service';
 import { aggiornaNomiCampi, iconaCampo } from '../../mappa/icona-campo';
 
 type Stato = 'caricamento' | 'completata' | 'errore';
@@ -88,8 +88,7 @@ export class RisultatiPage implements OnDestroy {
   readonly risultati = signal<Societa[]>([]);
   readonly geolocalizzati = computed(() => this.risultati().filter(haCoordinate));
 
-  private readonly contenitoreMappa =
-    viewChild<ElementRef<HTMLDivElement>>('contenitoreMappa');
+  private readonly contenitoreMappa = viewChild<ElementRef<HTMLDivElement>>('contenitoreMappa');
 
   private mappa?: L.Map;
   private pin?: L.LayerGroup;
@@ -240,9 +239,7 @@ export class RisultatiPage implements OnDestroy {
   private collegaPopupAllaScheda(): void {
     this.mappa?.off('popupopen');
     this.mappa?.on('popupopen', (evento: L.PopupEvent) => {
-      const bottone = evento.popup
-        .getElement()
-        ?.querySelector<HTMLButtonElement>('[data-societa]');
+      const bottone = evento.popup.getElement()?.querySelector<HTMLButtonElement>('[data-societa]');
 
       bottone?.addEventListener('click', () => {
         const id = bottone.dataset['societa'];

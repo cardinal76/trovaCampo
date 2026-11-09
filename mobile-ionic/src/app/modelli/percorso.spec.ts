@@ -30,15 +30,21 @@ describe('linkPercorso', () => {
   });
 
   it('accorcia le coordinate a sei decimali, senza notazione esponenziale', () => {
-    expect(linkPercorso({ lat: 41.123456789, lng: 0.0000001 }, '', { lat: -0.1234564, lng: 9 })).toBe(
-      'https://www.google.com/maps/dir/?api=1&origin=-0.123456,9&destination=41.123457,0',
-    );
+    expect(
+      linkPercorso({ lat: 41.123456789, lng: 0.0000001 }, '', { lat: -0.1234564, lng: 9 }),
+    ).toBe('https://www.google.com/maps/dir/?api=1&origin=-0.123456,9&destination=41.123457,0');
   });
 });
 
 describe('partenza predefinita', () => {
   it('è la posizione se il browser la può dare, anche dopo averla sbloccata', () => {
-    for (const caso of ['consentita', 'da-consentire', 'sconosciuta', 'bloccata', 'rifiutata'] as const) {
+    for (const caso of [
+      'consentita',
+      'da-consentire',
+      'sconosciuta',
+      'bloccata',
+      'rifiutata',
+    ] as const) {
       expect(partenzaDallaPosizione(caso)).withContext(caso).toBeTrue();
       expect(suggerimentoPartenza(caso)).toBe('La mia posizione');
     }

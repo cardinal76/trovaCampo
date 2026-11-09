@@ -4,8 +4,8 @@ import { addIcons } from 'ionicons';
 import { locate, navigateOutline } from 'ionicons/icons';
 import { linkPercorso, suggerimentoPartenza } from '../../modelli/percorso';
 import { Posizione } from '../../modelli/vicini';
-import { DiagnosiService } from '../../servizi/diagnosi.service';
-import { RichiestaPosizione } from '../../servizi/richiesta-posizione';
+import { DiagnosiService } from '../../servizi/posizione/diagnosi.service';
+import { RichiestaPosizione } from '../../servizi/posizione/richiesta-posizione';
 import { RiquadroDiagnosiComponent } from '../riquadro-diagnosi/riquadro-diagnosi.component';
 
 /**

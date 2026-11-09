@@ -42,8 +42,8 @@ import { Societa, haCoordinate, indirizzoCompleto, nomeCompleto } from '../../mo
 import { ZOOM_ICONE, iconaCampo } from '../../mappa/icona-campo';
 import { SITO_FOOTBALLER } from '../../footballer';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
-import { CampiCambiatiService } from '../../servizi/campi-cambiati.service';
-import { SocietaService } from '../../servizi/societa.service';
+import { CampiCambiatiService } from '../../servizi/societa/campi-cambiati.service';
+import { SocietaService } from '../../servizi/societa/societa.service';
 
 /** Centro dello sfondo: Roma, piazza Venezia. */
 const ROMA = L.latLng(41.8964, 12.4823);

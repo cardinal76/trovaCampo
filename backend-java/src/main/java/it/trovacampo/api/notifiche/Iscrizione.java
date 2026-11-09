@@ -1,5 +1,6 @@
 package it.trovacampo.api.notifiche;
 
+import it.trovacampo.api.anagrafica.ChiaveSquadra;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

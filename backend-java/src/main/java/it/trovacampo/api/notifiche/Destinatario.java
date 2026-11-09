@@ -1,5 +1,6 @@
 package it.trovacampo.api.notifiche;
 
+import it.trovacampo.api.anagrafica.ChiaveSquadra;
 import java.util.List;
 
 /**

@@ -170,7 +170,10 @@ const CampoSuCanvas = (L.CircleMarker as unknown as typeof L.Class).extend({
       ALTEZZA_CANVAS,
     );
   },
-}) as unknown as new (posizione: L.LatLngExpression, opzioni: OpzioniCampoSuCanvas) => L.CircleMarker;
+}) as unknown as new (
+  posizione: L.LatLngExpression,
+  opzioni: OpzioniCampoSuCanvas,
+) => L.CircleMarker;
 
 export function campoSuCanvas(
   posizione: L.LatLngExpression,

@@ -21,7 +21,7 @@ import org.springframework.stereotype.Service;
  * OpenStreetMap.
  *
  * <p>Fino a tre richieste a Nominatim per società, una al secondo per tutto
- * il backend ({@link it.trovacampo.api.service.RitmoNominatim}): qualche
+ * il backend ({@link it.trovacampo.api.geocoding.RitmoNominatim}): qualche
  * centinaio di società sono una ventina di minuti. Per questo parte a mano,
  * in sottofondo su un thread solo, una corsa alla volta. Una società già
  * cercata così non si ricerca, salvo {@code ritenta}.

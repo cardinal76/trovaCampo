@@ -9,11 +9,11 @@ import static org.mockito.Mockito.when;
 
 import it.trovacampo.api.anagrafica.AnagraficaPresenze.Partita;
 import it.trovacampo.api.anagrafica.PartiteSuiCampi;
-import it.trovacampo.api.dominio.Societa;
 import it.trovacampo.api.notifiche.ProssimePartite.AvvisoPrevisto;
 import it.trovacampo.api.notifiche.ProssimePartite.Elenco;
 import it.trovacampo.api.notifiche.ProssimePartite.ProssimaPartita;
-import it.trovacampo.api.repository.SocietaRepository;
+import it.trovacampo.api.societa.Societa;
+import it.trovacampo.api.societa.SocietaRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;

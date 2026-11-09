@@ -11,7 +11,7 @@ import {
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { list, map, notifications, search } from 'ionicons/icons';
-import { NotificheService } from './servizi/notifiche.service';
+import { NotificheService } from './servizi/notifiche/notifiche.service';
 
 type Scheda = 'cerca' | 'campi' | 'mappa' | 'notifiche';
 

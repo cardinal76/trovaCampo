@@ -1,6 +1,6 @@
 package it.trovacampo.api.importazione;
 
-import it.trovacampo.api.dominio.Testo;
+import it.trovacampo.api.societa.Testo;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;

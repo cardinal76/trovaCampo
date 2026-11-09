@@ -26,14 +26,15 @@ import {
 } from 'ionicons/icons';
 import { MenuUtenteComponent } from '../../componenti/menu-utente/menu-utente.component';
 import { RiquadroDiagnosiComponent } from '../../componenti/riquadro-diagnosi/riquadro-diagnosi.component';
-import { DiagnosiService } from '../../servizi/diagnosi.service';
+import { DiagnosiService } from '../../servizi/posizione/diagnosi.service';
 import {
   istruzioniNotifiche,
   istruzioniPosizione,
   statoNotifiche,
   statoPosizione,
-} from '../../servizi/istruzioni';
-import { NotificheService, RAGGI_KM } from '../../servizi/notifiche.service';
+} from '../../servizi/posizione/istruzioni';
+import { NotificheService } from '../../servizi/notifiche/notifiche.service';
+import { RAGGI_KM } from '../../servizi/notifiche/preferenze-notifiche';
 
 /**
  * "oggi alle 14:32", "ieri alle 9:05", "il 21 settembre alle 18:00": quando

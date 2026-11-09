@@ -1,6 +1,6 @@
 package it.trovacampo.api.indirizzi;
 
-import it.trovacampo.api.web.DatiNonValidiException;
+import it.trovacampo.api.societa.DatiNonValidiException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -8,8 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Le fonti degli indirizzi, per chi amministra (ruolo trovacampo-admin, vedi
- * {@link it.trovacampo.api.config.ConfigurazioneSicurezza}). Il collegamento
+ * {@link it.trovacampo.api.sicurezza.ConfigurazioneSicurezza}). Il collegamento
  * dei prospect e la copertura stanno in {@code /api/admin/prospect}.
  *
  * <ul>

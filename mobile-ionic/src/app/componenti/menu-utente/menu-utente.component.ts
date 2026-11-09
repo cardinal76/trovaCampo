@@ -12,7 +12,10 @@ import {
 import { addIcons } from 'ionicons';
 import { add, cloudUpload, globe, logIn, logOut, personCircle } from 'ionicons/icons';
 import { SITO_FOOTBALLER } from '../../footballer';
-import { amministratoreRicordato, nomeRicordato } from '../../servizi/amministratore-ricordato';
+import {
+  amministratoreRicordato,
+  nomeRicordato,
+} from '../../servizi/amministrazione/amministratore-ricordato';
 
 let prossimo = 0;
 

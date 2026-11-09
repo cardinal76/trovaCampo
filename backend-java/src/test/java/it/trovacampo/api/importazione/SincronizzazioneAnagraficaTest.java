@@ -1,17 +1,17 @@
 package it.trovacampo.api.importazione;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.any;
 
 import it.trovacampo.api.anagrafica.AnagraficaPresenze;
-import it.trovacampo.api.dominio.Esclusione;
-import it.trovacampo.api.dominio.Societa;
-import it.trovacampo.api.repository.EsclusioniRepository;
-import it.trovacampo.api.repository.SocietaRepository;
+import it.trovacampo.api.societa.Esclusione;
+import it.trovacampo.api.societa.EsclusioniRepository;
+import it.trovacampo.api.societa.Societa;
+import it.trovacampo.api.societa.SocietaRepository;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;

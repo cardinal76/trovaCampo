@@ -15,9 +15,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import it.trovacampo.api.config.ConfigurazioneSicurezza;
 import it.trovacampo.api.indirizzi.Confidenza;
 import it.trovacampo.api.indirizzi.FonteIndirizzo;
+import it.trovacampo.api.sicurezza.ConfigurazioneSicurezza;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -52,10 +52,10 @@ class ProspectControllerTest {
         return conRuolo(ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE);
     }
 
-    private static ImportazioneProspect.Stato fermo() {
-        return new ImportazioneProspect.Stato(
+    private static StatoImportazione fermo() {
+        return new StatoImportazione(
                 false, "mai", null, null, 0, false, null, null, false, null, null, null,
-                ImportazioneProspect.Avanzamento.mai(), List.of());
+                AvanzamentoImportazione.mai(), List.of());
     }
 
     @Test
@@ -106,7 +106,7 @@ class ProspectControllerTest {
                 .andExpect(status().isAccepted());
 
         verify(importazione)
-                .avvia(eq(new ImportazioneProspect.Opzioni(List.of(12), 2, false, AmbitoDettagli.CALCIO)), anyString());
+                .avvia(eq(new OpzioniImportazione(List.of(12), 2, false, AmbitoDettagli.CALCIO)), anyString());
     }
 
     @Test
@@ -121,8 +121,8 @@ class ProspectControllerTest {
         mockMvc.perform(post("/api/admin/prospect/importazione").param("dettagli", "boh").with(admin()))
                 .andExpect(status().isBadRequest());
 
-        verify(importazione).avvia(eq(new ImportazioneProspect.Opzioni(List.of(), null, false, AmbitoDettagli.FIGC)), anyString());
-        verify(importazione).avvia(eq(new ImportazioneProspect.Opzioni(List.of(), null, false, AmbitoDettagli.TUTTE)), anyString());
+        verify(importazione).avvia(eq(new OpzioniImportazione(List.of(), null, false, AmbitoDettagli.FIGC)), anyString());
+        verify(importazione).avvia(eq(new OpzioniImportazione(List.of(), null, false, AmbitoDettagli.TUTTE)), anyString());
     }
 
     @Test
