@@ -5,6 +5,7 @@ import it.trovacampo.api.societa.SocietaNonTrovataException;
 import it.trovacampo.api.societa.SocietaService;
 import java.util.List;
 import java.util.Map;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,12 +25,15 @@ public class AnagraficaController {
     private final SquadreSocieta squadre;
     private final PartiteSuiCampi partite;
     private final RisultatiSocieta risultati;
+    private final AccessoSocieta accesso;
 
     public AnagraficaController(
             SocietaService service,
             SquadreSocieta squadre,
             PartiteSuiCampi partite,
-            RisultatiSocieta risultati) {
+            RisultatiSocieta risultati,
+            AccessoSocieta accesso) {
+        this.accesso = accesso;
         this.service = service;
         this.squadre = squadre;
         this.partite = partite;
@@ -89,5 +93,18 @@ public class AnagraficaController {
     @GetMapping("/societa/{id}/risultati")
     public RisultatiSocieta.Risultati risultati(@PathVariable String id) {
         return risultati.di(service.perId(id).orElseThrow(SocietaNonTrovataException::new));
+    }
+
+    /**
+     * Dove porta il collegamento «Accedi a Footballer» della scheda: l'accesso
+     * del club se è cliente di presenze. 204 in ogni altro caso (non cliente,
+     * società che in presenze non c'è, presenze giù o ancora senza il campo):
+     * la scheda non mostra il collegamento e non ha niente da raccontare.
+     */
+    @GetMapping("/societa/{id}/accesso")
+    public ResponseEntity<AnagraficaPresenze.Accesso> accesso(@PathVariable String id) {
+        return accesso.di(service.perId(id).orElseThrow(SocietaNonTrovataException::new))
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
     }
 }

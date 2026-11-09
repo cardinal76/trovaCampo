@@ -50,6 +50,18 @@
         </ion-label>
       </ion-list-header>
 
+      <!-- Solo per un club cliente di Footballer: l'accesso lo dice presenze
+           (assente per le altre società e da un presenze che non lo manda
+           ancora, e allora non c'è nessun collegamento). -->
+      @if (accesso(); as accessoClub) {
+        <accesso-club
+          class="accesso-club"
+          [nome]="societa()!.nomeSocieta"
+          [accesso]="accessoClub"
+          [logoUrl]="societa()!.logoUrl"
+        ></accesso-club>
+      }
+
       <ion-list-header>
         <ion-label>Campo</ion-label>
       </ion-list-header>

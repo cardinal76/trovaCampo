@@ -13,6 +13,7 @@ import { Partita } from '../../modelli/partita';
 import { Risultati, Risultato } from '../../modelli/risultato';
 import { Societa } from '../../modelli/societa';
 import { Squadra } from '../../modelli/squadra';
+import { AccessoSocieta } from '../../presenze';
 import { AmbientePush } from '../../servizi/notifiche/ambiente-push';
 import { AmministrazioneService } from '../../servizi/amministrazione/amministrazione.service';
 import { ricordaAmministratore } from '../../servizi/amministrazione/amministratore-ricordato';
@@ -98,6 +99,8 @@ describe('SchedaPage', () => {
   let chiesteLive: number[][];
   let punteggiLive: Record<string, { golCasa: number; golOspite: number }>;
   let rispostaRisultati: () => Observable<Risultati>;
+  /** Cosa dice presenze dell'accesso del club: nulla per chi non è cliente. */
+  let accessoClub: AccessoSocieta | null;
 
   afterEach(() => {
     localStorage.removeItem('trovacampo.squadreSeguite');
@@ -109,6 +112,7 @@ describe('SchedaPage', () => {
     societa: Societa,
     partite: Partita[] = [PARTITA],
     squadre: Squadra[] = [],
+    accesso: AccessoSocieta | null = null,
   ): HTMLElement {
     messaggi = [];
     conferme = [];
@@ -123,6 +127,7 @@ describe('SchedaPage', () => {
     chiesteLive = [];
     punteggiLive = {};
     rispostaRisultati = () => of({ stato: 'DISPONIBILI', risultati: [VITTORIA, SCONFITTA_FUORI] });
+    accessoClub = accesso;
     TestBed.configureTestingModule({
       imports: [SchedaPage],
       providers: [
@@ -137,6 +142,7 @@ describe('SchedaPage', () => {
           useValue: {
             perId: () => of(societa),
             squadre: () => of(squadre),
+            accesso: () => of(accessoClub),
             partite: () => {
               richiestePartite++;
               return of(partite);
@@ -235,6 +241,59 @@ describe('SchedaPage', () => {
     );
     expect(stemma.style.getPropertyValue('--stemma-dimensione')).toBe('48px');
     expect(pagina.querySelector('.testata h2')!.textContent).toContain('BOREALE');
+  });
+
+  describe('il collegamento «Accedi a Footballer»', () => {
+    const CLIENTE: AccessoSocieta = { alias: 'boreale', stemma: '/api/organizzazioni/3/logo' };
+
+    it('per un club cliente porta al suo accesso su presenze, con il suo stemma', () => {
+      const pagina = apri(SOCIETA, [], [], CLIENTE);
+
+      const link = pagina.querySelector('accesso-club a') as HTMLAnchorElement;
+      expect(link.getAttribute('href')).toBe('https://presenze.footballer.it/?societa=boreale');
+      expect(link.textContent).toContain('Accedi a Footballer');
+      expect(link.textContent).toContain('BOREALE');
+      expect(link.querySelector('img')!.getAttribute('src')).toBe(
+        'https://presenze.footballer.it/api/organizzazioni/3/logo',
+      );
+    });
+
+    it('senza stemma del club usa quello dell anagrafica', () => {
+      const pagina = apri(
+        { ...SOCIETA, logoUrl: 'https://play.lnd.it/lndimg/7/7-web.png' },
+        [],
+        [],
+        { alias: 'boreale', stemma: null },
+      );
+
+      expect(pagina.querySelector('accesso-club img')!.getAttribute('src')).toBe(
+        'https://play.lnd.it/lndimg/7/7-web.png',
+      );
+    });
+
+    it('se lo stemma non si carica resta il solo testo, col collegamento', () => {
+      const pagina = apri(SOCIETA, [], [], CLIENTE);
+
+      pagina.querySelector('accesso-club img')!.dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+
+      expect(pagina.querySelector('accesso-club img')).toBeNull();
+      expect(pagina.querySelector('accesso-club a')).not.toBeNull();
+    });
+
+    /** Una società non cliente, o un presenze che non manda ancora il campo: nessun collegamento. */
+    it('senza accesso non c è nessun collegamento', () => {
+      const pagina = apri(SOCIETA);
+
+      expect(pagina.querySelector('accesso-club')).toBeNull();
+      expect(pagina.textContent).not.toContain('Accedi a Footballer');
+    });
+
+    it('con un alias inutilizzabile non c è nessun collegamento', () => {
+      const pagina = apri(SOCIETA, [], [], { alias: 'a&b=<x>', stemma: null });
+
+      expect(pagina.querySelector('accesso-club a')).toBeNull();
+    });
   });
 
   it('senza stemma in testa c è l iniziale del nome', () => {

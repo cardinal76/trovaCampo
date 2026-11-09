@@ -55,6 +55,31 @@ class AnagraficaPresenzeTest {
     }
 
     @Test
+    void leggeL_accessoDelClubClienteEL_assenzaDelCampo() {
+        server.expect(requestTo("http://presenze-backend:8080/api/pubblico/anagrafica/societa/7"))
+                .andRespond(
+                        withSuccess(
+                                """
+                                {"id":7,"denominazione":"BOREALE","campi":[],"squadre":[],
+                                 "accesso":{"alias":"boreale","stemma":"/api/organizzazioni/3/logo"}}
+                                """,
+                                MediaType.APPLICATION_JSON));
+        // Un presenze che non manda ancora il campo: nessun errore, accesso nullo.
+        server.expect(requestTo("http://presenze-backend:8080/api/pubblico/anagrafica/societa/8"))
+                .andRespond(
+                        withSuccess(
+                                """
+                                {"id":8,"denominazione":"LODIGIANI","campi":[],"squadre":[]}
+                                """,
+                                MediaType.APPLICATION_JSON));
+
+        assertThat(anagrafica.scheda(7).accesso())
+                .isEqualTo(new AnagraficaPresenze.Accesso("boreale", "/api/organizzazioni/3/logo"));
+        assertThat(anagrafica.scheda(8).accesso()).isNull();
+        server.verify();
+    }
+
+    @Test
     void leggeLaSchedaConLeSquadre() {
         server.expect(requestTo("http://presenze-backend:8080/api/pubblico/anagrafica/societa/7"))
                 .andRespond(

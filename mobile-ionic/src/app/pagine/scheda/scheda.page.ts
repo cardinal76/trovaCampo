@@ -62,7 +62,7 @@ import {
   quandoPartita,
   squadrePartita,
 } from '../../modelli/partita';
-import { paginaCampionato, paginaGirone } from '../../presenze';
+import { AccessoSocieta, paginaCampionato, paginaGirone } from '../../presenze';
 import {
   Risultato,
   dettaglioRisultato,
@@ -78,6 +78,7 @@ import {
   portaleNonRaggiungibile,
 } from '../../modelli/squadra';
 import { PercorsoCampoComponent } from '../../componenti/percorso-campo/percorso-campo.component';
+import { AccessoClubComponent } from '../../componenti/accesso-club/accesso-club.component';
 import { StemmaComponent } from '../../componenti/stemma/stemma.component';
 import { iconaCampo } from '../../mappa/icona-campo';
 import {
@@ -127,6 +128,7 @@ const ZOOM_SCHEDA = 16;
     RouterLink,
     PercorsoCampoComponent,
     StemmaComponent,
+    AccessoClubComponent,
     IonAccordion,
     IonAccordionGroup,
     IonBackButton,
@@ -166,6 +168,12 @@ export class SchedaPage implements OnDestroy {
   /** Le squadre dall'anagrafica di presenze: si caricano a parte, e possono mancare. */
   readonly squadre = signal<Squadra[]>([]);
   readonly statoSquadre = signal<Stato>('caricamento');
+  /**
+   * Come si entra in Footballer da questo club, se ne è cliente: si chiede a
+   * presenze all'apertura della scheda. Vuoto (nessun collegamento) per le
+   * altre società, se presenze non risponde o non manda ancora il campo.
+   */
+  readonly accesso = signal<AccessoSocieta | null>(null);
   readonly dettaglioSquadra = dettaglioSquadra;
   readonly aggiornamentoRisultati = aggiornamentoRisultati;
   /**
@@ -450,6 +458,7 @@ export class SchedaPage implements OnDestroy {
         this.societa.set(dati);
         this.stato.set('completata');
         this.caricaSquadre(dati);
+        this.caricaAccesso(dati);
         this.caricaPartite(dati);
         this.rileggiRisultati();
         if (eliminaDopoAccesso) {
@@ -515,6 +524,11 @@ export class SchedaPage implements OnDestroy {
    * presenze: il backend le cerca per nome. Se presenze non risponde la
    * scheda resta com'è, con un avviso al posto dei campionati.
    */
+  private caricaAccesso(societa: Societa): void {
+    this.accesso.set(null);
+    this.service.accesso(societa.id).subscribe((accesso) => this.accesso.set(accesso));
+  }
+
   private caricaSquadre(societa: Societa): void {
     this.statoSquadre.set('caricamento');
     this.service.squadre(societa.id).subscribe({
