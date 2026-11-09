@@ -1,6 +1,6 @@
 package it.trovacampo.api.config;
 
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -11,13 +11,14 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  * richieste. Le origini permesse sono configurabili con
  * {@code trovacampo.cors.origini}.
  */
+@EnableConfigurationProperties(ProprietaCors.class)
 @Configuration
 public class ConfigurazioneCors implements WebMvcConfigurer {
 
     private final String[] origini;
 
-    public ConfigurazioneCors(@Value("${trovacampo.cors.origini}") String[] origini) {
-        this.origini = origini;
+    public ConfigurazioneCors(ProprietaCors proprieta) {
+        this.origini = proprieta.origini().toArray(String[]::new);
     }
 
     @Override

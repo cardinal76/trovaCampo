@@ -2,7 +2,8 @@ package it.trovacampo.api.notifiche;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Component;
  * <p>Si leggono la prima volta che servono e non all'avvio, così un backend
  * senza Mongo (i test di contesto) parte lo stesso.
  */
+@EnableConfigurationProperties(ProprietaNotifiche.class)
 @Component
 public class DepositoChiaviVapid {
 
@@ -39,10 +41,12 @@ public class DepositoChiaviVapid {
     private final String privataDaAmbiente;
     private volatile ChiaviVapid chiavi;
 
-    public DepositoChiaviVapid(
-            MongoTemplate mongo,
-            @Value("${trovacampo.notifiche.vapid.pubblica:}") String pubblicaDaAmbiente,
-            @Value("${trovacampo.notifiche.vapid.privata:}") String privataDaAmbiente) {
+    @Autowired
+    public DepositoChiaviVapid(MongoTemplate mongo, ProprietaNotifiche proprieta) {
+        this(mongo, proprieta.vapid().pubblica(), proprieta.vapid().privata());
+    }
+
+    DepositoChiaviVapid(MongoTemplate mongo, String pubblicaDaAmbiente, String privataDaAmbiente) {
         this.mongo = mongo;
         this.pubblicaDaAmbiente = pubblicaDaAmbiente;
         this.privataDaAmbiente = privataDaAmbiente;

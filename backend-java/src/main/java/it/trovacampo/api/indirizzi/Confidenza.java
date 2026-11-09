@@ -1,6 +1,7 @@
 package it.trovacampo.api.indirizzi;
 
 
+
 /**
  * Quanto ci si può fidare di un indirizzo trovato.
  *

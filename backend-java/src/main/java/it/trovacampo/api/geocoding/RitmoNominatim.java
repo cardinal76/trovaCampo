@@ -2,7 +2,7 @@ package it.trovacampo.api.geocoding;
 
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
@@ -16,14 +16,15 @@ import org.springframework.stereotype.Component;
  * ogni richiesta. Il conto lo tiene un {@link LimitatoreRichieste}, lo
  * stesso del Registro RASD.
  */
+@EnableConfigurationProperties(ProprietaNominatim.class)
 @Component
 public class RitmoNominatim {
 
     private final LimitatoreRichieste limitatore;
 
     @Autowired
-    public RitmoNominatim(@Value("${trovacampo.nominatim.intervallo:PT1.1S}") Duration intervallo) {
-        this(new LimitatoreRichieste(intervallo));
+    public RitmoNominatim(ProprietaNominatim proprieta) {
+        this(new LimitatoreRichieste(proprieta.intervallo()));
     }
 
     /** Per i test, con un limitatore che non dorme davvero. */

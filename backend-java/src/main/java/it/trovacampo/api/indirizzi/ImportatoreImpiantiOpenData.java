@@ -1,6 +1,7 @@
 package it.trovacampo.api.indirizzi;
 
 import it.trovacampo.api.geocoding.LimitatoreRichieste;
+import it.trovacampo.api.geocoding.ProprietaNominatim;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -14,7 +15,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -50,8 +50,8 @@ import org.springframework.web.client.RestClientException;
  * {@link OpenDataBloccatoException}, senza riprovare. Lo lancia solo
  * l'amministrazione, a mano: nessun giro programmato.
  */
+@EnableConfigurationProperties({ProprietaOpenData.class, ProprietaNominatim.class, OpenDataVeneto.class})
 @Service
-@EnableConfigurationProperties(OpenDataVeneto.class)
 public class ImportatoreImpiantiOpenData {
 
     private static final Logger log = LoggerFactory.getLogger(ImportatoreImpiantiOpenData.class);
@@ -71,13 +71,13 @@ public class ImportatoreImpiantiOpenData {
     public ImportatoreImpiantiOpenData(
             ImpiantiOpenDataRepository repository,
             RestClient.Builder builder,
-            @Value("${trovacampo.indirizzi.open-data.cmrc-url}") String url,
+            ProprietaOpenData proprieta,
             OpenDataVeneto veneto,
-            @Value("${trovacampo.nominatim.user-agent}") String userAgent) {
+            ProprietaNominatim nominatim) {
         this(repository, builder.requestFactory(richieste())
-                        .defaultHeader(HttpHeaders.USER_AGENT, userAgent)
+                        .defaultHeader(HttpHeaders.USER_AGENT, nominatim.userAgent())
                         .build(),
-                url, veneto, Thread::sleep, Clock.systemUTC());
+                proprieta.cmrcUrl(), veneto, Thread::sleep, Clock.systemUTC());
     }
 
     ImportatoreImpiantiOpenData(

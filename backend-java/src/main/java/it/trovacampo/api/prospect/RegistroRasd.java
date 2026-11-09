@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -47,6 +47,7 @@ import org.springframework.web.client.RestClient;
  * {@link #VOCI_DETTAGLIO}. Il nome del legale rappresentante, che il
  * registro mette fra le prime, non esce da questa classe.
  */
+@EnableConfigurationProperties(ProprietaRasd.class)
 @Component
 public class RegistroRasd {
 
@@ -73,13 +74,11 @@ public class RegistroRasd {
 
     @Autowired
     public RegistroRasd(
-            RestClient.Builder builder,
-            @Value("${trovacampo.prospect.rasd.url}") String url,
-            @Value("${trovacampo.prospect.rasd.user-agent}") String userAgent,
-            @Value("${trovacampo.prospect.rasd.intervallo-ms}") long intervalloMs) {
+            RestClient.Builder builder, ProprietaRasd proprieta) {
         this(
-                configura(builder.requestFactory(richieste()), url, userAgent).build(),
-                new LimitatoreRichieste(Duration.ofMillis(intervalloMs)));
+                configura(builder.requestFactory(richieste()), proprieta.url(), proprieta.userAgent())
+                        .build(),
+                new LimitatoreRichieste(Duration.ofMillis(proprieta.intervalloMs())));
     }
 
     /** Indirizzo e intestazioni di ogni richiesta; a parte perché i test ci passano un server finto. */
