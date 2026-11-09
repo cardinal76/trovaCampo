@@ -94,6 +94,37 @@ che `.env.prod` esista, e lo dice in chiaro se manca qualcosa. Poi va
 rilasciato presenze con il blocco `trovacampo.footballer.it` nel Caddyfile:
 è il suo deploy a ricreare Caddy.
 
+## Ambiente di test (server2)
+
+Uno stack a parte su **server2**, accanto al runner `server2-trovacampo`:
+`docker-compose.test.yml`, progetto `trovacampo-test`, Mongo vuoto e suo, nessun
+dato di produzione. Costruisce e accende il workflow `.github/workflows/test.yml`
+(push sul branch `test`, oppure *Run workflow* su qualunque branch), sulla stessa
+macchina: niente registro, niente SSH. Le notifiche sono spente.
+
+Non ha dominio ne' Caddy: l'unica porta e' `127.0.0.1:8088`, e dal PC si apre
+con un tunnel.
+
+```bash
+ssh -N -L 8088:127.0.0.1:8088 server2     # poi http://localhost:8088
+```
+
+Una volta sola:
+
+1. su server2: `mkdir -p ~/trovacampo-test && cd ~/trovacampo-test`, poi un
+   `.env.test` con `MONGO_USER=trovacampo` e `MONGO_PASSWORD=$(openssl rand -hex 24)`
+   (`chmod 600`);
+2. **login dell'amministrazione**: il test usa il Keycloak di produzione (stesso
+   realm e client). Nel client `trovacampo-frontend` vanno aggiunti ai redirect
+   URI `http://localhost:8088/*` e fra le web origins `http://localhost:8088`
+   (nel template del realm di presenze, poi riconciliato). Senza, ricerca,
+   elenco e mappa funzionano e solo il login no;
+3. il primo rilascio: `git push origin <branch>:test`.
+
+Memoria: Mongo 512 MB, backend 448 MB, nginx 64 MB, su una macchina che ospita
+anche fototimeline e ha gia' lo swap in uso. Se pesa troppo, `docker compose -p
+trovacampo-test down` lo spegne senza toccare i dati (con `-v` si azzera il test).
+
 ## Aggiornare
 
 ```bash
