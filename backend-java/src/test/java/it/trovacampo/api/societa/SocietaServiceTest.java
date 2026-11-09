@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import it.trovacampo.api.geocoding.Geocoding;
+import it.trovacampo.api.geocoding.GeocodingNonDisponibile;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -80,6 +81,24 @@ class SocietaServiceTest {
 
         assertThat(salvata.getLat()).isNull();
         assertThat(salvata.getLng()).isNull();
+    }
+
+    @Test
+    void salvaIlCampoAncheSeNominatimNonRispondeESenzaSegnoDiRinuncia() {
+        when(repository.save(any())).thenAnswer(invocazione -> invocazione.getArgument(0));
+        SocietaService service =
+                serviceCon(
+                        indirizzo -> {
+                            throw new GeocodingNonDisponibile("Nominatim non risponde", null);
+                        });
+
+        Societa salvata =
+                service.inserisci(new NuovoCampoRequest("Certosa Calcio", "Campo Certosa", "Via della Certosa 12"));
+
+        assertThat(salvata.getLat()).isNull();
+        // Senza coordinate e senza rinuncia: la geocodifica automatica lo riprende.
+        assertThat(salvata.getGeocodificaFallitaVersione()).isNull();
+        verify(repository).save(salvata);
     }
 
     @Test

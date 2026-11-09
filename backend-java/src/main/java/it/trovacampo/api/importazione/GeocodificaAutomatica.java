@@ -1,14 +1,20 @@
 package it.trovacampo.api.importazione;
 
 import it.trovacampo.api.geocoding.Geocoding;
+import it.trovacampo.api.geocoding.GeocodingNonDisponibile;
 import it.trovacampo.api.societa.Societa;
 import it.trovacampo.api.societa.SocietaRepository;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -42,6 +48,13 @@ import org.springframework.stereotype.Component;
  * ricerca e non viene ritentato, altrimenti la coda resterebbe per sempre
  * bloccata sulla stessa società. Quando la ricerca migliora, si alza
  * {@link #VERSIONE} e i campi rinunciati tornano in coda da soli.
+ *
+ * <p>Un errore di rete non è un indirizzo non riconosciuto. Se Nominatim non
+ * risponde ({@link GeocodingNonDisponibile}) non si scrive niente sulla società:
+ * senza coordinate e senza segno di rinuncia è ancora in coda, e non si perde.
+ * Per non restare incollati sulla stessa, la società va in fondo ({@link #RIMANDO})
+ * e la ricerca si ferma per {@link #PAUSA_RETE}, invece di consumare tutta la coda
+ * a vuoto mentre il servizio è giù.
  */
 @EnableConfigurationProperties(ProprietaGeocodifica.class)
 @Component
@@ -53,6 +66,12 @@ public class GeocodificaAutomatica {
      * senza civico.
      */
     static final int VERSIONE = 2;
+
+    /** Dopo un errore di rete la ricerca si ferma tanto: ritentare a ogni secondo non aiuta. */
+    static final Duration PAUSA_RETE = Duration.ofMinutes(5);
+
+    /** Una società su cui la rete ha fallito torna in fondo alla coda per tanto. */
+    static final Duration RIMANDO = Duration.ofMinutes(30);
 
     private static final Logger log = LoggerFactory.getLogger(GeocodificaAutomatica.class);
 
@@ -80,27 +99,62 @@ public class GeocodificaAutomatica {
     private final SocietaRepository repository;
     private final Geocoding geocoding;
     private final Duration pausa;
+    private final Clock orologio;
+
+    /** Societa' su cui la rete ha fallito, fino a quando restano in fondo. Solo in memoria: al riavvio tornano in coda. */
+    private final Map<String, Instant> rimandate = new ConcurrentHashMap<>();
+
+    private volatile Instant sospesaFinoA = Instant.MIN;
 
     @Autowired
     public GeocodificaAutomatica(
             SocietaRepository repository, Geocoding geocoding, ProprietaGeocodifica proprieta) {
-        this(repository, geocoding, proprieta.intervallo());
+        this(repository, geocoding, proprieta.intervallo(), Clock.systemUTC());
     }
 
     GeocodificaAutomatica(SocietaRepository repository, Geocoding geocoding, Duration pausa) {
+        this(repository, geocoding, pausa, Clock.systemUTC());
+    }
+
+    GeocodificaAutomatica(
+            SocietaRepository repository, Geocoding geocoding, Duration pausa, Clock orologio) {
         this.repository = repository;
         this.geocoding = geocoding;
         this.pausa = pausa;
+        this.orologio = orologio;
     }
 
     /** fixedDelay e non fixedRate: l'attesa conta da quando Nominatim ha risposto. */
     @Scheduled(fixedDelayString = "${trovacampo.geocodifica.intervallo:PT1.1S}")
     public void geocodificaLaProssima() {
+        Instant adesso = orologio.instant();
+        if (adesso.isBefore(sospesaFinoA)) {
+            return;
+        }
+        rimandate.values().removeIf(fino -> !fino.isAfter(adesso));
         try {
-            repository.primaDaGeocodificare(VERSIONE).ifPresent(this::geocodifica);
+            Optional<Societa> prossima =
+                    rimandate.isEmpty()
+                            ? repository.primaDaGeocodificare(VERSIONE)
+                            : repository.primaDaGeocodificare(VERSIONE, Set.copyOf(rimandate.keySet()));
+            prossima.ifPresent(societa -> geocodificaORimanda(societa, adesso));
         } catch (RuntimeException eccezione) {
             // Mongo giù per un attimo non deve fermare lo scheduler per sempre.
             log.warn("Geocodifica automatica non riuscita: {}", eccezione.toString());
+        }
+    }
+
+    /** Se la rete fallisce la societa' non si tocca: va in fondo e la ricerca si ferma un po'. */
+    private void geocodificaORimanda(Societa societa, Instant adesso) {
+        try {
+            geocodifica(societa);
+        } catch (GeocodingNonDisponibile nonDisponibile) {
+            rimandate.put(Objects.toString(societa.getId(), ""), adesso.plus(RIMANDO));
+            sospesaFinoA = adesso.plus(PAUSA_RETE);
+            log.warn(
+                    "Nominatim non risponde: la ricerca riprende fra {} minuti, e la societa' {} torna in coda",
+                    PAUSA_RETE.toMinutes(),
+                    societa.getId());
         }
     }
 

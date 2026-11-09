@@ -69,4 +69,15 @@ public interface SocietaRepository extends MongoRepository<Societa, String> {
     default Optional<Societa> primaDaGeocodificare(int versione) {
         return daGeocodificare(versione, PageRequest.of(0, 1)).stream().findFirst();
     }
+
+    /**
+     * La prima in coda che non e' fra le {@code rimandate}: quelle su cui la
+     * rete ha fallito e che tornano in fondo. Si leggono tante societa' quante
+     * le rimandate piu' una, cosi' ce n'e' almeno una buona se esiste.
+     */
+    default Optional<Societa> primaDaGeocodificare(int versione, Collection<String> rimandate) {
+        return daGeocodificare(versione, PageRequest.of(0, rimandate.size() + 1)).stream()
+                .filter(societa -> !rimandate.contains(societa.getId()))
+                .findFirst();
+    }
 }

@@ -6,6 +6,7 @@ import it.trovacampo.api.geocoding.LimitatoreRichieste;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -271,7 +272,7 @@ public class RegistroRasd {
         }
         try {
             return LocalDate.parse(testo.substring(0, 10));
-        } catch (RuntimeException e) {
+        } catch (DateTimeParseException e) {
             return null;
         }
     }

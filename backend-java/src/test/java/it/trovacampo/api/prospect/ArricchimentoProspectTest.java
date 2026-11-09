@@ -4,9 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import it.trovacampo.api.geocoding.GeocodingNonDisponibile;
 import it.trovacampo.api.indirizzi.Confidenza;
 import it.trovacampo.api.indirizzi.FonteIndirizzo;
 import it.trovacampo.api.indirizzi.IndirizzoMigliore;
@@ -70,6 +72,26 @@ class ArricchimentoProspectTest {
         assertThat(arricchimento.stato().cercate()).isEqualTo(1);
         assertThat(arricchimento.stato().trovate()).isEqualTo(1);
         assertThat(arricchimento.stato().inCorso()).isFalse();
+    }
+
+    @Test
+    void seLaReteNonRispondeNonSiSegnaNienteESiFermaLaRicerca() {
+        Prospect uno = lazio("CF1", "A.S.D. VICUS");
+        Prospect due = lazio("CF2", "A.S.D. ALTRA");
+        when(prospect.findByRegioneAndCalcioTrue("Lazio")).thenReturn(List.of(uno, due));
+        when(localizzatore.trova(any(), any()))
+                .thenThrow(new GeocodingNonDisponibile("OpenStreetMap non risponde", null));
+
+        arricchimento.avvia(new ArricchimentoProspect.Richiesta(false, null));
+
+        // Nessun prospect segnato come cercato: restano da cercare al prossimo giro.
+        assertThat(uno.getGeocodificaTentata()).isNull();
+        assertThat(due.getGeocodificaTentata()).isNull();
+        verify(prospect, never()).save(any());
+        // Si ferma al primo: gli altri andrebbero incontro allo stesso timeout.
+        verify(localizzatore, times(1)).trova(any(), any());
+        assertThat(arricchimento.stato().inCorso()).isFalse();
+        assertThat(arricchimento.stato().messaggio()).startsWith("Interrotta");
     }
 
     @Test

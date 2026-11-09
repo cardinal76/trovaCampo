@@ -1,6 +1,7 @@
 package it.trovacampo.api.indirizzi;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import it.trovacampo.api.geocoding.GeocodingNonDisponibile;
 import it.trovacampo.api.geocoding.ProprietaNominatim;
 import it.trovacampo.api.geocoding.RitmoNominatim;
 import java.time.Duration;
@@ -19,6 +20,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 /**
  * Fonte 3, l'ultima risorsa: un campo sportivo su OpenStreetMap, cercato con
@@ -137,10 +139,20 @@ public class RicercaCampiOsm {
                             .retrieve()
                             .body(Luogo[].class);
             return luoghi == null ? List.of() : List.of(luoghi);
+        } catch (RestClientException eccezione) {
+            if (GeocodingNonDisponibile.transitorio(eccezione)) {
+                // Non e' che non ci sia: chi chiama non deve darlo per cercato.
+                throw new GeocodingNonDisponibile("OpenStreetMap non risponde", eccezione);
+            }
+            return nonRiuscita(ricerca, eccezione);
         } catch (RuntimeException eccezione) {
-            log.warn("Ricerca su OSM non riuscita per '{}': {}", ricerca, eccezione.toString());
-            return List.of();
+            return nonRiuscita(ricerca, eccezione);
         }
+    }
+
+    private List<Luogo> nonRiuscita(String ricerca, RuntimeException eccezione) {
+        log.warn("Ricerca su OSM non riuscita per '{}': {}", ricerca, eccezione.toString());
+        return List.of();
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

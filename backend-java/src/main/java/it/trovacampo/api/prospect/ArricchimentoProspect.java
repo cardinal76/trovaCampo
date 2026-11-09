@@ -1,5 +1,6 @@
 package it.trovacampo.api.prospect;
 
+import it.trovacampo.api.geocoding.GeocodingNonDisponibile;
 import it.trovacampo.api.indirizzi.IndirizzoMigliore;
 import it.trovacampo.api.indirizzi.LocalizzatoreSocieta;
 import java.time.Clock;
@@ -129,6 +130,11 @@ public class ArricchimentoProspect {
                         trovate++;
                     }
                     prospect.save(p.setGeocodificaTentata(adesso));
+                } catch (GeocodingNonDisponibile nonDisponibile) {
+                    // Non e' il prospect: senza rete ogni altro andrebbe incontro allo
+                    // stesso timeout. Si ferma qui, senza segnare niente: chi lo ha
+                    // avviato lo rilancia quando il servizio torna.
+                    throw nonDisponibile;
                 } catch (RuntimeException eccezione) {
                     errori++;
                     log.warn("Indirizzo di {} non cercato: {}", p.getCodiceFiscale(), eccezione.toString());

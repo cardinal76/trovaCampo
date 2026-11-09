@@ -1,11 +1,15 @@
 package it.trovacampo.api.indirizzi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.queryParam;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withBadRequest;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withTooManyRequests;
 
+import it.trovacampo.api.geocoding.GeocodingNonDisponibile;
 import it.trovacampo.api.geocoding.LimitatoreRichieste;
 import it.trovacampo.api.geocoding.RitmoNominatim;
 import java.time.Duration;
@@ -76,10 +80,30 @@ class RicercaCampiOsmTest {
         server.verify();
     }
 
+    /**
+     * Un Nominatim che non risponde non vuol dire che il campo non ci sia: la
+     * ricerca deve dirlo, perche' chi chiama non segni la societa' come cercata.
+     */
     @Test
-    void nominatimCheNonRispondeNonEUnErrore() {
+    void nominatimCheNonRispondeNonEUnCampoNonTrovato() {
         server.expect(queryParam("q", "vicus%20Ronciglione")).andRespond(withServerError());
-        server.expect(queryParam("q", "campo%20sportivo%20Ronciglione")).andRespond(withServerError());
+
+        assertThatThrownBy(() -> osm.cerca(new SocietaDaLocalizzare("A.S.D. VICUS", "Ronciglione")))
+                .isInstanceOf(GeocodingNonDisponibile.class);
+    }
+
+    @Test
+    void troppeRichiesteEUnServizioNonDisponibile() {
+        server.expect(queryParam("q", "vicus%20Ronciglione")).andRespond(withTooManyRequests());
+
+        assertThatThrownBy(() -> osm.cerca(new SocietaDaLocalizzare("A.S.D. VICUS", "Ronciglione")))
+                .isInstanceOf(GeocodingNonDisponibile.class);
+    }
+
+    @Test
+    void unaRichiestaRifiutataDalServizioNonSiRiprova() {
+        server.expect(queryParam("q", "vicus%20Ronciglione")).andRespond(withBadRequest());
+        server.expect(queryParam("q", "campo%20sportivo%20Ronciglione")).andRespond(withBadRequest());
 
         assertThat(osm.cerca(new SocietaDaLocalizzare("A.S.D. VICUS", "Ronciglione"))).isEmpty();
     }
