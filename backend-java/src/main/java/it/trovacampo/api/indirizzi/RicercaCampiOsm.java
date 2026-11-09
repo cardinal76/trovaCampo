@@ -1,6 +1,7 @@
 package it.trovacampo.api.indirizzi;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import it.trovacampo.api.geocoding.ProprietaNominatim;
 import it.trovacampo.api.geocoding.RitmoNominatim;
 import java.time.Duration;
 import java.util.List;
@@ -13,7 +14,7 @@ import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -41,6 +42,7 @@ import org.springframework.web.client.RestClient;
  * © OpenStreetMap contributors, licenza ODbL: l'attribuzione viaggia con
  * l'indirizzo.
  */
+@EnableConfigurationProperties(ProprietaNominatim.class)
 @Component
 public class RicercaCampiOsm {
 
@@ -66,13 +68,10 @@ public class RicercaCampiOsm {
 
     @Autowired
     public RicercaCampiOsm(
-            RestClient.Builder builder,
-            @Value("${trovacampo.nominatim.url}") String url,
-            @Value("${trovacampo.nominatim.user-agent}") String userAgent,
-            RitmoNominatim ritmo) {
-        this(builder.baseUrl(url)
+            RestClient.Builder builder, ProprietaNominatim proprieta, RitmoNominatim ritmo) {
+        this(builder.baseUrl(proprieta.url())
                         .requestFactory(richieste())
-                        .defaultHeader(HttpHeaders.USER_AGENT, userAgent)
+                        .defaultHeader(HttpHeaders.USER_AGENT, proprieta.userAgent())
                         .build(),
                 ritmo);
     }

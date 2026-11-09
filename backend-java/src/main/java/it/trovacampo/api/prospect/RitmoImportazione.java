@@ -1,6 +1,7 @@
 package it.trovacampo.api.prospect;
 
 
+
 /** Il ritmo configurato, come lo vede la pagina. */
 public record RitmoImportazione(
         long pausaMs, long jitterMs, String finestra, String fuso, int tettoGiornaliero, long richiestePerGiorno) {

@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.index.Index;
@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
  * manda richieste POST: senza questo controllo chiunque potrebbe fargli
  * chiamare un indirizzo a sua scelta, anche dentro la rete di Docker.
  */
+@EnableConfigurationProperties(ProprietaNotifiche.class)
 @Service
 public class IscrizioniService {
 
@@ -45,10 +46,8 @@ public class IscrizioniService {
 
     @Autowired
     public IscrizioniService(
-            IscrizioniRepository repository,
-            MongoTemplate mongo,
-            @Value("${trovacampo.notifiche.servizi-push}") List<String> serviziPush) {
-        this(repository, mongo, serviziPush, Clock.systemUTC());
+            IscrizioniRepository repository, MongoTemplate mongo, ProprietaNotifiche proprieta) {
+        this(repository, mongo, proprieta.serviziPush(), Clock.systemUTC());
     }
 
     IscrizioniService(

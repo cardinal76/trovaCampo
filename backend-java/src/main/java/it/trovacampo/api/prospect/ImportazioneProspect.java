@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Service;
 
 /**
@@ -43,6 +43,7 @@ import org.springframework.stereotype.Service;
  * <p>Gira in un thread suo, uno solo per volta: un'importazione nazionale
  * dura giorni, una richiesta HTTP no.
  */
+@EnableConfigurationProperties(ProprietaRasd.class)
 @Service
 public class ImportazioneProspect {
 
@@ -81,7 +82,7 @@ public class ImportazioneProspect {
             GiriImportazioneRepository giri,
             CollegamentoCampi collegamento,
             RitmoRasd ritmo,
-            @Value("${trovacampo.prospect.rasd.dettaglio-valido-giorni:30}") int validitaGiorni) {
+            ProprietaRasd proprieta) {
         this(
                 registro,
                 prospect,
@@ -89,7 +90,7 @@ public class ImportazioneProspect {
                 giri,
                 collegamento,
                 ritmo,
-                Duration.ofDays(validitaGiorni),
+                Duration.ofDays(proprieta.dettaglioValidoGiorni()),
                 Executors.newSingleThreadExecutor(
                         r -> {
                             Thread t = new Thread(r, "importazione-prospect");

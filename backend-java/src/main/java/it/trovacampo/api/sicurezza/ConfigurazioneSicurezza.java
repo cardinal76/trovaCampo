@@ -3,7 +3,7 @@ package it.trovacampo.api.sicurezza;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -32,6 +32,7 @@ import org.springframework.security.web.SecurityFilterChain;
  * secondo Keycloak costerebbe mezzo giga di RAM e un'altra password di
  * amministrazione per tre persone che importano file.
  */
+@EnableConfigurationProperties(ProprietaKeycloak.class)
 @Configuration
 public class ConfigurazioneSicurezza {
 
@@ -66,14 +67,12 @@ public class ConfigurazioneSicurezza {
      * l'amministrazione di TrovaCampo, anche se l'utente è lo stesso.
      */
     @Bean
-    JwtDecoder decodificatoreJwt(
-            @Value("${trovacampo.keycloak.issuer}") String issuer,
-            @Value("${trovacampo.keycloak.jwks-uri}") String jwksUri,
-            @Value("${trovacampo.keycloak.client-id}") String clientId) {
-        NimbusJwtDecoder decodificatore = NimbusJwtDecoder.withJwkSetUri(jwksUri).build();
+    JwtDecoder decodificatoreJwt(ProprietaKeycloak keycloak) {
+        NimbusJwtDecoder decodificatore = NimbusJwtDecoder.withJwkSetUri(keycloak.jwksUri()).build();
         decodificatore.setJwtValidator(
                 new DelegatingOAuth2TokenValidator<>(
-                        JwtValidators.createDefaultWithIssuer(issuer), clientAutorizzato(clientId)));
+                        JwtValidators.createDefaultWithIssuer(keycloak.issuer()),
+                        clientAutorizzato(keycloak.clientId())));
         return decodificatore;
     }
 

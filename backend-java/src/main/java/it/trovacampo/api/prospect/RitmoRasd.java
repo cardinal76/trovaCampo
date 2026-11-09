@@ -11,7 +11,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BooleanSupplier;
 import java.util.function.LongUnaryOperator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
  * controllino senza dormire davvero. Le attese lunghe si fanno a pezzi di
  * {@link #PASSO}, così un «Ferma» arriva in fretta anche di giorno.
  */
+@EnableConfigurationProperties(ProprietaRasd.class)
 @Component
 public class RitmoRasd {
 
@@ -154,14 +155,14 @@ public class RitmoRasd {
     private boolean primaFatta;
 
     @Autowired
-    public RitmoRasd(
-            @Value("${trovacampo.prospect.rasd.ritmo.pausa-ms:3000}") long pausaMs,
-            @Value("${trovacampo.prospect.rasd.ritmo.jitter-ms:1000}") long jitterMs,
-            @Value("${trovacampo.prospect.rasd.ritmo.finestra:22:00-07:00}") String finestra,
-            @Value("${trovacampo.prospect.rasd.ritmo.fuso:Europe/Rome}") String fuso,
-            @Value("${trovacampo.prospect.rasd.ritmo.tetto-giornaliero:7000}") int tetto) {
+    public RitmoRasd(ProprietaRasd proprieta) {
         this(
-                Configurazione.di(pausaMs, jitterMs, finestra, fuso, tetto),
+                Configurazione.di(
+                        proprieta.ritmo().pausaMs(),
+                        proprieta.ritmo().jitterMs(),
+                        proprieta.ritmo().finestra(),
+                        proprieta.ritmo().fuso(),
+                        proprieta.ritmo().tettoGiornaliero()),
                 Clock.systemUTC(),
                 Thread::sleep,
                 limite -> limite <= 0 ? 0 : ThreadLocalRandom.current().nextLong(limite + 1));

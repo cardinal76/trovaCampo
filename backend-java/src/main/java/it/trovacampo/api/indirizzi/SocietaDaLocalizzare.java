@@ -1,6 +1,7 @@
 package it.trovacampo.api.indirizzi;
 
 
+
 /**
  * Una società di cui si cerca il campo: quello che il Registro RASD (e quindi
  * un {@code Prospect}) ne sa, senza l'indirizzo. Il registro non dà la

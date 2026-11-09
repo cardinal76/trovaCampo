@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -24,6 +24,7 @@ import org.springframework.web.client.RestClient;
  * <p>In produzione i due backend stanno sulla stessa rete Docker e si parlano
  * da dentro ({@code http://presenze-backend:8080}), senza passare da Caddy.
  */
+@EnableConfigurationProperties(ProprietaAnagrafica.class)
 @Component
 public class AnagraficaPresenze {
 
@@ -34,9 +35,8 @@ public class AnagraficaPresenze {
     private final RestClient client;
 
     @Autowired
-    public AnagraficaPresenze(
-            RestClient.Builder builder, @Value("${trovacampo.anagrafica.url}") String url) {
-        this(builder.baseUrl(url).requestFactory(richieste()).build());
+    public AnagraficaPresenze(RestClient.Builder builder, ProprietaAnagrafica proprieta) {
+        this(builder.baseUrl(proprieta.url()).requestFactory(richieste()).build());
     }
 
     /** Per i test, con un client già pronto. */

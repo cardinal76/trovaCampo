@@ -14,8 +14,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -42,6 +43,7 @@ import org.springframework.stereotype.Component;
  * bloccata sulla stessa società. Quando la ricerca migliora, si alza
  * {@link #VERSIONE} e i campi rinunciati tornano in coda da soli.
  */
+@EnableConfigurationProperties(ProprietaGeocodifica.class)
 @Component
 @ConditionalOnProperty(name = "trovacampo.geocodifica.automatica", havingValue = "true")
 public class GeocodificaAutomatica {
@@ -79,10 +81,13 @@ public class GeocodificaAutomatica {
     private final Geocoding geocoding;
     private final Duration pausa;
 
+    @Autowired
     public GeocodificaAutomatica(
-            SocietaRepository repository,
-            Geocoding geocoding,
-            @Value("${trovacampo.geocodifica.intervallo:PT1.1S}") Duration pausa) {
+            SocietaRepository repository, Geocoding geocoding, ProprietaGeocodifica proprieta) {
+        this(repository, geocoding, proprieta.intervallo());
+    }
+
+    GeocodificaAutomatica(SocietaRepository repository, Geocoding geocoding, Duration pausa) {
         this.repository = repository;
         this.geocoding = geocoding;
         this.pausa = pausa;

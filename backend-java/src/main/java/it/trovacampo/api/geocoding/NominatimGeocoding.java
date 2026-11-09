@@ -5,7 +5,8 @@ import java.time.Duration;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -19,6 +20,7 @@ import org.springframework.web.client.RestClient;
  * identifichi l'applicazione. Per volumi più alti serve un provider a
  * pagamento o un'istanza Nominatim self-hosted.
  */
+@EnableConfigurationProperties(ProprietaNominatim.class)
 @Component
 public class NominatimGeocoding implements Geocoding {
 
@@ -28,11 +30,13 @@ public class NominatimGeocoding implements Geocoding {
     private final RestClient client;
     private final RitmoNominatim ritmo;
 
+    @Autowired
     public NominatimGeocoding(
-            RestClient.Builder builder,
-            @Value("${trovacampo.nominatim.url}") String url,
-            @Value("${trovacampo.nominatim.user-agent}") String userAgent,
-            RitmoNominatim ritmo) {
+            RestClient.Builder builder, ProprietaNominatim proprieta, RitmoNominatim ritmo) {
+        this(builder, proprieta.url(), proprieta.userAgent(), ritmo);
+    }
+
+    NominatimGeocoding(RestClient.Builder builder, String url, String userAgent, RitmoNominatim ritmo) {
         this.ritmo = ritmo;
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(TIMEOUT);

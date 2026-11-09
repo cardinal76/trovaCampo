@@ -138,7 +138,7 @@ trovacampo:
       privata: ${VAPID_PRIVATA:}
     # Gli unici host a cui il backend manda notifiche (e sottodomini): gli
     # endpoint arrivano da chiunque, e non devono poter puntare altrove.
-    # Una riga sola, separata da virgole: @Value non legge le liste YAML.
+    # Una riga sola separata da virgole, o una lista YAML: valgono entrambe.
     servizi-push: fcm.googleapis.com,android.googleapis.com,push.services.mozilla.com,push.apple.com,notify.windows.com
 
 # Solo /actuator/health, che e' quello che guarda l'healthcheck del container

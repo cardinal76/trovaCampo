@@ -1,6 +1,7 @@
 package it.trovacampo.api.indirizzi;
 
 
+
 /**
  * Da dove viene l'indirizzo del campo di una società, nell'ordine di
  * preferenza: il campo di gioco dai comunicati LND prima di tutto, la

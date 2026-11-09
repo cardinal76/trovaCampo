@@ -11,13 +11,14 @@ import java.time.Duration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
  * Manda una notifica al servizio push del browser (Google, Mozilla, Apple,
  * Microsoft), che la consegna al telefono anche a sito chiuso.
  */
+@EnableConfigurationProperties(ProprietaNotifiche.class)
 @Component
 public class InvioWebPush {
 
@@ -42,13 +43,11 @@ public class InvioWebPush {
     private final Clock orologio;
 
     @Autowired
-    public InvioWebPush(
-            DepositoChiaviVapid chiavi,
-            @Value("${trovacampo.notifiche.contatto:https://trovacampo.footballer.it}") String contatto) {
+    public InvioWebPush(DepositoChiaviVapid chiavi, ProprietaNotifiche proprieta) {
         this(
                 HttpClient.newBuilder().connectTimeout(TIMEOUT).followRedirects(HttpClient.Redirect.NEVER).build(),
                 chiavi,
-                contatto,
+                proprieta.contatto(),
                 Clock.systemUTC());
     }
 
