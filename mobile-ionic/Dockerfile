@@ -9,8 +9,9 @@ RUN npm ci --no-audit --no-fund
 
 COPY . .
 # Configurazione "production": usa environment.prod.ts, con l'indirizzo
-# pubblico dell'API.
-RUN npx ng build --configuration production
+# pubblico dell'API. L'ambiente di test passa CONFIGURATION=test.
+ARG CONFIGURATION=production
+RUN npx ng build --configuration ${CONFIGURATION}
 
 # --- runtime -------------------------------------------------------------
 FROM nginx:1.27-alpine

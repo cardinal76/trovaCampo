@@ -1,0 +1,51 @@
+name: Deploy test
+
+# Ambiente di test su server2: push sul branch "test", oppure a mano dalla
+# scheda Actions su qualunque branch (Run workflow -> scegli il branch).
+# Il runner trovacampo-build sta sulla stessa macchina dello stack di test,
+# quindi costruisce e accende senza registro ne' SSH.
+on:
+  push:
+    branches: [test]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Costruisce e accende l'ambiente di test
+    runs-on: [self-hosted, trovacampo-build]
+    timeout-minutes: 30
+    concurrency:
+      group: deploy-test-trovacampo
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Controlla il file d'ambiente
+        run: |
+          test -f "$HOME/trovacampo-test/.env.test" \
+            || { echo "Manca ~/trovacampo-test/.env.test su server2: vedi DEPLOY.md, 'Ambiente di test'" >&2; exit 1; }
+
+      - name: Costruisce e accende
+        run: |
+          export TAG_IMMAGINI="${{ github.sha }}"
+          docker compose -p trovacampo-test -f docker-compose.test.yml \
+            --env-file "$HOME/trovacampo-test/.env.test" up -d --build
+
+      - name: Aspetta che il backend sia healthy
+        run: |
+          for i in $(seq 1 40); do
+            if docker ps --format "{{.Names}} {{.Status}}" | grep -q "trovacampo-test-backend.*(healthy)"; then
+              echo "backend healthy"; exit 0
+            fi
+            sleep 15
+          done
+          echo "il backend non e' diventato healthy in 10 minuti" >&2
+          docker logs --tail 40 trovacampo-test-backend >&2
+          exit 1
+
+      - name: Pulizia
+        if: always()
+        run: docker image prune -f
