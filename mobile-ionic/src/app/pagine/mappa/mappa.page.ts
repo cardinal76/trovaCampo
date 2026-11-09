@@ -63,6 +63,7 @@ import {
   partiteNelPopup,
   popupCampo,
 } from '../../mappa/popup-campo';
+import { distruggiMappa } from '../../mappa/distruggi-mappa';
 import { NumeroViciniService } from '../../servizi/preferenze/numero-vicini.service';
 import { RichiestaPosizione } from '../../servizi/posizione/richiesta-posizione';
 import { suggerimentoPartenza } from '../../modelli/percorso';
@@ -434,15 +435,24 @@ export class MappaPage implements OnDestroy {
     }
     this.livelloVicini = null;
     this.anelli.clear();
-    this.mappa?.remove();
-    this.mappa = null;
+    this.distruggiMappa();
     this.segnaposto.clear();
     this.tipoIcona.clear();
   }
 
+  /** Distrugge la mappa e i riferimenti ai suoi livelli, che non vanno piu' toccati. */
+  private distruggiMappa(): void {
+    if (this.mappa) {
+      distruggiMappa(this.mappa);
+    }
+    this.mappa = null;
+    this.sulCanvas = null;
+    this.icone = null;
+  }
+
   private creaMappa(contenitore: HTMLElement): void {
     this.zona.runOutsideAngular(() => {
-      this.mappa?.remove();
+      this.distruggiMappa();
       const mappa = L.map(contenitore, { preferCanvas: true });
       this.mappa = mappa;
       this.sulCanvas = null;
@@ -453,7 +463,14 @@ export class MappaPage implements OnDestroy {
         attribution: '© OpenStreetMap',
       }).addTo(mappa);
 
-      mappa.on('zoomend moveend', () => this.aggiornaSegnaposto(mappa));
+      mappa.on('zoomend moveend', () => {
+        // Un movimento in corso quando la mappa viene distrutta (uno zoom
+        // animato dura 250 ms) fa scattare questi eventi dopo: non si
+        // ridisegna una mappa che non c'e' piu'.
+        if (this.mappa === mappa) {
+          this.aggiornaSegnaposto(mappa);
+        }
+      });
 
       // Uno stemma che non si carica (un 404 del portale, la rete che salta)
       // lascia il posto all'icona del campo. L'errore di un'immagine non
