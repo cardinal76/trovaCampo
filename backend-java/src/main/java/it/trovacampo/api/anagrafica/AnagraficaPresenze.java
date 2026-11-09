@@ -181,10 +181,39 @@ public class AnagraficaPresenze {
 
     /** @param campo il campo principale, nullo se presenze non lo conosce */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record SocietaConCampo(Long id, String denominazione, Campo campo, String logoUrl) {}
+    public record SocietaConCampo(
+            Long id, String denominazione, Campo campo, String logoUrl, Accesso accesso) {
 
+        /** Senza accesso: come l'elenco arrivava prima che presenze lo mandasse. */
+        public SocietaConCampo(Long id, String denominazione, Campo campo, String logoUrl) {
+            this(id, denominazione, campo, logoUrl, null);
+        }
+    }
+
+    /**
+     * Come si entra in Footballer da un club che ne è cliente: il collegamento
+     * «Accedi» accanto alla sua scheda.
+     *
+     * @param alias lo slug dell'accesso del club ({@code /?societa=alias} su presenze)
+     * @param stemma il percorso (relativo a presenze) dello stemma caricato dal
+     *     club, o un indirizzo https; nullo se non ce n'è
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Scheda(Long id, String denominazione, List<Campo> campi, List<Squadra> squadre) {}
+    public record Accesso(String alias, String stemma) {}
+
+    /**
+     * @param accesso presente solo se la società è cliente di Footballer; nullo
+     *     per le altre, e da un presenze che non lo manda ancora
+     */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record Scheda(
+            Long id, String denominazione, List<Campo> campi, List<Squadra> squadre, Accesso accesso) {
+
+        /** Senza accesso. */
+        public Scheda(Long id, String denominazione, List<Campo> campi, List<Squadra> squadre) {
+            this(id, denominazione, campi, squadre, null);
+        }
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record Campo(Long id, String nome, String indirizzo, String comune) {}

@@ -1,7 +1,8 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, catchError, map, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { AccessoSocieta } from '../../presenze';
 import { Partita, PartitePerCampo, PunteggioLive } from '../../modelli/partita';
 import { Risultati } from '../../modelli/risultato';
 import { NuovoCampo, Societa } from '../../modelli/societa';
@@ -36,6 +37,21 @@ export class SocietaService {
   /** Le squadre della società con il campionato di ognuna, dall'anagrafica di presenze. */
   squadre(id: string): Observable<Squadra[]> {
     return this.http.get<Squadra[]>(`${this.base}/${encodeURIComponent(id)}/squadre`);
+  }
+
+  /**
+   * Dove porta «Accedi a Footballer» nella scheda: l'accesso del club, se è
+   * cliente di presenze. `null` (204) per tutte le altre, e `null` anche se la
+   * chiamata fallisce: è un collegamento in più, e non ci si rompe la scheda
+   * (né l'errore si racconta a chi guarda).
+   */
+  accesso(id: string): Observable<AccessoSocieta | null> {
+    return this.http
+      .get<AccessoSocieta | null>(`${this.base}/${encodeURIComponent(id)}/accesso`)
+      .pipe(
+        map((accesso) => accesso ?? null),
+        catchError(() => of(null)),
+      );
   }
 
   /** Le prossime partite sul campo della società, dal calendario di presenze. */

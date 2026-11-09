@@ -41,6 +41,8 @@ class AnagraficaControllerTest {
 
     @MockitoBean private RisultatiSocieta risultati;
 
+    @MockitoBean private AccessoSocieta accesso;
+
     private Societa certosa() {
         return new Societa()
                 .setId("1")
@@ -103,6 +105,38 @@ class AnagraficaControllerTest {
                 .andExpect(
                         jsonPath("$[0].risultatiDaComunicato.portaleNonDisponibileDal")
                                 .value("2026-09-26T11:00:00Z"));
+    }
+
+    @Test
+    void l_accessoDiUnClubClienteEPubblicoESoloAliasEStemma() throws Exception {
+        Societa certosa = certosa().setAnagraficaSocietaId(42L);
+        when(service.perId("1")).thenReturn(Optional.of(certosa));
+        when(accesso.di(certosa))
+                .thenReturn(
+                        Optional.of(
+                                new AnagraficaPresenze.Accesso(
+                                        "certosa", "/api/organizzazioni/3/logo")));
+
+        mockMvc.perform(get("/api/societa/1/accesso"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.alias").value("certosa"))
+                .andExpect(jsonPath("$.stemma").value("/api/organizzazioni/3/logo"))
+                .andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void senzaAccessoLaRispostaEVuota() throws Exception {
+        when(service.perId("1")).thenReturn(Optional.of(certosa()));
+        when(accesso.di(any())).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/societa/1/accesso")).andExpect(status().isNoContent());
+    }
+
+    @Test
+    void l_accessoDiUnaSocietaCheNonCeRisponde404() throws Exception {
+        when(service.perId("9")).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/societa/9/accesso")).andExpect(status().isNotFound());
     }
 
     @Test

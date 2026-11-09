@@ -81,6 +81,36 @@ describe('SocietaService', () => {
     http.expectOne(`${base}/abc%201/squadre`).flush([]);
   });
 
+  describe('accesso del club', () => {
+    it('legge alias e stemma di un club cliente', () => {
+      let risposta: unknown;
+      service.accesso('abc 1').subscribe((dati) => (risposta = dati));
+
+      http
+        .expectOne(`${base}/abc%201/accesso`)
+        .flush({ alias: 'boreale', stemma: '/api/organizzazioni/3/logo' });
+      expect(risposta).toEqual({ alias: 'boreale', stemma: '/api/organizzazioni/3/logo' });
+    });
+
+    it('204 per chi non è cliente vale nessun accesso', () => {
+      let risposta: unknown = 'non arrivata';
+      service.accesso('abc').subscribe((dati) => (risposta = dati));
+
+      http.expectOne(`${base}/abc/accesso`).flush(null, { status: 204, statusText: 'No Content' });
+      expect(risposta).toBeNull();
+    });
+
+    it('un errore non si propaga: nessun accesso', () => {
+      let risposta: unknown = 'non arrivata';
+      let errore = false;
+      service.accesso('abc').subscribe({ next: (dati) => (risposta = dati), error: () => (errore = true) });
+
+      http.expectOne(`${base}/abc/accesso`).flush('x', { status: 502, statusText: 'Bad Gateway' });
+      expect(errore).toBe(false);
+      expect(risposta).toBeNull();
+    });
+  });
+
   it('richiede gli ultimi risultati della società', () => {
     let risposta: unknown;
     service.risultati('abc 1').subscribe((dati) => (risposta = dati));
