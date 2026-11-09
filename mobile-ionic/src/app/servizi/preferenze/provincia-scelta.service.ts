@@ -1,5 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { TUTTE } from '../../modelli/provincia';
+import { archivioLocale } from '../archivio-locale';
 
 const CHIAVE = 'trovacampo.provincia';
 
@@ -17,18 +18,11 @@ export class ProvinciaSceltaService {
 
   scegli(provincia: string): void {
     this.scelta.set(provincia);
-    try {
-      localStorage.setItem(CHIAVE, provincia);
-    } catch {
-      // Navigazione privata o archivio bloccato: vale finché la pagina resta aperta.
-    }
+    // Con l'archivio bloccato la scelta vale finché la pagina resta aperta.
+    archivioLocale.scrivi(CHIAVE, provincia);
   }
 }
 
 function ricordata(): string {
-  try {
-    return localStorage.getItem(CHIAVE) || TUTTE;
-  } catch {
-    return TUTTE;
-  }
+  return archivioLocale.leggi(CHIAVE) || TUTTE;
 }

@@ -103,7 +103,9 @@ describe('SocietaService', () => {
     it('un errore non si propaga: nessun accesso', () => {
       let risposta: unknown = 'non arrivata';
       let errore = false;
-      service.accesso('abc').subscribe({ next: (dati) => (risposta = dati), error: () => (errore = true) });
+      service
+        .accesso('abc')
+        .subscribe({ next: (dati) => (risposta = dati), error: () => (errore = true) });
 
       http.expectOne(`${base}/abc/accesso`).flush('x', { status: 502, statusText: 'Bad Gateway' });
       expect(errore).toBe(false);

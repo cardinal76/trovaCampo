@@ -1,10 +1,5 @@
 import { CasoNotifiche, CasoPosizione } from '../diagnosi.service';
-import {
-  istruzioniNotifiche,
-  istruzioniPosizione,
-  statoNotifiche,
-  statoPosizione,
-} from './index';
+import { istruzioniNotifiche, istruzioniPosizione, statoNotifiche, statoPosizione } from './index';
 import { APP_GENERICA, Piattaforma, riconosciPiattaforma } from '../sonde-browser';
 import { AGENTI } from '../sonde-finte.spec';
 

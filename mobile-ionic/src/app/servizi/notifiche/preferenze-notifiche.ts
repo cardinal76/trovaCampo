@@ -1,3 +1,5 @@
+import { archivioLocale } from '../archivio-locale';
+
 /** Le preferenze delle notifiche sul dispositivo: tipi, valori predefiniti e archivio locale. */
 
 const CHIAVE = 'trovacampo.notifiche';
@@ -35,35 +37,25 @@ export function arrotonda(gradi: number): number {
 }
 
 export function preferenzeRicordate(): PreferenzeNotifiche {
-  try {
-    const lette = JSON.parse(
-      localStorage.getItem(CHIAVE) ?? 'null',
-    ) as Partial<PreferenzeNotifiche> | null;
-    if (!lette || typeof lette !== 'object') {
-      return PREDEFINITE;
-    }
-    const posizione = lette.posizione;
-    return {
-      avvisoSquadre: lette.avvisoSquadre === true,
-      avvisoVicino: lette.avvisoVicino === true,
-      raggioKm: (RAGGI_KM as readonly number[]).includes(lette.raggioKm ?? -1)
-        ? lette.raggioKm!
-        : RAGGIO_PREDEFINITO_KM,
-      posizione:
-        posizione && typeof posizione.lat === 'number' && typeof posizione.lng === 'number'
-          ? posizione
-          : null,
-    };
-  } catch {
+  const lette = archivioLocale.leggiJson(CHIAVE) as Partial<PreferenzeNotifiche> | null;
+  if (!lette || typeof lette !== 'object') {
     return PREDEFINITE;
   }
+  const posizione = lette.posizione;
+  return {
+    avvisoSquadre: lette.avvisoSquadre === true,
+    avvisoVicino: lette.avvisoVicino === true,
+    raggioKm: (RAGGI_KM as readonly number[]).includes(lette.raggioKm ?? -1)
+      ? lette.raggioKm!
+      : RAGGIO_PREDEFINITO_KM,
+    posizione:
+      posizione && typeof posizione.lat === 'number' && typeof posizione.lng === 'number'
+        ? posizione
+        : null,
+  };
 }
 
 /** Scrive le preferenze sul dispositivo; con l'archivio bloccato valgono finché la pagina resta aperta. */
 export function salvaPreferenze(preferenze: PreferenzeNotifiche): void {
-  try {
-    localStorage.setItem(CHIAVE, JSON.stringify(preferenze));
-  } catch {
-    // Archivio bloccato: le scelte valgono finché la pagina resta aperta.
-  }
+  archivioLocale.scriviJson(CHIAVE, preferenze);
 }

@@ -1,6 +1,7 @@
 import { Injectable, Injector, inject, signal } from '@angular/core';
 import { AlertController, NavController, ToastController } from '@ionic/angular/standalone';
 import { Societa, daPresenze, nomeCompleto } from '../../modelli/societa';
+import { archivioSessione } from '../archivio-locale';
 
 /**
  * La scheda da eliminare quando si torna dal login di Keycloak. Il login
@@ -127,22 +128,14 @@ export class EliminazioneSocietaService {
 
 /** La scheda la cui eliminazione era in corso prima del login, se c'è. */
 export function leggiEliminaDopoAccesso(): string | null {
-  try {
-    return sessionStorage.getItem(CHIAVE_ELIMINA_DOPO_ACCESSO);
-  } catch {
-    // Archivio bloccato: dopo il login si tocca di nuovo il cestino.
-    return null;
-  }
+  // Con l'archivio bloccato, dopo il login si tocca di nuovo il cestino.
+  return archivioSessione.leggi(CHIAVE_ELIMINA_DOPO_ACCESSO);
 }
 
 export function scriviEliminaDopoAccesso(id: string | null): void {
-  try {
-    if (id) {
-      sessionStorage.setItem(CHIAVE_ELIMINA_DOPO_ACCESSO, id);
-    } else {
-      sessionStorage.removeItem(CHIAVE_ELIMINA_DOPO_ACCESSO);
-    }
-  } catch {
-    // Come sopra.
+  if (id) {
+    archivioSessione.scrivi(CHIAVE_ELIMINA_DOPO_ACCESSO, id);
+  } else {
+    archivioSessione.togli(CHIAVE_ELIMINA_DOPO_ACCESSO);
   }
 }
