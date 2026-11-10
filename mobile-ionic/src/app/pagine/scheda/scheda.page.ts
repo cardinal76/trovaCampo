@@ -24,7 +24,6 @@ import {
   IonLabel,
   IonList,
   IonListHeader,
-  IonNote,
   IonSpinner,
   IonTitle,
   IonToolbar,
@@ -51,32 +50,16 @@ import {
   nomeCompleto,
 } from '../../modelli/societa';
 import {
-  GIORNI_PARTITE_SCHEDA,
   Partita,
   RILETTURA_IN_DIRETTA_MS,
   campionatoPartita,
   daSeguire,
-  dataPartita,
   fondiLive,
-  punteggioLive,
-  quandoPartita,
   squadrePartita,
 } from '../../modelli/partita';
-import { AccessoSocieta, paginaCampionato, paginaGirone } from '../../presenze';
-import {
-  Risultato,
-  dettaglioRisultato,
-  giornoRisultato,
-  punteggio,
-  risultatoPerEsteso,
-  siglaEsito,
-} from '../../modelli/risultato';
-import {
-  Squadra,
-  aggiornamentoRisultati,
-  dettaglioSquadra,
-  portaleNonRaggiungibile,
-} from '../../modelli/squadra';
+import { AccessoSocieta } from '../../presenze';
+import { Risultato } from '../../modelli/risultato';
+import { Squadra, dettaglioSquadra } from '../../modelli/squadra';
 import { PercorsoCampoComponent } from '../../componenti/percorso-campo/percorso-campo.component';
 import { AccessoClubComponent } from '../../componenti/accesso-club/accesso-club.component';
 import { StemmaComponent } from '../../componenti/stemma/stemma.component';
@@ -89,23 +72,11 @@ import {
 import { amministratoreRicordato } from '../../servizi/amministrazione/amministratore-ricordato';
 import { NotificheService } from '../../servizi/notifiche/notifiche.service';
 import { SocietaService } from '../../servizi/societa/societa.service';
-
-type Stato = 'caricamento' | 'completata' | 'errore';
-
-/**
- * Lo stato della sezione degli ultimi risultati. Ha due stati in più delle
- * altre perché deve raccontare due cose in più:
- *
- * - `chiusa`: nessuno l'ha ancora aperta, e i risultati non sono stati
- *   chiesti. Si chiedono all'apertura della piega e non all'arrivo sulla
- *   scheda: questa è la pagina di un campo, e la maggior parte di chi la apre
- *   vuole sapere dove si gioca, non com'è finita domenica;
- * - `assenti`: presenze non ha i risultati di questa società. Può essere un
- *   campo che lì non c'è, o un presenze che non ha ancora l'endpoint, perché
- *   TrovaCampo si rilascia per conto suo e questa scheda può arrivare sul
- *   server prima. Riprovare non serve, e la sezione non lo promette.
- */
-type StatoSezioneRisultati = 'chiusa' | 'caricamento' | 'completata' | 'assenti' | 'errore';
+import { SezioneAnagraficaComponent } from './sezioni/sezione-anagrafica.component';
+import { SezioneCampionatiComponent } from './sezioni/sezione-campionati.component';
+import { SezionePartiteComponent } from './sezioni/sezione-partite.component';
+import { SezioneRisultatiComponent } from './sezioni/sezione-risultati.component';
+import { Stato, StatoSezioneRisultati } from './sezioni/stati';
 
 /**
  * Zoom della mappa della scheda: abbastanza vicino da riconoscere le vie
@@ -125,6 +96,10 @@ const ZOOM_SCHEDA = 16;
 @Component({
   selector: 'pagina-scheda',
   imports: [
+    SezioneAnagraficaComponent,
+    SezioneCampionatiComponent,
+    SezionePartiteComponent,
+    SezioneRisultatiComponent,
     RouterLink,
     PercorsoCampoComponent,
     StemmaComponent,
@@ -142,7 +117,6 @@ const ZOOM_SCHEDA = 16;
     IonLabel,
     IonList,
     IonListHeader,
-    IonNote,
     IonSpinner,
     IonTitle,
     IonToolbar,
@@ -174,14 +148,6 @@ export class SchedaPage implements OnDestroy {
    * altre società, se presenze non risponde o non manda ancora il campo.
    */
   readonly accesso = signal<AccessoSocieta | null>(null);
-  readonly dettaglioSquadra = dettaglioSquadra;
-  readonly aggiornamentoRisultati = aggiornamentoRisultati;
-  /**
-   * Il portale LND non risponde a presenze: i risultati arrivano solo dai
-   * Comunicati Ufficiali, e chi guarda nel fine settimana deve sapere perché
-   * sono fermi.
-   */
-  readonly portaleNonRaggiungibile = computed(() => portaleNonRaggiungibile(this.squadre()));
   /**
    * Le prossime partite su questo campo, dal calendario di presenze: anche
    * loro a parte, e solo per un campo che viene da lì.
@@ -194,14 +160,6 @@ export class SchedaPage implements OnDestroy {
    */
   readonly risultati = signal<Risultato[]>([]);
   readonly statoRisultati = signal<StatoSezioneRisultati>('chiusa');
-  readonly giornoRisultato = giornoRisultato;
-  readonly punteggio = punteggio;
-  readonly siglaEsito = siglaEsito;
-  readonly risultatoPerEsteso = risultatoPerEsteso;
-  readonly dettaglioRisultato = dettaglioRisultato;
-  // Le pagine del Comitato su presenze, dove portano campionato e girone.
-  readonly paginaCampionato = paginaCampionato;
-  readonly paginaGirone = paginaGirone;
   /**
    * Se la piega dei risultati è aperta in questo momento. All'arrivo nessuna
    * lo è, ma tornando qui dalla modifica la pagina è la stessa di prima, con
@@ -209,12 +167,8 @@ export class SchedaPage implements OnDestroy {
    * lasciati in attesa per sempre.
    */
   private readonly risultatiInVista = signal(false);
-  readonly giorniPartite = GIORNI_PARTITE_SCHEDA;
-  readonly quandoPartita = quandoPartita;
   readonly squadrePartita = squadrePartita;
   readonly campionatoPartita = campionatoPartita;
-  readonly dataPartita = (partita: Partita) => dataPartita(partita);
-  readonly punteggioLive = punteggioLive;
   /**
    * Ogni minuto, se una partita si può star giocando, si chiedono i soli
    * punteggi in diretta e cambiano solo quelli: la scheda non si ricarica.
@@ -246,31 +200,6 @@ export class SchedaPage implements OnDestroy {
     return societa && haCoordinate(societa) ? societa : null;
   });
 
-  /** Un campo inserito a mano con la sola Funzione 1 non ha anagrafica. */
-  /**
-   * Presidente, sede e contatti non li scrivono i comunicati: mancano anche
-   * alle società che vengono dall'anagrafica di presenze, che a mano non sono
-   * state inserite. Il motivo cambia, e la frase con lui.
-   */
-  readonly testoSenzaAnagrafica = computed(() =>
-    this.societa()?.anagraficaSocietaId || this.squadre().length > 0
-      ? 'Presidente, sede e contatti non sono ancora stati inseriti.'
-      : 'Anagrafica non ancora disponibile per questo campo (inserito manualmente).',
-  );
-
-  readonly haAnagrafica = computed(() => {
-    const societa = this.societa();
-    return Boolean(
-      societa &&
-      (societa.presidente ||
-        societa.indirizzoSede ||
-        societa.telefono ||
-        societa.email ||
-        societa.sitoWeb ||
-        societa.matricola),
-    );
-  });
-
   readonly campionati = computed(() => this.societa()?.campionati ?? []);
   readonly agonistica = computed(() => this.campionati().filter((c) => c.tipo === 'Agonistica'));
   readonly scuolaCalcio = computed(() =>
@@ -291,20 +220,6 @@ export class SchedaPage implements OnDestroy {
   readonly sezioniAperte = computed(() =>
     this.societa()?.anagraficaImpiantoId ? ['partite'] : ['campionati'],
   );
-
-  readonly prezziScuolaCalcio = computed(() => {
-    const societa = this.societa();
-
-    if (!societa || societa.scuolaCalcio === undefined) {
-      return null;
-    }
-
-    if (!societa.scuolaCalcio) {
-      return 'No';
-    }
-
-    return societa.prezziScuolaCalcio ? `Sì — ${societa.prezziScuolaCalcio}` : 'Sì';
-  });
 
   constructor() {
     addIcons({

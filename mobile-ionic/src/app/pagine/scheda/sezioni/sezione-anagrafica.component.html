@@ -1,0 +1,60 @@
+<ion-list class="corpo-sezione" lines="inset">
+  @if (haAnagrafica()) {
+    @if (societa().matricola) {
+      <ion-item>
+        <ion-label>Matricola</ion-label>
+        <ion-note slot="end">{{ societa().matricola }}</ion-note>
+      </ion-item>
+    }
+    @if (societa().comitatoRegionale) {
+      <ion-item>
+        <ion-label>Comitato regionale</ion-label>
+        <ion-note slot="end">{{ societa().comitatoRegionale }}</ion-note>
+      </ion-item>
+    }
+    @if (societa().presidente) {
+      <ion-item>
+        <ion-label>Presidente</ion-label>
+        <ion-note slot="end">{{ societa().presidente }}</ion-note>
+      </ion-item>
+    }
+    @if (societa().indirizzoSede) {
+      <ion-item>
+        <ion-label>Indirizzo sede</ion-label>
+        <ion-note slot="end">{{ societa().indirizzoSede }}</ion-note>
+      </ion-item>
+    }
+    @if (societa().telefono) {
+      <ion-item>
+        <ion-label>Telefono</ion-label>
+        <ion-note slot="end">{{ societa().telefono }}</ion-note>
+      </ion-item>
+    }
+    @if (societa().fax) {
+      <ion-item>
+        <ion-label>Fax</ion-label>
+        <ion-note slot="end">{{ societa().fax }}</ion-note>
+      </ion-item>
+    }
+    @if (societa().email) {
+      <ion-item>
+        <ion-label>Email</ion-label>
+        <ion-note slot="end">{{ societa().email }}</ion-note>
+      </ion-item>
+    }
+    @if (societa().sitoWeb) {
+      <ion-item>
+        <ion-label>Sito web</ion-label>
+        <ion-note slot="end">{{ societa().sitoWeb }}</ion-note>
+      </ion-item>
+    }
+    @if (prezziScuolaCalcio()) {
+      <ion-item>
+        <ion-label>Scuola calcio</ion-label>
+        <ion-note slot="end">{{ prezziScuolaCalcio() }}</ion-note>
+      </ion-item>
+    }
+  } @else {
+    <p class="vuoto">{{ testoSenzaAnagrafica() }}</p>
+  }
+</ion-list>

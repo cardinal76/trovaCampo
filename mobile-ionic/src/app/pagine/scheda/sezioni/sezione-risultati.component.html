@@ -1,0 +1,95 @@
+@switch (stato()) {
+  @case ('errore') {
+    <p class="vuoto">I risultati non sono disponibili in questo momento: riprova tra poco.</p>
+  }
+  @case ('assenti') {
+    <!-- Niente "riprova tra poco": qui riprovare non serve. -->
+    <p class="vuoto">I risultati non sono ancora disponibili per questa società.</p>
+  }
+  @case ('completata') {
+    <ol class="risultati">
+      <!--
+        La chiave è la squadra e non l'indice: nel derby la stessa
+        partita arriva due volte, una per squadra, e una chiave
+        stabile è quella che tiene le due righe distinte fra un
+        ridisegno e l'altro.
+      -->
+      @for (risultato of risultati(); track risultato.squadraIscrittaId) {
+        <li class="risultato">
+          <!--
+            Il bollino con l'esito: lo manda presenze, non si
+            ricalcola dai gol. Una "V" da sola non dice niente a chi
+            legge con lo screen reader, che sente la riga per esteso.
+          -->
+          <span
+            class="bollino"
+            [class.vittoria]="risultato.esito === 'VITTORIA'"
+            [class.pareggio]="risultato.esito === 'PAREGGIO'"
+            [class.sconfitta]="risultato.esito === 'SCONFITTA'"
+            aria-hidden="true"
+            >{{ siglaEsito(risultato) }}</span
+          >
+          <div class="dettagli">
+            <p class="quando">
+              <span class="visually-hidden">{{ risultatoPerEsteso(risultato) }}</span>
+              @let giorno = giornoRisultato(risultato);
+              @if (giorno) {
+                <span class="giorno-giocato" aria-hidden="true">{{ giorno }}</span>
+              }
+              @if (!risultato.inCasa) {
+                <span class="trasferta" aria-hidden="true">In trasferta</span>
+              }
+            </p>
+            <p class="squadre" aria-hidden="true">
+              <span class="squadra">
+                <span class="casa" [class.nostra]="risultato.inCasa">{{ risultato.casa }}</span>
+              </span>
+              <span class="punteggio">{{ punteggio(risultato) }}</span>
+              <span class="squadra">
+                <span class="ospite" [class.nostra]="!risultato.inCasa">{{
+                  risultato.ospite
+                }}</span>
+              </span>
+            </p>
+            <!-- Come nelle partite qui sopra: campionato e girone
+                 portano alle pagine del Comitato su presenze. -->
+            <p class="campionato">
+              <span class="nome-campionato">
+                @let vaiAlCampionatoGiocato = paginaCampionato(risultato.campionatoId);
+                @if (vaiAlCampionatoGiocato) {
+                  <a [href]="vaiAlCampionatoGiocato" target="_blank" rel="noopener">{{
+                    risultato.campionato
+                  }}</a>
+                } @else {
+                  {{ risultato.campionato }}
+                }
+              </span>
+              @if (risultato.girone) {
+                <span>
+                  @let vaiAlGironeGiocato = paginaGirone(risultato.gironeId);
+                  @if (vaiAlGironeGiocato) {
+                    <a [href]="vaiAlGironeGiocato" target="_blank" rel="noopener"
+                      >Girone {{ risultato.girone }}</a
+                    >
+                  } @else {
+                    Girone {{ risultato.girone }}
+                  }
+                </span>
+              }
+              @let dettaglio = dettaglioRisultato(risultato);
+              @if (dettaglio) {
+                <span>{{ dettaglio }}</span>
+              }
+            </p>
+          </div>
+        </li>
+      } @empty {
+        <p class="vuoto">Nessuna partita giocata finora in questa stagione.</p>
+      }
+    </ol>
+  }
+  @default {
+    <!-- 'chiusa' dura un attimo: aprendo la piega la chiamata parte subito. -->
+    <div class="attesa"><ion-spinner name="crescent"></ion-spinner></div>
+  }
+}
