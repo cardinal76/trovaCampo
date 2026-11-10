@@ -32,6 +32,7 @@ import {
 import { addIcons } from 'ionicons';
 import {
   calendarOutline,
+  createOutline,
   create,
   footballOutline,
   trash,
@@ -224,6 +225,7 @@ export class SchedaPage implements OnDestroy {
   constructor() {
     addIcons({
       calendarOutline,
+      createOutline,
       create,
       footballOutline,
       notifications,
