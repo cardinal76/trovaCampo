@@ -27,7 +27,7 @@ import {
   IonToolbar,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { globeOutline, searchOutline } from 'ionicons/icons';
+import { createOutline, globeOutline, searchOutline } from 'ionicons/icons';
 import * as L from 'leaflet';
 import {
   catchError,
@@ -106,7 +106,7 @@ export class CercaPage implements OnDestroy {
   readonly sitoFootballer = SITO_FOOTBALLER;
 
   constructor() {
-    addIcons({ globeOutline, searchOutline });
+    addIcons({ createOutline, globeOutline, searchOutline });
 
     // Anche quando chi amministra cambia l'archivio: tornando qui dopo aver
     // eliminato una scheda, i suggerimenti non devono proporla ancora.

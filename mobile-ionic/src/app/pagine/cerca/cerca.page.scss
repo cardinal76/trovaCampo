@@ -154,7 +154,9 @@
   position: relative;
   z-index: 2;
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
+  gap: 0.5rem;
   padding: 0 16px 1.5rem;
 }
 

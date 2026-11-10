@@ -173,5 +173,17 @@
         ></div>
       </ion-accordion>
     </ion-accordion-group>
+
+    <div class="rettifica contenuto-largo">
+      <ion-button
+        fill="clear"
+        size="small"
+        [routerLink]="['/rettifica']"
+        [queryParams]="{ societa: societa()!.id, nome: societa()!.nomeSocieta }"
+      >
+        <ion-icon slot="start" name="create-outline" aria-hidden="true"></ion-icon>
+        Dati da rettificare? Scrivici
+      </ion-button>
+    </div>
   }
 </ion-content>

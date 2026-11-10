@@ -37,6 +37,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pagine/aggiungi/aggiungi.page').then((m) => m.AggiungiPage),
   },
   {
+    // «Hai dati da rettificare?»: pubblica, con ?societa=<id>&nome=<nome> dalla scheda.
+    path: 'rettifica',
+    loadComponent: () => import('./pagine/rettifica/rettifica.page').then((m) => m.RettificaPage),
+  },
+  {
     // Dalle voci "Accedi" ed "Esci" (con ?esci=1) del menu utente.
     path: 'accedi',
     loadComponent: () => import('./pagine/accesso/accesso.page').then((m) => m.AccessoPage),

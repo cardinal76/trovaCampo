@@ -1,0 +1,90 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Rettifica dati</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  <div class="contenuto-largo">
+    <ion-text color="medium">
+      <p>
+        Hai dati da rettificare o modificare? Scrivici: puoi chiedere di correggere il nome della
+        società o l'indirizzo del campo.
+      </p>
+    </ion-text>
+
+    <ion-list>
+      <ion-item>
+        <ion-select
+          label="Cosa vuoi rettificare"
+          labelPlacement="stacked"
+          interface="popover"
+          [ngModel]="tipo()"
+          (ngModelChange)="tipo.set($event)"
+        >
+          <ion-select-option value="NOME_SOCIETA">Nome della società</ion-select-option>
+          <ion-select-option value="INDIRIZZO_CAMPO">Indirizzo del campo</ion-select-option>
+          <ion-select-option value="ALTRO">Altro</ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <ion-item>
+        <ion-input
+          label="Dato attuale (come lo vedi ora)"
+          labelPlacement="stacked"
+          maxlength="200"
+          [ngModel]="attuale()"
+          (ngModelChange)="attuale.set($event)"
+        ></ion-input>
+      </ion-item>
+
+      <ion-item>
+        <ion-textarea
+          label="Dato corretto"
+          labelPlacement="stacked"
+          placeholder="es. A.S.D. Certosa Calcio / Via della Certosa 12, Roma"
+          maxlength="500"
+          [autoGrow]="true"
+          [ngModel]="corretto()"
+          (ngModelChange)="corretto.set($event)"
+        ></ion-textarea>
+      </ion-item>
+
+      <ion-item>
+        <ion-input
+          label="La tua email (facoltativa, per risponderti)"
+          labelPlacement="stacked"
+          type="email"
+          inputmode="email"
+          maxlength="150"
+          [ngModel]="contatto()"
+          (ngModelChange)="contatto.set($event)"
+        ></ion-input>
+      </ion-item>
+    </ion-list>
+
+    <!-- Casella-trappola per i programmi: una persona non la vede. -->
+    <input
+      class="trappola"
+      type="text"
+      name="sito"
+      tabindex="-1"
+      autocomplete="off"
+      aria-hidden="true"
+      [ngModel]="sito()"
+      (ngModelChange)="sito.set($event)"
+      style="position: absolute; left: -9999px; width: 1px; height: 1px"
+    />
+
+    <ion-button expand="block" [disabled]="!pronto() || invio()" (click)="invia()">
+      @if (invio()) {
+        <ion-spinner name="crescent"></ion-spinner>
+      } @else {
+        Invia la rettifica
+      }
+    </ion-button>
+  </div>
+</ion-content>
