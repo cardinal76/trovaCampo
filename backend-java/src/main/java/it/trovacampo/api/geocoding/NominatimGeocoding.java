@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 /**
  * Geocodifica con Nominatim (OpenStreetMap): gratuito e senza chiave API, ma
@@ -37,16 +38,24 @@ public class NominatimGeocoding implements Geocoding {
     }
 
     NominatimGeocoding(RestClient.Builder builder, String url, String userAgent, RitmoNominatim ritmo) {
+        this(client(builder, url, userAgent), ritmo);
+    }
+
+    /** Per i test, con un client gia' pronto. */
+    NominatimGeocoding(RestClient client, RitmoNominatim ritmo) {
+        this.client = client;
         this.ritmo = ritmo;
+    }
+
+    private static RestClient client(RestClient.Builder builder, String url, String userAgent) {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
         requestFactory.setConnectTimeout(TIMEOUT);
         requestFactory.setReadTimeout(TIMEOUT);
 
-        this.client =
-                builder.baseUrl(url)
-                        .requestFactory(requestFactory)
-                        .defaultHeader(HttpHeaders.USER_AGENT, userAgent)
-                        .build();
+        return builder.baseUrl(url)
+                .requestFactory(requestFactory)
+                .defaultHeader(HttpHeaders.USER_AGENT, userAgent)
+                .build();
     }
 
     @Override
@@ -73,12 +82,21 @@ public class NominatimGeocoding implements Geocoding {
                     new Coordinate(
                             Double.parseDouble(risultati[0].lat()),
                             Double.parseDouble(risultati[0].lon())));
+        } catch (RestClientException eccezione) {
+            if (GeocodingNonDisponibile.transitorio(eccezione)) {
+                // Non e' l'indirizzo: chi chiama non deve darlo per perso.
+                throw new GeocodingNonDisponibile("Nominatim non risponde", eccezione);
+            }
+            return nonRiconosciuto(indirizzo, eccezione);
         } catch (RuntimeException eccezione) {
-            // Un indirizzo non geocodificato non deve impedire il salvataggio
-            // del campo: comparirà in ricerca senza posizione sulla mappa.
-            log.warn("Geocodifica non riuscita per '{}': {}", indirizzo, eccezione.toString());
-            return Optional.empty();
+            return nonRiconosciuto(indirizzo, eccezione);
         }
+    }
+
+    /** Un indirizzo non geocodificato non deve impedire il salvataggio del campo: comparira' in ricerca senza posizione sulla mappa. */
+    private Optional<Coordinate> nonRiconosciuto(String indirizzo, RuntimeException eccezione) {
+        log.warn("Geocodifica non riuscita per '{}': {}", indirizzo, eccezione.toString());
+        return Optional.empty();
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)

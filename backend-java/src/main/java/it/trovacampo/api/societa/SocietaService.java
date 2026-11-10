@@ -1,18 +1,23 @@
 package it.trovacampo.api.societa;
 
 import it.trovacampo.api.geocoding.Geocoding;
+import it.trovacampo.api.geocoding.GeocodingNonDisponibile;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SocietaService {
 
     private final SocietaRepository repository;
+    private static final Logger log = LoggerFactory.getLogger(SocietaService.class);
+
     private final Geocoding geocoding;
     private final EsclusioniRepository esclusioni;
 
@@ -60,10 +65,18 @@ public class SocietaService {
                         .setLocalitaImpianto("")
                         .setProvinciaImpianto("");
 
-        geocoding
-                .geocodifica(societa.getIndirizzoImpianto())
-                .ifPresent(
-                        coordinate -> societa.setLat(coordinate.lat()).setLng(coordinate.lng()));
+        try {
+            geocoding
+                    .geocodifica(societa.getIndirizzoImpianto())
+                    .ifPresent(
+                            coordinate ->
+                                    societa.setLat(coordinate.lat()).setLng(coordinate.lng()));
+        } catch (GeocodingNonDisponibile nonDisponibile) {
+            // Il campo si salva lo stesso: senza coordinate e senza segno di
+            // rinuncia, quindi la geocodifica automatica lo riprende appena
+            // Nominatim torna.
+            log.warn("Geocodifica non disponibile per un campo nuovo: la riprovera' la coda");
+        }
 
         return repository.save(TestoRicerca.aggiorna(societa));
     }

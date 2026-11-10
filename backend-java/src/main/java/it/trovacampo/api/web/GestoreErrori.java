@@ -1,5 +1,6 @@
 package it.trovacampo.api.web;
 
+import it.trovacampo.api.geocoding.GeocodingNonDisponibile;
 import it.trovacampo.api.societa.DatiNonValidiException;
 import it.trovacampo.api.societa.SocietaNonTrovataException;
 import java.util.Map;
@@ -56,6 +57,14 @@ public class GestoreErrori {
      * richiesta è l'anagrafica di presenze (Nominatim i suoi errori li
      * assorbe): giù durante un suo aggiornamento, o irraggiungibile.
      */
+    @ExceptionHandler(GeocodingNonDisponibile.class)
+    public ResponseEntity<Map<String, String>> geocodificaNonDisponibile(
+            GeocodingNonDisponibile eccezione) {
+        log.warn("Geocodifica non disponibile: {}", eccezione.getMessage());
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of("errore", "Il servizio di geocodifica non risponde: riprova tra poco"));
+    }
+
     @ExceptionHandler(RestClientException.class)
     public ResponseEntity<Map<String, String>> anagraficaNonRaggiungibile(
             RestClientException eccezione) {
