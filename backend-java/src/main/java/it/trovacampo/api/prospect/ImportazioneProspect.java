@@ -3,15 +3,11 @@ package it.trovacampo.api.prospect;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,12 +55,11 @@ public class ImportazioneProspect {
     static final String INTERROTTA = "interrotta";
 
     private final RegistroRasd registro;
-    private final ProspectRepository prospect;
     private final StatiImportazioneRepository stati;
     private final GiriImportazioneRepository giri;
     private final CollegamentoCampi collegamento;
     private final RitmoRasd ritmo;
-    private final Duration validitaDettaglio;
+    private final AggiornamentoDaRegistro aggiornamento;
     private final ExecutorService esecutore;
 
     private final AtomicBoolean inCorso = new AtomicBoolean(false);
@@ -109,12 +104,12 @@ public class ImportazioneProspect {
             Duration validitaDettaglio,
             ExecutorService esecutore) {
         this.registro = registro;
-        this.prospect = prospect;
         this.stati = stati;
         this.giri = giri;
         this.collegamento = collegamento;
         this.ritmo = ritmo;
-        this.validitaDettaglio = validitaDettaglio;
+        this.aggiornamento =
+                new AggiornamentoDaRegistro(registro, prospect, validitaDettaglio, () -> ritmo.orologio().instant());
         this.esecutore = esecutore;
     }
 
@@ -210,7 +205,7 @@ public class ImportazioneProspect {
      * usano i test.
      */
     AvanzamentoImportazione esegui(OpzioniImportazione opzioni, String chi) {
-        Contatori c = new Contatori();
+        ContatoriGiro c = new ContatoriGiro();
         Instant iniziato = adesso();
         giro = giri.findById(GiroImportazione.ID).orElseGet(GiroImportazione::new);
         if (giro.getGiorno() != null) {
@@ -292,15 +287,6 @@ public class ImportazioneProspect {
         giri.save(giro);
     }
 
-    private static final class Contatori {
-        int pagine;
-        int richieste;
-        int lette;
-        int nuove;
-        int dettagli;
-        int saltati;
-    }
-
     /** Le pause del ritmo finiscono nella pagina admin e in Mongo. */
     private final RitmoRasd.Ascoltatore ascoltatore =
             new RitmoRasd.Ascoltatore() {
@@ -326,7 +312,7 @@ public class ImportazioneProspect {
             };
 
     /** Aspetta il ritmo e conta la richiesta. Falso se nel frattempo è arrivato un «Ferma». */
-    private boolean prossimaRichiesta(Contatori c) throws InterruptedException {
+    private boolean prossimaRichiesta(ContatoriGiro c) throws InterruptedException {
         if (!ritmo.prima(() -> fermati, ascoltatore)) {
             return false;
         }
@@ -336,7 +322,7 @@ public class ImportazioneProspect {
     }
 
     /** Vero se la regione è arrivata in fondo, falso se ci si è fermati prima. */
-    private boolean importaRegione(StatoImportazioneProspect stato, OpzioniImportazione opzioni, Contatori c)
+    private boolean importaRegione(StatoImportazioneProspect stato, OpzioniImportazione opzioni, ContatoriGiro c)
             throws InterruptedException {
         while (true) {
             if (fermati || (opzioni.maxPagine() != null && c.pagine >= opzioni.maxPagine())) {
@@ -348,7 +334,8 @@ public class ImportazioneProspect {
             int start = stato.getProssimoStart();
             RegistroRasd.Pagina pagina = registro.pagina(stato.getRegioneId(), start, PAGINA);
             c.pagine++;
-            boolean completa = aggiorna(c, pagina.voci(), opzioni.dettagli());
+            boolean completa =
+                    aggiornamento.aggiorna(c, pagina.voci(), opzioni.dettagli(), () -> prossimaRichiesta(c));
             if (!completa) {
                 // Fermati a metà dei dettagli: la pagina si rilegge al prossimo giro,
                 // e i dettagli già letti si saltano perché recenti.
@@ -370,73 +357,5 @@ public class ImportazioneProspect {
                 return true;
             }
         }
-    }
-
-    /** Un dettaglio letto da meno di {@code validitaDettaglio} non si richiede. */
-    private boolean recente(Prospect p) {
-        return p.getDettaglioLetto() != null && p.getDettaglioLetto().isAfter(adesso().minus(validitaDettaglio));
-    }
-
-    /** Falso se ci si è fermati prima di leggere tutti i dettagli della pagina. */
-    private boolean aggiorna(Contatori c, List<RegistroRasd.Voce> voci, AmbitoDettagli ambito)
-            throws InterruptedException {
-        if (voci.isEmpty()) {
-            return true;
-        }
-        boolean completa = true;
-        Map<String, Prospect> esistenti =
-                prospect.findAllById(voci.stream().map(RegistroRasd.Voce::codiceFiscale).toList())
-                        .stream()
-                        .collect(Collectors.toMap(Prospect::getCodiceFiscale, Function.identity(), (a, b) -> a));
-        List<Prospect> daSalvare = new ArrayList<>();
-        try {
-            for (RegistroRasd.Voce voce : voci) {
-                Prospect p = esistenti.get(voce.codiceFiscale());
-                if (p == null) {
-                    p = new Prospect().setCodiceFiscale(voce.codiceFiscale());
-                    c.nuove++;
-                }
-                p.setRasdId(voce.id())
-                        .setDenominazione(voce.denominazione())
-                        .setNaturaGiuridica(voce.naturaGiuridica())
-                        .setRegione(voce.regione())
-                        .setComune(voce.comune())
-                        .setOrganismi(voce.organismi())
-                        .setDataIscrizione(voce.dataIscrizione())
-                        .setCalcio(calcio(voce.organismi(), p.getDiscipline()))
-                        .setAggiornato(adesso());
-                if (completa && ambito.vuole(voce, p)) {
-                    if (recente(p)) {
-                        c.saltati++;
-                    } else if (!prossimaRichiesta(c)) {
-                        completa = false;
-                    } else {
-                        RegistroRasd.Dettaglio dettaglio = registro.dettaglio(voce.id());
-                        c.dettagli++;
-                        p.setDiscipline(dettaglio.discipline())
-                                .setTesseratiAttivi(dettaglio.tesseratiAttivi())
-                                .setAttivitaSportiveUltimoAnno(dettaglio.attivitaSportiveUltimoAnno())
-                                .setPartecipazioniUltimoAnno(dettaglio.partecipazioniUltimoAnno())
-                                .setDettaglioLetto(adesso())
-                                .setCalcio(calcio(voce.organismi(), dettaglio.discipline()));
-                    }
-                }
-                daSalvare.add(p);
-            }
-        } finally {
-            // Anche se il registro blocca a metà pagina: i dettagli già letti non si richiedono più.
-            c.lette += daSalvare.size();
-            prospect.saveAll(daSalvare);
-        }
-        return completa;
-    }
-
-    /** Affiliata FIGC, o con una disciplina che comincia per «Calcio» (calcio a 5, a 11…). */
-    static boolean calcio(List<String> organismi, List<String> discipline) {
-        if (organismi != null && organismi.stream().anyMatch("FIGC"::equalsIgnoreCase)) {
-            return true;
-        }
-        return discipline != null
-                && discipline.stream().anyMatch(d -> d.toLowerCase().startsWith("calcio"));
     }
 }
