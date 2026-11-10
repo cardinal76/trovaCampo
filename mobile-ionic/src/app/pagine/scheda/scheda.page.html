@@ -84,7 +84,6 @@
       } @else {
         <p class="posizione-assente">Posizione del campo non ancora disponibile.</p>
       }
-
     </ion-list>
 
     <!--
@@ -107,112 +106,13 @@
               <ion-badge slot="end" class="conteggio">{{ partite().length }}</ion-badge>
             }
           </ion-item>
-          <div slot="content" class="corpo-sezione">
-            @switch (statoPartite()) {
-              @case ('caricamento') {
-                <div class="attesa"><ion-spinner name="crescent"></ion-spinner></div>
-              }
-              @case ('errore') {
-                <p class="vuoto">Le partite non sono disponibili in questo momento: riprova tra poco.</p>
-              }
-              @default {
-                <ol class="partite">
-                  @for (partita of partite(); track $index) {
-                    @let data = dataPartita(partita);
-                    <li class="partita">
-                      <div class="calendario" aria-hidden="true">
-                        <span class="giorno">{{ data.giorno }}</span>
-                        <span class="numero">{{ data.numero }}</span>
-                        <span class="mese">{{ data.mese }}</span>
-                      </div>
-                      <div class="dettagli">
-                        <p class="quando">
-                          @if (partita.live) {
-                            <ion-badge color="danger" class="live">LIVE</ion-badge>
-                          }
-                          @if (data.vicino) {
-                            <span class="vicino">{{ data.vicino }}</span>
-                          }
-                          <span class="visually-hidden">{{ quandoPartita(partita) }}</span>
-                          <span class="ora" aria-hidden="true">
-                            <ion-icon name="time-outline"></ion-icon>{{ data.ora }}
-                          </span>
-                          @if (partita.giornata) {
-                            <span class="giornata">{{ partita.giornata }}ª giornata</span>
-                          }
-                        </p>
-                        <!-- Lo stemma di ogni squadra, o il cerchio con l'iniziale
-                             quando TrovaCampo non lo conosce: le righe restano
-                             allineate con e senza. -->
-                        <p class="squadre">
-                          <span class="squadra">
-                            <stemma-societa
-                              [nome]="partita.casa"
-                              [logoUrl]="partita.casaLogoUrl"
-                              [dimensione]="24"
-                            ></stemma-societa>
-                            <span class="casa">{{ partita.casa }}</span>
-                          </span>
-                          @if (partita.live) {
-                            <span class="contro punteggio-live">{{ punteggioLive(partita) }}</span>
-                          } @else {
-                            <span class="contro">vs</span>
-                          }
-                          <span class="squadra">
-                            <stemma-societa
-                              [nome]="partita.ospite"
-                              [logoUrl]="partita.ospiteLogoUrl"
-                              [dimensione]="24"
-                            ></stemma-societa>
-                            <span class="ospite">{{ partita.ospite }}</span>
-                          </span>
-                        </p>
-                        <!--
-                          Campionato e girone portano alle pagine pubbliche del
-                          Comitato su presenze: qui si legge che partita e',
-                          li' si vedono classifica e calendario. Il link sta
-                          DENTRO lo span e non al posto suo, perche' i puntini
-                          di separazione li disegna «span + span» nel foglio
-                          di stile: scambiando il tag sparirebbero.
-                          Senza l'id — un presenze che non lo manda ancora —
-                          resta il testo di prima, senza collegamento morto.
-                        -->
-                        <p class="campionato">
-                          <span class="nome-campionato">
-                            @let vaiAlCampionato = paginaCampionato(partita.campionatoId);
-                            @if (vaiAlCampionato) {
-                              <a [href]="vaiAlCampionato" target="_blank" rel="noopener">{{
-                                partita.campionato
-                              }}</a>
-                            } @else {
-                              {{ partita.campionato }}
-                            }
-                          </span>
-                          @if (partita.girone) {
-                            <span>
-                              @let vaiAlGirone = paginaGirone(partita.gironeId);
-                              @if (vaiAlGirone) {
-                                <a [href]="vaiAlGirone" target="_blank" rel="noopener"
-                                  >Girone {{ partita.girone }}</a
-                                >
-                              } @else {
-                                Girone {{ partita.girone }}
-                              }
-                            </span>
-                          }
-                          @if (partita.ente) {
-                            <span>{{ partita.ente }}</span>
-                          }
-                        </p>
-                      </div>
-                    </li>
-                  } @empty {
-                    <p class="vuoto">Nessuna partita in programma qui nei prossimi {{ giorniPartite }} giorni.</p>
-                  }
-                </ol>
-              }
-            }
-          </div>
+          <div
+            slot="content"
+            class="corpo-sezione"
+            schedaPartite
+            [stato]="statoPartite()"
+            [partite]="partite()"
+          ></div>
         </ion-accordion>
       }
 
@@ -229,109 +129,13 @@
             <ion-badge slot="end" class="conteggio">{{ risultati().length }}</ion-badge>
           }
         </ion-item>
-        <div slot="content" class="corpo-sezione">
-          @switch (statoRisultati()) {
-            @case ('errore') {
-              <p class="vuoto">
-                I risultati non sono disponibili in questo momento: riprova tra poco.
-              </p>
-            }
-            @case ('assenti') {
-              <!-- Niente "riprova tra poco": qui riprovare non serve. -->
-              <p class="vuoto">
-                I risultati non sono ancora disponibili per questa società.
-              </p>
-            }
-            @case ('completata') {
-              <ol class="risultati">
-                <!--
-                  La chiave è la squadra e non l'indice: nel derby la stessa
-                  partita arriva due volte, una per squadra, e una chiave
-                  stabile è quella che tiene le due righe distinte fra un
-                  ridisegno e l'altro.
-                -->
-                @for (risultato of risultati(); track risultato.squadraIscrittaId) {
-                  <li class="risultato">
-                    <!--
-                      Il bollino con l'esito: lo manda presenze, non si
-                      ricalcola dai gol. Una "V" da sola non dice niente a chi
-                      legge con lo screen reader, che sente la riga per esteso.
-                    -->
-                    <span
-                      class="bollino"
-                      [class.vittoria]="risultato.esito === 'VITTORIA'"
-                      [class.pareggio]="risultato.esito === 'PAREGGIO'"
-                      [class.sconfitta]="risultato.esito === 'SCONFITTA'"
-                      aria-hidden="true"
-                      >{{ siglaEsito(risultato) }}</span
-                    >
-                    <div class="dettagli">
-                      <p class="quando">
-                        <span class="visually-hidden">{{ risultatoPerEsteso(risultato) }}</span>
-                        @let giorno = giornoRisultato(risultato);
-                        @if (giorno) {
-                          <span class="giorno-giocato" aria-hidden="true">{{ giorno }}</span>
-                        }
-                        @if (!risultato.inCasa) {
-                          <span class="trasferta" aria-hidden="true">In trasferta</span>
-                        }
-                      </p>
-                      <p class="squadre" aria-hidden="true">
-                        <span class="squadra">
-                          <span class="casa" [class.nostra]="risultato.inCasa">{{
-                            risultato.casa
-                          }}</span>
-                        </span>
-                        <span class="punteggio">{{ punteggio(risultato) }}</span>
-                        <span class="squadra">
-                          <span class="ospite" [class.nostra]="!risultato.inCasa">{{
-                            risultato.ospite
-                          }}</span>
-                        </span>
-                      </p>
-                      <!-- Come nelle partite qui sopra: campionato e girone
-                           portano alle pagine del Comitato su presenze. -->
-                      <p class="campionato">
-                        <span class="nome-campionato">
-                          @let vaiAlCampionatoGiocato = paginaCampionato(risultato.campionatoId);
-                          @if (vaiAlCampionatoGiocato) {
-                            <a [href]="vaiAlCampionatoGiocato" target="_blank" rel="noopener">{{
-                              risultato.campionato
-                            }}</a>
-                          } @else {
-                            {{ risultato.campionato }}
-                          }
-                        </span>
-                        @if (risultato.girone) {
-                          <span>
-                            @let vaiAlGironeGiocato = paginaGirone(risultato.gironeId);
-                            @if (vaiAlGironeGiocato) {
-                              <a [href]="vaiAlGironeGiocato" target="_blank" rel="noopener"
-                                >Girone {{ risultato.girone }}</a
-                              >
-                            } @else {
-                              Girone {{ risultato.girone }}
-                            }
-                          </span>
-                        }
-                        @let dettaglio = dettaglioRisultato(risultato);
-                        @if (dettaglio) {
-                          <span>{{ dettaglio }}</span>
-                        }
-                      </p>
-                    </div>
-                  </li>
-                } @empty {
-                  <p class="vuoto">Nessuna partita giocata finora in questa stagione.</p>
-                }
-              </ol>
-            }
-            @default {
-              <!-- 'chiusa' dura un attimo: aprendo la piega la chiamata parte subito. -->
-              <div class="attesa"><ion-spinner name="crescent"></ion-spinner></div>
-            }
-          }
-        </div>
+        <div
+          slot="content"
+          class="corpo-sezione"
+          schedaRisultati
+          [stato]="statoRisultati()"
+          [risultati]="risultati()"
+        ></div>
       </ion-accordion>
 
       <ion-accordion value="anagrafica">
@@ -339,66 +143,12 @@
           <ion-icon slot="start" name="people-outline" aria-hidden="true"></ion-icon>
           <ion-label>Anagrafica società</ion-label>
         </ion-item>
-        <ion-list slot="content" class="corpo-sezione" lines="inset">
-          @if (haAnagrafica()) {
-            @if (societa()!.matricola) {
-              <ion-item>
-                <ion-label>Matricola</ion-label>
-                <ion-note slot="end">{{ societa()!.matricola }}</ion-note>
-              </ion-item>
-            }
-            @if (societa()!.comitatoRegionale) {
-              <ion-item>
-                <ion-label>Comitato regionale</ion-label>
-                <ion-note slot="end">{{ societa()!.comitatoRegionale }}</ion-note>
-              </ion-item>
-            }
-            @if (societa()!.presidente) {
-              <ion-item>
-                <ion-label>Presidente</ion-label>
-                <ion-note slot="end">{{ societa()!.presidente }}</ion-note>
-              </ion-item>
-            }
-            @if (societa()!.indirizzoSede) {
-              <ion-item>
-                <ion-label>Indirizzo sede</ion-label>
-                <ion-note slot="end">{{ societa()!.indirizzoSede }}</ion-note>
-              </ion-item>
-            }
-            @if (societa()!.telefono) {
-              <ion-item>
-                <ion-label>Telefono</ion-label>
-                <ion-note slot="end">{{ societa()!.telefono }}</ion-note>
-              </ion-item>
-            }
-            @if (societa()!.fax) {
-              <ion-item>
-                <ion-label>Fax</ion-label>
-                <ion-note slot="end">{{ societa()!.fax }}</ion-note>
-              </ion-item>
-            }
-            @if (societa()!.email) {
-              <ion-item>
-                <ion-label>Email</ion-label>
-                <ion-note slot="end">{{ societa()!.email }}</ion-note>
-              </ion-item>
-            }
-            @if (societa()!.sitoWeb) {
-              <ion-item>
-                <ion-label>Sito web</ion-label>
-                <ion-note slot="end">{{ societa()!.sitoWeb }}</ion-note>
-              </ion-item>
-            }
-            @if (prezziScuolaCalcio()) {
-              <ion-item>
-                <ion-label>Scuola calcio</ion-label>
-                <ion-note slot="end">{{ prezziScuolaCalcio() }}</ion-note>
-              </ion-item>
-            }
-          } @else {
-            <p class="vuoto">{{ testoSenzaAnagrafica() }}</p>
-          }
-        </ion-list>
+        <div
+          slot="content"
+          schedaAnagrafica
+          [societa]="societa()!"
+          [conSquadre]="squadre().length > 0"
+        ></div>
       </ion-accordion>
 
       <ion-accordion value="campionati">
@@ -409,86 +159,18 @@
             <ion-badge slot="end" class="conteggio">{{ numeroCampionati() }}</ion-badge>
           }
         </ion-item>
-        <ion-list slot="content" class="corpo-sezione" lines="inset">
-          @switch (statoSquadre()) {
-            @case ('caricamento') {
-              <div class="attesa"><ion-spinner name="crescent"></ion-spinner></div>
-            }
-            @case ('errore') {
-              <p class="vuoto">I campionati non sono disponibili in questo momento: riprova tra poco.</p>
-            }
-            @default {
-              @if (portaleNonRaggiungibile()) {
-                <p class="avviso-risultati" role="note">
-                  I risultati sono aggiornati ai Comunicati Ufficiali.
-                </p>
-              }
-              @for (squadra of squadre(); track $index) {
-                <ion-item>
-                  <ion-label class="ion-text-wrap">
-                    <h3>{{ squadra.campionato }}</h3>
-                    <p>{{ dettaglioSquadra(squadra) }}</p>
-                    @let aggiornamento = aggiornamentoRisultati(squadra);
-                    @if (aggiornamento) {
-                      <p class="aggiornamento-risultati">{{ aggiornamento }}</p>
-                    }
-                    @if (squadra.campo && squadra.campo !== societa()!.nomeImpianto) {
-                      <p>Gioca in casa a {{ squadra.campo }}</p>
-                    }
-                  </ion-label>
-                  <ion-note slot="end">{{ squadra.stagione }}</ion-note>
-                  <!-- Segui la squadra, non il campionato: la chiave è per squadra (ChiaveSquadra). -->
-                  @if (squadra.chiave) {
-                    @let segui = seguita(squadra);
-                    <ion-button
-                      slot="end"
-                      fill="clear"
-                      class="segui"
-                      [class.attiva]="segui"
-                      [attr.aria-pressed]="segui"
-                      [attr.aria-label]="(segui ? 'Smetti di seguire ' : 'Segui ') + squadra.campionato"
-                      (click)="seguiOSmetti(squadra)"
-                    >
-                      <ion-icon slot="icon-only" [name]="segui ? 'notifications' : 'notifications-outline'"></ion-icon>
-                    </ion-button>
-                  }
-                </ion-item>
-              } @empty {
-                @if (campionati().length === 0) {
-                  <p class="vuoto">Nessun campionato nei comunicati letti finora.</p>
-                }
-              }
-            }
-          }
-
-          @if (agonistica().length > 0) {
-            <ion-list-header>
-              <ion-label>Agonistica</ion-label>
-            </ion-list-header>
-            @for (campionato of agonistica(); track $index) {
-              <ion-item>
-                <ion-label>
-                  <h3>{{ campionato.descrizione }}</h3>
-                  <p>Girone {{ campionato.girone }} · Comitato {{ campionato.comitato }}</p>
-                </ion-label>
-              </ion-item>
-            }
-          }
-
-          @if (scuolaCalcio().length > 0) {
-            <ion-list-header>
-              <ion-label>Scuola calcio</ion-label>
-            </ion-list-header>
-            @for (campionato of scuolaCalcio(); track $index) {
-              <ion-item>
-                <ion-label>
-                  <h3>{{ campionato.descrizione }}</h3>
-                  <p>Girone {{ campionato.girone }} · Comitato {{ campionato.comitato }}</p>
-                </ion-label>
-              </ion-item>
-            }
-          }
-        </ion-list>
+        <div
+          slot="content"
+          schedaCampionati
+          [stato]="statoSquadre()"
+          [squadre]="squadre()"
+          [campionati]="campionati()"
+          [agonistica]="agonistica()"
+          [scuolaCalcio]="scuolaCalcio()"
+          [nomeImpianto]="societa()!.nomeImpianto"
+          [chiaviSeguite]="chiaviSeguite()"
+          (cambiaSegui)="seguiOSmetti($event)"
+        ></div>
       </ion-accordion>
     </ion-accordion-group>
   }
