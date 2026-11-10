@@ -507,8 +507,8 @@ class ImportazioneProspectTest {
 
     @Test
     void calcioVuolDireFigcOUnaDisciplinaDiCalcio() {
-        assertThat(ImportazioneProspect.calcio(List.of("CSI", "FIGC"), null)).isTrue();
-        assertThat(ImportazioneProspect.calcio(List.of("CSI"), List.of("Calcio a 5"))).isTrue();
-        assertThat(ImportazioneProspect.calcio(List.of("FIS"), List.of("Sciabola"))).isFalse();
+        assertThat(AggiornamentoDaRegistro.calcio(List.of("CSI", "FIGC"), null)).isTrue();
+        assertThat(AggiornamentoDaRegistro.calcio(List.of("CSI"), List.of("Calcio a 5"))).isTrue();
+        assertThat(AggiornamentoDaRegistro.calcio(List.of("FIS"), List.of("Sciabola"))).isFalse();
     }
 }
