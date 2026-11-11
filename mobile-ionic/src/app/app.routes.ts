@@ -59,6 +59,12 @@ export const routes: Routes = [
     loadComponent: () => import('./pagine/prospect/prospect.page').then((m) => m.ProspectPage),
   },
   {
+    // Le richieste di rettifica arrivate dal form pubblico: solo per chi amministra.
+    path: 'admin/segnalazioni',
+    loadComponent: () =>
+      import('./pagine/segnalazioni/segnalazioni.page').then((m) => m.SegnalazioniPage),
+  },
+  {
     // Prima di :id, che altrimenti prenderebbe "nuova" per un identificativo.
     path: 'admin/societa/nuova',
     data: { nuova: true },

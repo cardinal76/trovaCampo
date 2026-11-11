@@ -6,10 +6,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import it.trovacampo.api.sicurezza.ConfigurazioneSicurezza;
+import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -80,5 +84,30 @@ class SegnalazioniControllerTest {
     @Test
     void l_elenco_senza_login_e_401() throws Exception {
         mockMvc.perform(get("/api/admin/segnalazioni")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void segnare_come_gestita_senza_login_e_401() throws Exception {
+        mockMvc.perform(
+                        put("/api/admin/segnalazioni/abc")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"gestita\":true}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void l_admin_segna_come_gestita() throws Exception {
+        Segnalazione s =
+                new Segnalazione("abc", TipoRettifica.ALTRO, null, null, "x", null, Instant.now(), false);
+        when(repository.findById("abc")).thenReturn(Optional.of(s));
+        when(repository.save(any(Segnalazione.class))).thenAnswer(i -> i.getArgument(0));
+        mockMvc.perform(
+                        put("/api/admin/segnalazioni/abc")
+                                .with(SecurityMockMvcRequestPostProcessors.jwt().authorities(
+                                        new org.springframework.security.core.authority.SimpleGrantedAuthority(
+                                                "ROLE_" + ConfigurazioneSicurezza.RUOLO_AMMINISTRATORE)))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"gestita\":true}"))
+                .andExpect(status().isOk());
     }
 }

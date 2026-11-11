@@ -10,7 +10,7 @@ import {
   NavController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
-import { add, cloudUpload, globe, logIn, logOut, personCircle } from 'ionicons/icons';
+import { add, cloudUpload, globe, logIn, logOut, mail, personCircle } from 'ionicons/icons';
 import { SITO_FOOTBALLER } from '../../footballer';
 import {
   amministratoreRicordato,
@@ -56,6 +56,10 @@ let prossimo = 0;
                 <ion-icon slot="start" name="cloud-upload"></ion-icon>
                 <ion-label>Importa campi</ion-label>
               </ion-item>
+              <ion-item button [detail]="false" (click)="vai('/admin/segnalazioni')">
+                <ion-icon slot="start" name="mail"></ion-icon>
+                <ion-label>Segnalazioni</ion-label>
+              </ion-item>
               <ion-item button [detail]="false" (click)="vai('/accedi?esci=1')">
                 <ion-icon slot="start" name="log-out" color="danger"></ion-icon>
                 <ion-label color="danger">Esci</ion-label>
@@ -92,7 +96,7 @@ export class MenuUtenteComponent {
   readonly sitoFootballer = SITO_FOOTBALLER;
 
   constructor() {
-    addIcons({ add, cloudUpload, globe, logIn, logOut, personCircle });
+    addIcons({ add, cloudUpload, globe, logIn, logOut, mail, personCircle });
   }
 
   rileggi(): void {

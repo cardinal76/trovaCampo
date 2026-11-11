@@ -1,0 +1,101 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Segnalazioni</ion-title>
+    @if (dati() === 'pronto') {
+      <ion-buttons slot="end">
+        <ion-button aria-label="Aggiorna" (click)="carica()">
+          <ion-icon slot="icon-only" name="refresh"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    }
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="ion-padding">
+  @switch (accesso()) {
+    @case ('in-corso') {
+      <div class="ion-text-center"><ion-spinner name="crescent"></ion-spinner></div>
+    }
+    @case ('errore') {
+      <ion-card color="danger">
+        <ion-card-content>Il login non risponde. Riprova tra poco.</ion-card-content>
+      </ion-card>
+      <ion-button expand="block" (click)="entra()">Riprova</ion-button>
+    }
+    @case ('entrato') {
+      @if (!autenticazione.amministratore()) {
+        <ion-card color="warning">
+          <ion-card-content>
+            <ion-icon name="warning"></ion-icon>
+            Pagina riservata: serve il ruolo <strong>{{ ruolo }}</strong
+            >.
+          </ion-card-content>
+        </ion-card>
+      } @else if (dati() === 'caricamento') {
+        <div class="ion-text-center"><ion-spinner name="crescent"></ion-spinner></div>
+      } @else {
+        @if (errore()) {
+          <ion-card color="danger">
+            <ion-card-content>{{ errore() }}</ion-card-content>
+          </ion-card>
+        }
+        @if (dati() === 'pronto') {
+          <ion-segment
+            [value]="mostra()"
+            (ionChange)="mostra.set($event.detail.value === 'tutte' ? 'tutte' : 'da-gestire')"
+          >
+            <ion-segment-button value="da-gestire">
+              <ion-label>Da gestire ({{ daGestire() }})</ion-label>
+            </ion-segment-button>
+            <ion-segment-button value="tutte">
+              <ion-label>Tutte ({{ segnalazioni().length }})</ion-label>
+            </ion-segment-button>
+          </ion-segment>
+
+          <ion-list class="contenuto-largo">
+            @for (s of visibili(); track s.id) {
+              <ion-item lines="full">
+                <ion-label class="ion-text-wrap">
+                  <p>
+                    {{ testoTipo[s.tipo] }} · {{ s.ricevutaIl | date: 'dd/MM/yyyy HH:mm' }}
+                    @if (s.gestita) {
+                      · gestita
+                    }
+                  </p>
+                  @if (s.attuale) {
+                    <p>Ora: {{ s.attuale }}</p>
+                  }
+                  <h3>{{ s.corretto }}</h3>
+                  @if (s.contatto) {
+                    <p>
+                      <a [href]="'mailto:' + s.contatto">{{ s.contatto }}</a>
+                    </p>
+                  }
+                  @if (s.societaId) {
+                    <p><a [routerLink]="['/societa', s.societaId]">Apri la scheda</a></p>
+                  }
+                </ion-label>
+                <ion-button
+                  slot="end"
+                  fill="clear"
+                  [color]="s.gestita ? 'medium' : 'success'"
+                  (click)="segna(s, !s.gestita)"
+                >
+                  <ion-icon slot="start" name="checkmark-circle"></ion-icon>
+                  {{ s.gestita ? 'Riapri' : 'Gestita' }}
+                </ion-button>
+              </ion-item>
+            } @empty {
+              <ion-item lines="none">
+                <ion-label class="ion-text-center">Nessuna segnalazione.</ion-label>
+              </ion-item>
+            }
+          </ion-list>
+        }
+      }
+    }
+  }
+</ion-content>
