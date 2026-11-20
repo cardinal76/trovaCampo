@@ -12,7 +12,11 @@
  * collegamenti sono più d'uno e devono portare nello stesso posto, e se un
  * giorno l'indirizzo cambia si cambia qui.
  */
-const APP_PRESENZE = 'https://presenze.footballer.it';
+// Il gestionale risponde su manager.ploory.it, e
+// presenze.footballer.it rimanda li' (301) le pagine: si va direttamente.
+// Login degli amministratori e anagrafica restano su presenze.footballer.it
+// (environment.*.ts, docker-compose), che non sono collegamenti per chi legge.
+const APP_PRESENZE = 'https://manager.ploory.it';
 const COMITATO_PUBBLICO = `${APP_PRESENZE}/comitato/lazio`;
 
 /**

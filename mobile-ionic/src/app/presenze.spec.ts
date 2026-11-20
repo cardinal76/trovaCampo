@@ -3,7 +3,7 @@ import { paginaAccesso, stemmaAccesso } from './presenze';
 describe('paginaAccesso', () => {
   it('porta alla pagina di accesso del club su presenze', () => {
     expect(paginaAccesso({ alias: 'real-fontanella' })).toBe(
-      'https://presenze.footballer.it/?societa=real-fontanella',
+      'https://manager.ploory.it/?societa=real-fontanella',
     );
   });
 
@@ -19,7 +19,7 @@ describe('paginaAccesso', () => {
 describe('stemmaAccesso', () => {
   it('completa il percorso degli stemmi con l origine di presenze', () => {
     expect(stemmaAccesso({ alias: 'a', stemma: '/api/organizzazioni/3/logo' })).toBe(
-      'https://presenze.footballer.it/api/organizzazioni/3/logo',
+      'https://manager.ploory.it/api/organizzazioni/3/logo',
     );
   });
 
