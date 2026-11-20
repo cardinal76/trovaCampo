@@ -250,11 +250,11 @@ describe('SchedaPage', () => {
       const pagina = apri(SOCIETA, [], [], CLIENTE);
 
       const link = pagina.querySelector('accesso-club a') as HTMLAnchorElement;
-      expect(link.getAttribute('href')).toBe('https://presenze.footballer.it/?societa=boreale');
+      expect(link.getAttribute('href')).toBe('https://manager.ploory.it/?societa=boreale');
       expect(link.textContent).toContain('Accedi a Footballer');
       expect(link.textContent).toContain('BOREALE');
       expect(link.querySelector('img')!.getAttribute('src')).toBe(
-        'https://presenze.footballer.it/api/organizzazioni/3/logo',
+        'https://manager.ploory.it/api/organizzazioni/3/logo',
       );
     });
 
