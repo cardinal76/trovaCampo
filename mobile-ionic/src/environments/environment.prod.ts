@@ -8,9 +8,9 @@
 export const environment = {
   production: true,
   apiUrl: 'https://trovacampo.footballer.it',
-  /** Il Keycloak di presenze, che sta sullo stesso server sotto /auth. */
+  /** Il Keycloak di presenze, sotto /auth del nome nuovo (manager.ploory.it) dalla «sera del cambio». */
   keycloak: {
-    url: 'https://presenze.footballer.it/auth',
+    url: 'https://manager.ploory.it/auth',
     realm: 'presenze',
     clientId: 'trovacampo-frontend',
   },

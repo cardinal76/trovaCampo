@@ -55,8 +55,11 @@ services:
       # Il login dell'amministrazione e' il Keycloak di presenze. Issuer
       # pubblico (quello scritto nei token) e chiavi lette per rete interna:
       # questo container e' sulla rete presenze_default, quindi raggiunge
-      # Keycloak per nome senza passare da Caddy.
-      KEYCLOAK_ISSUER: https://presenze.footballer.it/auth/realms/presenze
+      # Keycloak per nome senza passare da Caddy. L'issuer e' manager.ploory.it
+      # dalla «sera del cambio» di presenze (DEPLOY.md di presenze): prima di
+      # quella sera i token portano ancora presenze.footballer.it e questa riga
+      # li rifiuterebbe tutti, quindi si rilascia solo quella sera.
+      KEYCLOAK_ISSUER: https://manager.ploory.it/auth/realms/presenze
       KEYCLOAK_JWKS_URI: http://presenze-keycloak:8080/auth/realms/presenze/protocol/openid-connect/certs
       # L'anagrafica di presenze (societa', squadre e campi dai Comunicati
       # Ufficiali), per la stessa rete interna. I campi si importano a mano
