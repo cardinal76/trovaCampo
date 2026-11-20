@@ -11,7 +11,7 @@ export const environment = {
   production: true,
   apiUrl: 'http://localhost:8088',
   keycloak: {
-    url: 'https://presenze.footballer.it/auth',
+    url: 'https://manager.ploory.it/auth',
     realm: 'presenze',
     clientId: 'trovacampo-frontend',
   },

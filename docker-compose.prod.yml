@@ -56,7 +56,7 @@ services:
       # pubblico (quello scritto nei token) e chiavi lette per rete interna:
       # questo container e' sulla rete presenze_default, quindi raggiunge
       # Keycloak per nome senza passare da Caddy.
-      KEYCLOAK_ISSUER: https://presenze.footballer.it/auth/realms/presenze
+      KEYCLOAK_ISSUER: https://manager.ploory.it/auth/realms/presenze
       KEYCLOAK_JWKS_URI: http://presenze-keycloak:8080/auth/realms/presenze/protocol/openid-connect/certs
       # L'anagrafica di presenze (societa', squadre e campi dai Comunicati
       # Ufficiali), per la stessa rete interna. I campi si importano a mano

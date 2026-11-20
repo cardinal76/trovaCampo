@@ -42,8 +42,8 @@ services:
       PORT: "3000"
       # Il login e' quello di produzione, letto per l'indirizzo pubblico: il
       # test non ha un Keycloak suo e presenze non e' su questa macchina.
-      KEYCLOAK_ISSUER: https://presenze.footballer.it/auth/realms/presenze
-      KEYCLOAK_JWKS_URI: https://presenze.footballer.it/auth/realms/presenze/protocol/openid-connect/certs
+      KEYCLOAK_ISSUER: https://manager.ploory.it/auth/realms/presenze
+      KEYCLOAK_JWKS_URI: https://manager.ploory.it/auth/realms/presenze/protocol/openid-connect/certs
       ANAGRAFICA_URL: https://presenze.footballer.it
       # Il test non manda notifiche a nessuno.
       NOTIFICHE_ATTIVE: "false"
